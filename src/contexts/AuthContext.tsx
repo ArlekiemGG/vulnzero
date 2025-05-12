@@ -5,6 +5,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 
+// Utility function to clean up auth state
+const cleanupAuthState = () => {
+  // Remove standard auth tokens
+  localStorage.removeItem('supabase.auth.token');
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  // Remove from sessionStorage if in use
+  Object.keys(sessionStorage || {}).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+};
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -41,6 +59,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           }, 0);
         }
+
+        // Handle sign out event
+        if (event === 'SIGNED_OUT') {
+          // Clean up any remaining state
+          setUser(null);
+          setSession(null);
+        }
       }
     );
 
@@ -58,9 +83,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Attempt global sign out first to avoid conflicting sessions
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+      
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate('/dashboard');
+      
+      // Force page reload for a clean state
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         title: "Error de inicio de sesión",
@@ -72,6 +109,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      // Clean up existing state
+      cleanupAuthState();
+      
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -101,6 +141,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGithub = async () => {
     try {
+      // Clean up existing state
+      cleanupAuthState();
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -119,6 +162,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      // Clean up existing state
+      cleanupAuthState();
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -137,8 +183,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      navigate('/');
+      // Clean up auth state first
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Ignore errors
+      }
+      
+      // Force page reload for a clean state
+      window.location.href = '/';
     } catch (error: any) {
       toast({
         title: "Error al cerrar sesión",
