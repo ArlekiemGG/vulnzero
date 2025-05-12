@@ -3,5 +3,5 @@
 User-agent: *
 Allow: /
 
-# Specify sitemap (aunque aún no la tenemos configurada)
-# Sitemap: https://tudominio.com/sitemap.xml
+# Specify sitemap
+Sitemap: https://vulnzero.es/sitemap.xml

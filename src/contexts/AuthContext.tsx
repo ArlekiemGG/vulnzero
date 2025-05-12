@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           data: {
             username
           },
-          emailRedirectTo: window.location.origin + '/dashboard' // Usar URL dinámica
+          emailRedirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
         }
       });
       if (error) throw error;
@@ -104,7 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '/dashboard' // Usar URL dinámica
+          redirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
         }
       });
       if (error) throw error;
@@ -122,7 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard' // Usar URL dinámica
+          redirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
         }
       });
       if (error) throw error;

@@ -16,6 +16,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
     flowType: 'pkce',
     // Usar la URL actual de la aplicación en lugar de localhost
-    redirectTo: window.location.origin,
   }
 });
