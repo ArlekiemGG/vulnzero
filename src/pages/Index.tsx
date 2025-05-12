@@ -3,8 +3,11 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield, Database, Trophy, Flag } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -19,9 +22,15 @@ const Index = () => {
             </p>
             
             <div className="mt-8 flex justify-center gap-4">
-              <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80 animate-pulse-neon">
-                <Link to="/dashboard">Comenzar ahora</Link>
-              </Button>
+              {user ? (
+                <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80 animate-pulse-neon">
+                  <Link to="/dashboard">Mi Dashboard</Link>
+                </Button>
+              ) : (
+                <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80 animate-pulse-neon">
+                  <Link to="/auth">Comenzar ahora</Link>
+                </Button>
+              )}
               <Button asChild variant="outline" size="lg" className="border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10">
                 <Link to="/machines">Ver máquinas</Link>
               </Button>
@@ -90,9 +99,15 @@ const Index = () => {
           </div>
           
           <div className="mt-16 text-center">
-            <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
-              <Link to="/dashboard">Empezar ahora</Link>
-            </Button>
+            {user ? (
+              <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
+                <Link to="/dashboard">Mi Dashboard</Link>
+              </Button>
+            ) : (
+              <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
+                <Link to="/auth">Empezar ahora</Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
