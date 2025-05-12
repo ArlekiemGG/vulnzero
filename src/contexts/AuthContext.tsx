@@ -23,6 +23,52 @@ const cleanupAuthState = () => {
   });
 };
 
+// Password strength checker
+const checkPasswordStrength = (password: string): { isStrong: boolean, message: string } => {
+  // Check if password is at least 8 characters long
+  if (password.length < 8) {
+    return { isStrong: false, message: "La contraseña debe tener al menos 8 caracteres" };
+  }
+
+  // Check if password has at least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return { isStrong: false, message: "La contraseña debe incluir al menos una letra mayúscula" };
+  }
+
+  // Check if password has at least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return { isStrong: false, message: "La contraseña debe incluir al menos una letra minúscula" };
+  }
+
+  // Check if password has at least one number
+  if (!/\d/.test(password)) {
+    return { isStrong: false, message: "La contraseña debe incluir al menos un número" };
+  }
+
+  // Check if password has at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return { isStrong: false, message: "La contraseña debe incluir al menos un carácter especial" };
+  }
+
+  // Password is strong
+  return { isStrong: true, message: "Contraseña segura" };
+};
+
+// Check for common passwords (a basic solution since we can't use HaveIBeenPwned)
+const isCommonPassword = (password: string): boolean => {
+  const commonPasswords = [
+    'password', 'password123', '123456', '123456789', 'qwerty', 
+    'admin', 'welcome', 'letmein', 'monkey', 'abc123', 
+    'iloveyou', '1234567', '1234567890', 'password1', '12345678',
+    'baseball', 'football', 'superman', 'starwars', 'jennifer',
+    'michael', 'shadow', 'batman', 'dragon', 'master'
+  ];
+  
+  // Case insensitive check
+  return commonPasswords.some(commonPwd => 
+    commonPwd.toLowerCase() === password.toLowerCase());
+};
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -109,6 +155,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      // Check password strength
+      const passwordCheck = checkPasswordStrength(password);
+      if (!passwordCheck.isStrong) {
+        toast({
+          title: "Contraseña débil",
+          description: passwordCheck.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if password is commonly used
+      if (isCommonPassword(password)) {
+        toast({
+          title: "Contraseña vulnerable",
+          description: "Esta contraseña es demasiado común y puede ser fácilmente adivinada. Por favor, elija una contraseña más segura.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Clean up existing state
       cleanupAuthState();
       
