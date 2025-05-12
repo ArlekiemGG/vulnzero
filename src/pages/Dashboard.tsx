@@ -1,0 +1,334 @@
+
+import React from 'react';
+import { Database, Trophy, Flag, Shield, Activity, Code, User } from 'lucide-react';
+import Navbar from '@/components/layout/Navbar';
+import Sidebar from '@/components/layout/Sidebar';
+import StatsCard from '@/components/dashboard/StatsCard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import BadgeCard from '@/components/dashboard/BadgeCard';
+import MachineCard from '@/components/machines/MachineCard';
+import { Link } from 'react-router-dom';
+
+// Mock data para estadísticas de usuario
+const userStats = {
+  level: 7,
+  points: 3450,
+  pointsToNextLevel: 550,
+  progress: 70,
+  rank: 42,
+  solvedMachines: 15,
+  completedChallenges: 8,
+};
+
+// Mock data para máquinas recomendadas
+const recommendedMachines = [
+  {
+    id: "machine1",
+    name: "VulnNet",
+    description: "Una máquina vulnerable que contiene varias debilidades en su infraestructura web. Ideal para principiantes.",
+    difficulty: "easy" as const,
+    categories: ["Web", "Privilege Escalation"],
+    points: 20,
+    solvedBy: 1250,
+    userProgress: 0,
+    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=320&auto=format&fit=crop",
+    osType: "linux" as const,
+    featured: true
+  },
+  {
+    id: "machine2",
+    name: "CryptoLocker",
+    description: "Máquina enfocada en técnicas de criptografía y explotación de servicios mal configurados.",
+    difficulty: "medium" as const,
+    categories: ["Crypto", "Enumeration"],
+    points: 30,
+    solvedBy: 842,
+    userProgress: 45,
+    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=320&auto=format&fit=crop",
+    osType: "linux" as const
+  },
+  {
+    id: "machine3",
+    name: "SecureServer 2023",
+    description: "Un servidor Windows con múltiples vulnerabilidades. Enfocado en técnicas de post-explotación.",
+    difficulty: "hard" as const,
+    categories: ["Active Directory", "Windows"],
+    points: 40,
+    solvedBy: 356,
+    userProgress: 0,
+    image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=320&auto=format&fit=crop",
+    osType: "windows" as const
+  }
+];
+
+// Mock data para insignias
+const badges = [
+  {
+    id: "badge1",
+    name: "Primer Sangre",
+    description: "Completa tu primera máquina vulnerable",
+    icon: <Trophy className="h-5 w-5 text-green-400" />,
+    earned: true,
+    rarity: "common" as const
+  },
+  {
+    id: "badge2",
+    name: "Explorador de Redes",
+    description: "Completa 5 máquinas con enfoque en redes",
+    icon: <Database className="h-5 w-5 text-blue-400" />,
+    earned: true,
+    progress: 5,
+    total: 5,
+    rarity: "uncommon" as const
+  },
+  {
+    id: "badge3",
+    name: "Maestro Web",
+    description: "Resolver 10 desafíos de seguridad web",
+    icon: <Code className="h-5 w-5 text-purple-400" />,
+    earned: false,
+    progress: 6,
+    total: 10,
+    rarity: "rare" as const
+  },
+  {
+    id: "badge4",
+    name: "Dominador de CTFs",
+    description: "Ganar un CTF semanal",
+    icon: <Flag className="h-5 w-5 text-amber-400" />,
+    earned: false,
+    rarity: "legendary" as const
+  }
+];
+
+// Mock data para actividad reciente
+const recentActivity = [
+  {
+    id: "activity1",
+    type: "machine_completed",
+    title: "WebIntrusion",
+    date: "Hoy, 14:25",
+    points: 25
+  },
+  {
+    id: "activity2",
+    type: "badge_earned",
+    title: "Explorador de Redes",
+    date: "Ayer, 18:40",
+    points: 50
+  },
+  {
+    id: "activity3",
+    type: "challenge_completed",
+    title: "Desafío: Semana Forense",
+    date: "15 May, 09:12",
+    points: 100
+  },
+  {
+    id: "activity4",
+    type: "level_up",
+    title: "Nivel 7",
+    date: "12 May, 22:30",
+    points: 0
+  }
+];
+
+const Dashboard = () => {
+  return (
+    <div className="min-h-screen bg-cybersec-black">
+      <Navbar />
+      <div className="flex pt-16">
+        <Sidebar userStats={userStats} />
+        <main className="flex-1 md:ml-64 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            <header className="mb-6">
+              <h1 className="text-2xl font-bold text-cybersec-neongreen mb-2">
+                Dashboard
+              </h1>
+              <p className="text-gray-400">
+                Bienvenido de nuevo, Hacker. Aquí tienes un resumen de tu progreso.
+              </p>
+            </header>
+
+            {/* Estadísticas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatsCard 
+                title="Máquinas Resueltas" 
+                value={userStats.solvedMachines} 
+                icon={<Database className="h-4 w-4 text-cybersec-neongreen" />} 
+                colorClass="text-cybersec-neongreen"
+                description="15% más que el mes pasado"
+              />
+              <StatsCard 
+                title="Puntos Totales" 
+                value={userStats.points} 
+                icon={<Trophy className="h-4 w-4 text-cybersec-yellow" />} 
+                colorClass="text-cybersec-yellow"
+                description="Rank #42 global"
+              />
+              <StatsCard 
+                title="Desafíos Completados" 
+                value={userStats.completedChallenges} 
+                icon={<Flag className="h-4 w-4 text-cybersec-red" />} 
+                colorClass="text-cybersec-red"
+                description="2 desafíos activos"
+              />
+              <StatsCard 
+                title="Nivel Actual" 
+                value={userStats.level} 
+                icon={<Shield className="h-4 w-4 text-cybersec-electricblue" />} 
+                colorClass="text-cybersec-electricblue"
+                description={`${userStats.pointsToNextLevel} pts para nivel ${userStats.level + 1}`}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Columna izquierda */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle className="text-cybersec-neongreen">Máquinas Recomendadas</CardTitle>
+                        <CardDescription>Basado en tu nivel y habilidades</CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" className="border-cybersec-neongreen text-cybersec-neongreen" asChild>
+                        <Link to="/machines">Ver todas</Link>
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recommendedMachines.map((machine) => (
+                      <MachineCard key={machine.id} {...machine} />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-cybersec-neongreen">Progreso de Nivel</CardTitle>
+                    <CardDescription>
+                      {userStats.points} / {userStats.points + userStats.pointsToNextLevel} puntos para Nivel {userStats.level + 1}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Progress value={userStats.progress} className="h-2 mb-4" />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div className="bg-cybersec-black p-4 rounded-lg">
+                        <div className="text-sm text-gray-400 mb-1">Nivel actual</div>
+                        <div className="flex items-center">
+                          <Shield className="h-5 w-5 text-cybersec-electricblue mr-2" />
+                          <span className="text-xl font-bold text-cybersec-electricblue">{userStats.level}</span>
+                        </div>
+                      </div>
+                      <div className="bg-cybersec-black p-4 rounded-lg">
+                        <div className="text-sm text-gray-400 mb-1">Puntos restantes</div>
+                        <div className="text-xl font-bold text-cybersec-yellow">{userStats.pointsToNextLevel}</div>
+                      </div>
+                      <div className="bg-cybersec-black p-4 rounded-lg">
+                        <div className="text-sm text-gray-400 mb-1">Rank global</div>
+                        <div className="text-xl font-bold text-cybersec-neongreen">#{userStats.rank}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Columna derecha */}
+              <div className="space-y-6">
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
+                  <CardHeader>
+                    <CardTitle className="text-cybersec-neongreen">Actividad Reciente</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start border-b border-cybersec-darkgray/50 pb-3 last:border-0 last:pb-0">
+                          <div className="p-2 rounded-full bg-cybersec-black mr-3">
+                            {activity.type === 'machine_completed' && <Database className="h-4 w-4 text-cybersec-neongreen" />}
+                            {activity.type === 'badge_earned' && <Trophy className="h-4 w-4 text-cybersec-yellow" />}
+                            {activity.type === 'challenge_completed' && <Flag className="h-4 w-4 text-cybersec-red" />}
+                            {activity.type === 'level_up' && <Shield className="h-4 w-4 text-cybersec-electricblue" />}
+                          </div>
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                              <span className="font-medium">{activity.title}</span>
+                              {activity.points > 0 && (
+                                <span className="text-cybersec-neongreen text-sm">+{activity.points}</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-400">{activity.date}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-cybersec-neongreen">Insignias</CardTitle>
+                      <Button variant="ghost" size="sm" className="text-cybersec-electricblue">
+                        Ver todas
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="earned">
+                      <TabsList className="bg-cybersec-black mb-4">
+                        <TabsTrigger value="earned" className="data-[state=active]:bg-cybersec-darkgray data-[state=active]:text-cybersec-neongreen">
+                          Obtenidas
+                        </TabsTrigger>
+                        <TabsTrigger value="progress" className="data-[state=active]:bg-cybersec-darkgray data-[state=active]:text-cybersec-neongreen">
+                          En progreso
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="earned" className="grid grid-cols-2 gap-4">
+                        {badges.filter(badge => badge.earned).map((badge) => (
+                          <BadgeCard key={badge.id} badge={badge} />
+                        ))}
+                      </TabsContent>
+                      <TabsContent value="progress" className="grid grid-cols-2 gap-4">
+                        {badges.filter(badge => !badge.earned).map((badge) => (
+                          <BadgeCard key={badge.id} badge={badge} />
+                        ))}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray neon-border-blue">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-cybersec-electricblue flex items-center">
+                      <Activity className="h-5 w-5 mr-2" />
+                      Desafío Semanal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm mb-3">
+                      Resuelve 3 máquinas Linux esta semana y gana puntos extra e insignias exclusivas.
+                    </p>
+                    <Progress value={33} className="h-2 mb-3" />
+                    <div className="flex justify-between text-sm">
+                      <span>1/3 completadas</span>
+                      <span className="text-cybersec-yellow">+500 pts</span>
+                    </div>
+                    <Button className="w-full mt-4 bg-cybersec-darkgray border border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue hover:text-cybersec-black" asChild>
+                      <Link to="/challenges">Ver desafío</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

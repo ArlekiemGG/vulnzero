@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,6 +53,15 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				cybersec: {
+					black: '#121212',
+					darkgray: '#1E1E1E',
+					neongreen: '#39FF14',
+					electricblue: '#0892D0',
+					purple: '#A020F0',
+					red: '#FF073A',
+					yellow: '#FFD700',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -84,12 +94,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'glitch': {
+					'0%': { transform: 'translate(0)' },
+					'20%': { transform: 'translate(-2px, 2px)' },
+					'40%': { transform: 'translate(-2px, -2px)' },
+					'60%': { transform: 'translate(2px, 2px)' },
+					'80%': { transform: 'translate(2px, -2px)' },
+					'100%': { transform: 'translate(0)' }
+				},
+				'terminal-cursor': {
+					'0%': { opacity: '0' },
+					'50%': { opacity: '1' },
+					'100%': { opacity: '0' }
+				},
+				'pulse-neon': {
+					'0%, 100%': { 
+						boxShadow: '0 0 5px #39FF14, 0 0 10px #39FF14, 0 0 15px #39FF14',
+						opacity: '1'
+					},
+					'50%': { 
+						boxShadow: '0 0 20px #39FF14, 0 0 30px #39FF14, 0 0 40px #39FF14',
+						opacity: '0.8'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'glitch': 'glitch 0.5s ease-in-out infinite',
+				'terminal-cursor': 'terminal-cursor 1s infinite',
+				'pulse-neon': 'pulse-neon 2s infinite'
+			},
+			fontFamily: {
+				mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+				sans: ['Inter', 'sans-serif'],
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

@@ -1,11 +1,100 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Shield, Database, Trophy, Flag } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <div className="relative bg-cybersec-black pt-40 pb-20 px-4 sm:px-6 lg:pt-48 lg:pb-28 lg:px-8 border-b border-cybersec-darkgray">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-cybersec-neongreen sm:text-5xl md:text-6xl">
+              <span className="glitch-text">CyberChallenge</span>
+            </h1>
+            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-300 sm:mt-5">
+              Aprende ciberseguridad resolviendo máquinas vulnerables en un entorno gamificado
+            </p>
+            
+            <div className="mt-8 flex justify-center gap-4">
+              <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80 animate-pulse-neon">
+                <Link to="/dashboard">Comenzar ahora</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10">
+                <Link to="/machines">Ver máquinas</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Animated background element */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(57,255,20,0.1),transparent_40%)]"></div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div className="py-16 px-4 sm:px-6 lg:py-24 lg:px-8 bg-cybersec-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold tracking-tight text-cybersec-neongreen sm:text-4xl">
+              Características principales
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-300">
+              Todo lo que necesitas para convertirte en un experto en ciberseguridad
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-cybersec-darkgray p-6 rounded-lg border border-cybersec-darkgray hover:neon-border transition-all">
+              <div className="bg-cybersec-black p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                <Database className="h-6 w-6 text-cybersec-neongreen" />
+              </div>
+              <h3 className="text-lg font-medium text-cybersec-neongreen mb-2">Laboratorios Virtuales</h3>
+              <p className="text-gray-300">
+                Entornos Docker configurados para practicar técnicas de hacking ético en un ambiente seguro.
+              </p>
+            </div>
+
+            <div className="bg-cybersec-darkgray p-6 rounded-lg border border-cybersec-darkgray hover:neon-border transition-all">
+              <div className="bg-cybersec-black p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-cybersec-neongreen" />
+              </div>
+              <h3 className="text-lg font-medium text-cybersec-neongreen mb-2">Máquinas Vulnerables</h3>
+              <p className="text-gray-300">
+                Explota vulnerabilidades en sistemas configurados con diferentes niveles de dificultad.
+              </p>
+            </div>
+
+            <div className="bg-cybersec-darkgray p-6 rounded-lg border border-cybersec-darkgray hover:neon-border transition-all">
+              <div className="bg-cybersec-black p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                <Trophy className="h-6 w-6 text-cybersec-neongreen" />
+              </div>
+              <h3 className="text-lg font-medium text-cybersec-neongreen mb-2">Gamificación</h3>
+              <p className="text-gray-300">
+                Gana puntos, sube de nivel y consigue insignias mientras aprendes conceptos avanzados de seguridad.
+              </p>
+            </div>
+
+            <div className="bg-cybersec-darkgray p-6 rounded-lg border border-cybersec-darkgray hover:neon-border transition-all">
+              <div className="bg-cybersec-black p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                <Flag className="h-6 w-6 text-cybersec-neongreen" />
+              </div>
+              <h3 className="text-lg font-medium text-cybersec-neongreen mb-2">Desafíos semanales</h3>
+              <p className="text-gray-300">
+                Participa en competiciones semanales para poner a prueba tus habilidades y competir con otros hackers.
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-16 text-center">
+            <Button asChild size="lg" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
+              <Link to="/dashboard">Empezar ahora</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
