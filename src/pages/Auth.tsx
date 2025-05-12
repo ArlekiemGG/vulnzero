@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, User, Lock, Mail } from 'lucide-react';
+import { Shield, User, Lock, Mail, Github, Chrome } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const Auth = () => {
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, signInWithGithub, signInWithGoogle } = useAuth();
   
   // Redirect if user is already authenticated
   if (user) {
@@ -43,11 +44,19 @@ const Auth = () => {
           </TabsList>
 
           <TabsContent value="login">
-            <LoginForm onLogin={signIn} />
+            <LoginForm 
+              onLogin={signIn} 
+              onGithubLogin={signInWithGithub}
+              onGoogleLogin={signInWithGoogle}
+            />
           </TabsContent>
 
           <TabsContent value="register">
-            <RegisterForm onRegister={signUp} />
+            <RegisterForm 
+              onRegister={signUp} 
+              onGithubLogin={signInWithGithub}
+              onGoogleLogin={signInWithGoogle}
+            />
           </TabsContent>
         </Tabs>
         
@@ -59,7 +68,15 @@ const Auth = () => {
   );
 };
 
-const LoginForm = ({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) => {
+const LoginForm = ({ 
+  onLogin, 
+  onGithubLogin,
+  onGoogleLogin
+}: { 
+  onLogin: (email: string, password: string) => Promise<void>;
+  onGithubLogin: () => Promise<void>;
+  onGoogleLogin: () => Promise<void>;
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -82,54 +99,90 @@ const LoginForm = ({ onLogin }: { onLogin: (email: string, password: string) => 
         <CardDescription>Ingresa a tu cuenta para continuar</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent border-gray-700 hover:bg-gray-800"
+              onClick={onGithubLogin}
+            >
+              <Github className="mr-2 h-4 w-4" />
+              GitHub
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent border-gray-700 hover:bg-gray-800"
+              onClick={onGoogleLogin}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Google
+            </Button>
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-700"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-cybersec-black px-2 text-gray-500">O continuar con</span>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
-          </Button>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
 };
 
 const RegisterForm = ({ 
-  onRegister 
+  onRegister,
+  onGithubLogin,
+  onGoogleLogin
 }: { 
-  onRegister: (email: string, password: string, username: string) => Promise<void> 
+  onRegister: (email: string, password: string, username: string) => Promise<void>;
+  onGithubLogin: () => Promise<void>;
+  onGoogleLogin: () => Promise<void>;
 }) => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -168,78 +221,110 @@ const RegisterForm = ({
         <CardDescription>Regístrate para comenzar</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="register-email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="register-email"
-                type="email"
-                placeholder="tu@email.com"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent border-gray-700 hover:bg-gray-800"
+              onClick={onGithubLogin}
+            >
+              <Github className="mr-2 h-4 w-4" />
+              GitHub
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-transparent border-gray-700 hover:bg-gray-800"
+              onClick={onGoogleLogin}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Google
+            </Button>
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-700"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-cybersec-black px-2 text-gray-500">O registrarse con</span>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="register-username">Nombre de Usuario</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="register-username"
-                type="text"
-                placeholder="hackerman123"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="register-email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="register-email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="register-password">Contraseña</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="register-password"
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+            <div className="space-y-2">
+              <Label htmlFor="register-username">Nombre de Usuario</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="register-username"
+                  type="text"
+                  placeholder="hackerman123"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="register-confirm-password">Confirmar Contraseña</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="register-confirm-password"
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
+            <div className="space-y-2">
+              <Label htmlFor="register-password">Contraseña</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="register-password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            {passwordError && (
-              <p className="text-sm text-cybersec-red mt-1">{passwordError}</p>
-            )}
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Cargando...' : 'Registrarse'}
-          </Button>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="register-confirm-password">Confirmar Contraseña</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="register-confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {passwordError && (
+                <p className="text-sm text-cybersec-red mt-1">{passwordError}</p>
+              )}
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Cargando...' : 'Registrarse'}
+            </Button>
+          </form>
+        </div>
       </CardContent>
       <CardFooter className="text-xs text-gray-500 text-center">
         Al registrarte, aceptas nuestros términos de servicio y política de privacidad.
