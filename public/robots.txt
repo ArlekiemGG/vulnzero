@@ -5,3 +5,4 @@ Allow: /
 
 # Specify sitemap
 Sitemap: https://vulnzero.es/sitemap.xml
+
