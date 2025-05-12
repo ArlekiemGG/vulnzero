@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,6 +77,8 @@ type AuthContextType = {
   signInWithGithub: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -271,6 +272,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/auth?reset=true',
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Correo enviado",
+        description: "Si existe una cuenta con este correo, recibirás instrucciones para restablecer tu contraseña.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al restablecer contraseña",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      // Check password strength
+      const passwordCheck = checkPasswordStrength(newPassword);
+      if (!passwordCheck.isStrong) {
+        toast({
+          title: "Contraseña débil",
+          description: passwordCheck.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if password is commonly used
+      if (isCommonPassword(newPassword)) {
+        toast({
+          title: "Contraseña vulnerable",
+          description: "Esta contraseña es demasiado común y puede ser fácilmente adivinada. Por favor, elija una contraseña más segura.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const { error } = await supabase.auth.updateUser({ 
+        password: newPassword 
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña ha sido actualizada correctamente.",
+      });
+      
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Error al actualizar contraseña",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const value = {
     user,
     session,
@@ -279,7 +345,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp,
     signInWithGithub,
     signInWithGoogle,
-    signOut
+    signOut,
+    resetPassword,
+    updatePassword
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
