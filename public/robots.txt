@@ -1,14 +1,7 @@
-User-agent: Googlebot
-Allow: /
 
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Allow crawling of all content
 User-agent: *
 Allow: /
+
+# Specify sitemap (aunque aún no la tenemos configurada)
+# Sitemap: https://tudominio.com/sitemap.xml
