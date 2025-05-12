@@ -16,5 +16,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
     flowType: 'pkce',
     storage: localStorage,
+    storageKey: 'sb-auth-token',
+    debug: false
   }
 });
