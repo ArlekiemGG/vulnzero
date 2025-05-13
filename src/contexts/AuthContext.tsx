@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -215,13 +214,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const redirectUrl = `${currentOrigin}/dashboard`;
       console.log("Login redirect URL:", redirectUrl);
       
-      // Modificamos la llamada para usar opciones de redirección
+      // Modificamos la llamada para usar opciones de redirección conforme a la API de supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email, 
         password,
-        options: {
-          redirectTo: redirectUrl
-        }
       });
       
       if (error) throw error;
