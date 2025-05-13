@@ -170,36 +170,42 @@ const MachineDetail = () => {
   const handleCommandSubmit = (command: string) => {
     setTerminalOutput(prev => [...prev, `$ ${command}`]);
     
+    // Get the base command and arguments
+    const [baseCommand, ...args] = command.split(' ');
+    
     // Simulación básica de comandos
     setTimeout(() => {
-      switch (command.toLowerCase()) {
+      switch (baseCommand.toLowerCase()) {
         case 'help':
           setTerminalOutput(prev => [...prev, 
             "Comandos disponibles:",
-            "  help       - Muestra esta ayuda",
-            "  ping       - Comprueba conectividad con la máquina",
-            "  nmap       - Escanea puertos en la máquina",
-            "  gobuster   - Busca directorios y archivos",
-            "  ssh        - Intenta conectarse por SSH",
-            "  clear      - Limpia la terminal"
+            "  help                - Muestra esta ayuda",
+            "  ping [host]         - Comprueba conectividad con un host",
+            "  nmap [host]         - Escanea puertos en un host",
+            "  gobuster [options]  - Busca directorios y archivos",
+            "  ssh [user@host]     - Intenta conectarse por SSH",
+            "  clear               - Limpia la terminal",
+            "  getshell/shell      - Intenta obtener una shell en la máquina"
           ]);
           break;
         case 'ping':
+          const target = args[0] || machine?.ipAddress || "10.10.10.10";
           setTerminalOutput(prev => [...prev, 
-            `PING ${machine?.ipAddress || "10.10.10.10"} (${machine?.ipAddress || "10.10.10.10"}) 56(84) bytes of data.`,
-            `64 bytes from ${machine?.ipAddress || "10.10.10.10"}: icmp_seq=1 ttl=63 time=42.8 ms`,
-            `64 bytes from ${machine?.ipAddress || "10.10.10.10"}: icmp_seq=2 ttl=63 time=44.1 ms`,
-            `64 bytes from ${machine?.ipAddress || "10.10.10.10"}: icmp_seq=3 ttl=63 time=43.5 ms`,
-            `64 bytes from ${machine?.ipAddress || "10.10.10.10"}: icmp_seq=4 ttl=63 time=42.9 ms`,
-            `--- ${machine?.ipAddress || "10.10.10.10"} ping statistics ---`,
+            `PING ${target} (${target}) 56(84) bytes of data.`,
+            `64 bytes from ${target}: icmp_seq=1 ttl=63 time=42.8 ms`,
+            `64 bytes from ${target}: icmp_seq=2 ttl=63 time=44.1 ms`,
+            `64 bytes from ${target}: icmp_seq=3 ttl=63 time=43.5 ms`,
+            `64 bytes from ${target}: icmp_seq=4 ttl=63 time=42.9 ms`,
+            `--- ${target} ping statistics ---`,
             "4 packets transmitted, 4 received, 0% packet loss, time 3004ms",
             "rtt min/avg/max/mdev = 42.815/43.337/44.129/0.518 ms"
           ]);
           break;
         case 'nmap':
+          const scanTarget = args[0] || machine?.ipAddress || "10.10.10.10";
           setTerminalOutput(prev => [...prev, 
             "Starting Nmap 7.92 ( https://nmap.org ) at 2025-05-13 13:37 UTC",
-            `Nmap scan report for ${machine?.ipAddress || "10.10.10.10"}`,
+            `Nmap scan report for ${scanTarget}`,
             "Host is up (0.045s latency).",
             "Not shown: 998 closed tcp ports (reset)",
             "PORT   STATE SERVICE",
@@ -237,16 +243,17 @@ const MachineDetail = () => {
           }
           break;
         case 'gobuster':
+          const gobusterTarget = args.find(arg => arg.includes("http")) || `http://${machine?.ipAddress || "10.10.10.10"}/`;
           setTerminalOutput(prev => [...prev, 
             "Gobuster v3.1.0",
             "by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)",
             "=====================================================",
-            `Scanning: http://${machine?.ipAddress || "10.10.10.10"}/`,
+            `Scanning: ${gobusterTarget}`,
             "=====================================================",
-            `/img                  (Status: 301) [Size: 310] [-->http://${machine?.ipAddress || "10.10.10.10"}/img/]`,
-            `/js                   (Status: 301) [Size: 309] [-->http://${machine?.ipAddress || "10.10.10.10"}/js/]`,
-            `/css                  (Status: 301) [Size: 310] [-->http://${machine?.ipAddress || "10.10.10.10"}/css/]`,
-            `/admin                (Status: 301) [Size: 312] [-->http://${machine?.ipAddress || "10.10.10.10"}/admin/]`,
+            `/img                  (Status: 301) [Size: 310] [-->${gobusterTarget}img/]`,
+            `/js                   (Status: 301) [Size: 309] [-->${gobusterTarget}js/]`,
+            `/css                  (Status: 301) [Size: 310] [-->${gobusterTarget}css/]`,
+            `/admin                (Status: 301) [Size: 312] [-->${gobusterTarget}admin/]`,
             "/login                (Status: 200) [Size: 1248]",
             "/index.php            (Status: 200) [Size: 3678]",
             "/robots.txt           (Status: 200) [Size: 85]",
@@ -255,8 +262,9 @@ const MachineDetail = () => {
           ]);
           break;
         case 'ssh':
+          const sshTarget = args[0] || `hacker@${machine?.ipAddress || "10.10.10.10"}`;
           setTerminalOutput(prev => [...prev, 
-            `ssh: connect to host ${machine?.ipAddress || "10.10.10.10"} port 22: Connection refused`,
+            `ssh: connect to host ${sshTarget.split('@')[1] || machine?.ipAddress || "10.10.10.10"} port 22: Connection refused`,
             "ERROR: Necesitas encontrar credenciales válidas primero"
           ]);
           break;
