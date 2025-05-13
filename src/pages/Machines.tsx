@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { queries } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { MachineService } from '@/components/machines/MachineService';
+import { MachineProps } from '@/components/machines/MachineCard';
 
 // Mock data para máquinas - we'll use this until we implement backend functionality
 const machines = [
@@ -26,98 +27,98 @@ const machines = [
     id: "machine1",
     name: "VulnNet",
     description: "Una máquina vulnerable que contiene varias debilidades en su infraestructura web. Ideal para principiantes.",
-    difficulty: "easy",
+    difficulty: "easy" as const,
     categories: ["Web", "Privilege Escalation"],
     points: 20,
     solvedBy: 1250,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=320&auto=format&fit=crop",
-    osType: "linux",
+    osType: "linux" as const,
     featured: true
   },
   {
     id: "machine2",
     name: "CryptoLocker",
     description: "Máquina enfocada en técnicas de criptografía y explotación de servicios mal configurados.",
-    difficulty: "medium",
+    difficulty: "medium" as const,
     categories: ["Crypto", "Enumeration"],
     points: 30,
     solvedBy: 842,
     userProgress: 45,
     image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=320&auto=format&fit=crop",
-    osType: "linux"
+    osType: "linux" as const
   },
   {
     id: "machine3",
     name: "SecureServer 2023",
     description: "Un servidor Windows con múltiples vulnerabilidades. Enfocado en técnicas de post-explotación.",
-    difficulty: "hard",
+    difficulty: "hard" as const,
     categories: ["Active Directory", "Windows"],
     points: 40,
     solvedBy: 356,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=320&auto=format&fit=crop",
-    osType: "windows"
+    osType: "windows" as const
   },
   {
     id: "machine4",
     name: "WebIntrusion",
     description: "Explora vulnerabilidades web comunes como XSS, CSRF y SQL Injection en esta aplicación web vulnerable.",
-    difficulty: "easy",
+    difficulty: "easy" as const,
     categories: ["Web", "Injection"],
     points: 25,
     solvedBy: 978,
     userProgress: 100,
     image: "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=320&auto=format&fit=crop",
-    osType: "linux"
+    osType: "linux" as const
   },
   {
     id: "machine5",
     name: "NetworkBreaker",
     description: "Enfocada en explotación de servicios de red y vulnerabilidades en sistemas de autenticación.",
-    difficulty: "medium",
+    difficulty: "medium" as const,
     categories: ["Network", "Authentication"],
     points: 35,
     solvedBy: 624,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1558346547-4439467bd1d5?q=80&w=320&auto=format&fit=crop",
-    osType: "linux"
+    osType: "linux" as const
   },
   {
     id: "machine6",
     name: "BufferBreaker",
     description: "Práctica técnicas de explotación de memoria y buffer overflows en entornos controlados.",
-    difficulty: "hard",
+    difficulty: "hard" as const,
     categories: ["Binary Exploitation", "Buffer Overflow"],
     points: 45,
     solvedBy: 213,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=320&auto=format&fit=crop",
-    osType: "linux"
+    osType: "linux" as const
   },
   {
     id: "machine7",
     name: "ActiveHacker",
     description: "Laboratorio de Active Directory con múltiples vectores de ataque y técnicas de enumeración.",
-    difficulty: "medium",
+    difficulty: "medium" as const,
     categories: ["Active Directory", "Windows"],
     points: 35,
     solvedBy: 546,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?q=80&w=320&auto=format&fit=crop",
-    osType: "windows"
+    osType: "windows" as const
   },
   {
     id: "machine8",
     name: "KernelExploit",
     description: "Explota vulnerabilidades en el kernel de Linux para escalar privilegios y comprometer el sistema.",
-    difficulty: "insane",
+    difficulty: "insane" as const,
     categories: ["Kernel", "Privilege Escalation"],
     points: 50,
     solvedBy: 124,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1618044619888-009e412ff12a?q=80&w=320&auto=format&fit=crop",
-    osType: "linux",
+    osType: "linux" as const,
     featured: true
   }
 ];
