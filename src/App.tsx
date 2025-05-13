@@ -13,7 +13,6 @@ import Labs from './pages/Labs';
 import Leaderboard from './pages/Leaderboard';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
-import Security from './pages/Security';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -82,8 +81,6 @@ function App() {
               } />
               
               <Route path="/leaderboard" element={<Leaderboard />} />
-              
-              <Route path="/security" element={<Security />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
