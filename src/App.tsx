@@ -9,7 +9,6 @@ import MachineDetail from './pages/MachineDetail';
 import MachineSessionDetail from './pages/MachineSessionDetail';
 import Challenges from './pages/Challenges';
 import CTFs from './pages/CTFs';
-import Labs from './pages/Labs';
 import Leaderboard from './pages/Leaderboard';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
@@ -71,12 +70,6 @@ function App() {
               <Route path="/ctfs" element={
                 <ProtectedRoute>
                   <CTFs />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/labs" element={
-                <ProtectedRoute>
-                  <Labs />
                 </ProtectedRoute>
               } />
               
