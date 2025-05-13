@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -26,6 +27,7 @@ const fetchProfiles = async () => {
     .limit(100);
   
   if (error) {
+    console.error("Error fetching profiles:", error);
     throw new Error(`Error al cargar perfiles: ${error.message}`);
   }
   
