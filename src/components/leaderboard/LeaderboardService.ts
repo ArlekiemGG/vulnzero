@@ -1,5 +1,7 @@
+
 import { leaderboard, userProfiles, type Profiles } from '@/integrations/supabase/client';
 import { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Transform database profiles into formatted leaderboard users
@@ -34,11 +36,34 @@ export const fetchLeaderboardData = async (
   offset = 0
 ): Promise<LeaderboardUser[]> => {
   try {
-    const profiles = await leaderboard.get(limit, offset);
-    return mapProfilesToLeaderboardUsers(profiles);
+    // Added retries for improved resilience
+    let attempts = 0;
+    const maxAttempts = 3;
+    let lastError;
+    
+    while (attempts < maxAttempts) {
+      try {
+        const profiles = await leaderboard.get(limit, offset);
+        return mapProfilesToLeaderboardUsers(profiles);
+      } catch (error) {
+        lastError = error;
+        attempts++;
+        
+        // Don't wait on the last attempt
+        if (attempts < maxAttempts) {
+          // Wait with exponential backoff before next attempt
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 500));
+        }
+      }
+    }
+    
+    console.error("All attempts to fetch leaderboard data failed:", lastError);
+    // Return empty array after all attempts fail
+    return [];
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
-    throw new Error("Failed to load leaderboard data");
+    // Return empty array on error instead of throwing
+    return [];
   }
 };
 

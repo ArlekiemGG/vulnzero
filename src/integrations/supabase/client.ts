@@ -24,11 +24,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'x-application-name': 'vulnzero'
     }
-  },
-  // Explicitly set the schema to public
-  db: {
-    schema: 'public',
   }
+  // Remove the explicit schema setting that's causing issues
 });
 
 // Cache management with improved error handling
@@ -182,10 +179,12 @@ export const userProfiles = {
       console.log("Fetching user profile with ID:", userId);
       
       try {
-        const { data, error } = await query.safe<Profiles>(
-          'profiles',
-          q => q.select('*').eq('id', userId).single()
-        );
+        // Direct query approach instead of using query.safe to avoid schema issues
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
         
         if (error) {
           console.error("Error fetching user profile:", error);
@@ -220,11 +219,12 @@ export const userProfiles = {
     if (!userId) return null;
     
     try {
-      // Check if profile exists
-      const { data: existingProfile } = await query.safe<Profiles>(
-        'profiles',
-        q => q.select('id').eq('id', userId).single()
-      );
+      // Check if profile exists - direct query approach
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
       
       // If profile doesn't exist, create it
       if (!existingProfile) {
@@ -251,10 +251,11 @@ export const userProfiles = {
       }
       
       // Return complete profile
-      const { data: completeProfile } = await query.safe<Profiles>(
-        'profiles',
-        q => q.select('*').eq('id', userId).single()
-      );
+      const { data: completeProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
       return completeProfile;
     } catch (err) {
@@ -301,19 +302,24 @@ export const leaderboard = {
     return cachedRequest(cacheKey, async () => {
       console.log("Fetching leaderboard data");
       
-      const { data, error } = await query.safe<Profiles[]>(
-        'profiles',
-        q => q.select('*')
-             .order('points', { ascending: false })
-             .range(offset, offset + limit - 1)
-      );
+      try {
+        // Direct query approach instead of using query.safe
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('points', { ascending: false })
+          .range(offset, offset + limit - 1);
       
-      if (error) {
-        console.error("Failed to fetch leaderboard:", error);
+        if (error) {
+          console.error("Failed to fetch leaderboard:", error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error("Error in leaderboard.get:", error);
         throw error;
       }
-      
-      return data || [];
     }, 60000); // Cache for 1 minute
   }
 };
