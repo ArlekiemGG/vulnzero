@@ -17,6 +17,12 @@ export interface MachineSession {
   expiresAt: string;
   terminatedAt?: string;
   remainingTimeMinutes?: number;
+  machineDetails?: {
+    name: string;
+    description: string;
+    difficulty: string;
+    os_type: string;
+  };
 }
 
 // External API configuration
@@ -71,11 +77,11 @@ export const MachineSessionService = {
         id: sessionData.id,
         machineTypeId: sessionData.machine_type_id,
         sessionId: sessionData.session_id,
-        status: sessionData.status as any,
+        status: sessionData.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
         ipAddress: sessionData.ip_address,
         username: sessionData.username,
         password: sessionData.password,
-        connectionInfo: sessionData.connection_info,
+        connectionInfo: sessionData.connection_info as Record<string, any>,
         startedAt: sessionData.started_at,
         expiresAt: sessionData.expires_at,
         terminatedAt: sessionData.terminated_at,
@@ -110,11 +116,11 @@ export const MachineSessionService = {
           id: session.id,
           machineTypeId: session.machine_type_id,
           sessionId: session.session_id,
-          status: session.status,
+          status: session.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
           ipAddress: session.ip_address,
           username: session.username,
           password: session.password,
-          connectionInfo: session.connection_info,
+          connectionInfo: session.connection_info as Record<string, any>,
           startedAt: session.started_at,
           expiresAt: session.expires_at,
           terminatedAt: session.terminated_at,

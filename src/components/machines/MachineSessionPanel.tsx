@@ -86,7 +86,6 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     toast({
       title: "Copiado",
       description: `${label} copiado al portapapeles`,
-      duration: 2000,
     });
   };
   
