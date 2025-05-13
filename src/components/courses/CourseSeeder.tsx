@@ -40,7 +40,7 @@ const CourseSeeder: React.FC = () => {
         description: success 
           ? "Cursos creados correctamente" 
           : "Los cursos ya existen en la base de datos",
-        variant: success ? "default" : "secondary",
+        variant: success ? "default" : "default", // Changed from "secondary" to "default" to match allowed variants
       });
     } catch (error) {
       console.error('Error seeding courses:', error);
