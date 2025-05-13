@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -455,14 +454,6 @@ const MachineDetail = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-400">Lanzamiento</span>
                       <span>{new Date(machine.releaseDate).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Tu progreso</span>
-                        <span>{userProgress}%</span>
-                      </div>
-                      <Progress value={userProgress} className="h-2" />
                     </div>
                     
                     <div className="flex flex-wrap gap-2 pt-2">
