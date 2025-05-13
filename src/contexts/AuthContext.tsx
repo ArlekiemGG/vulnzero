@@ -28,7 +28,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
-  const authOperations = useAuthOperations(navigate);
+  const { 
+    loading: authLoading, 
+    signIn, 
+    signUp, 
+    signInWithGithub,
+    signInWithGoogle, 
+    signOut, 
+    resetPassword, 
+    updatePassword 
+  } = useAuthOperations(navigate);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -111,8 +120,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     user,
     session,
-    loading,
-    ...authOperations
+    loading: loading || authLoading,
+    signIn,
+    signUp,
+    signInWithGithub,
+    signInWithGoogle,
+    signOut,
+    resetPassword,
+    updatePassword
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

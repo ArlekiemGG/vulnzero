@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
@@ -299,10 +300,10 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
     loading,
     signIn,
     signUp,
-    signInWithGithub: authOperations.signInWithGithub,
-    signInWithGoogle: authOperations.signInWithGoogle,
-    signOut: authOperations.signOut,
-    resetPassword: authOperations.resetPassword,
-    updatePassword: authOperations.updatePassword
+    signInWithGithub,
+    signInWithGoogle,
+    signOut,
+    resetPassword,
+    updatePassword
   };
 };
