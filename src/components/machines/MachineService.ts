@@ -64,6 +64,7 @@ export const MachineService = {
       ...machine,
       solvedBy: machine.solvedBy || 0, // Ensure solvedBy has a default value
       userProgress: machine.userProgress || 0, // Ensure userProgress has a default value
+      image: machine.image || "/placeholder.svg", // Ensure image has a default value
       ipAddress: '10.10.10.' + Math.floor(Math.random() * 254 + 1),
       creator: 'VulnZero Team',
       releaseDate: '2025-01-15',
