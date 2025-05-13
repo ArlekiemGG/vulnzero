@@ -24,7 +24,7 @@ import { MachineSessionService } from '@/components/machines/MachineSessionServi
 import { Skeleton } from '@/components/ui/skeleton';
 
 const MachineDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { machineId } = useParams<{ machineId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,7 +54,9 @@ const MachineDetail = () => {
   // Fetch machine and user progress data
   useEffect(() => {
     const fetchData = async () => {
-      if (!id) {
+      console.log("Starting fetchData with machineId:", machineId);
+      
+      if (!machineId) {
         console.error("No machine ID provided");
         toast({
           title: "Error",
@@ -67,13 +69,13 @@ const MachineDetail = () => {
       
       try {
         setLoading(true);
-        console.log("Fetching machine with ID:", id);
+        console.log("Fetching machine with ID:", machineId);
         
         // Get machine details
-        const machineData = MachineService.getMachine(id);
+        const machineData = MachineService.getMachine(machineId);
         
         if (!machineData) {
-          console.error("Machine not found with ID:", id);
+          console.error("Machine not found with ID:", machineId);
           toast({
             title: "Error",
             description: "No se pudo encontrar la máquina solicitada.",
@@ -89,7 +91,7 @@ const MachineDetail = () => {
         // Get user progress if user is logged in
         if (user) {
           try {
-            const progressData = await MachineService.getUserMachineProgress(user.id, id);
+            const progressData = await MachineService.getUserMachineProgress(user.id, machineId);
             setUserProgress(progressData.progress);
             
             // Since completedTasks doesn't exist in MachineProgress, we need to derive it
@@ -134,7 +136,7 @@ const MachineDetail = () => {
     };
     
     fetchData();
-  }, [id, user, toast]);
+  }, [machineId, user, toast]);
 
   const handleConnectToggle = () => {
     if (isConnected) {
@@ -465,7 +467,7 @@ const MachineDetail = () => {
 
   // Implement the "Start Machine" button functionality
   const handleStartMachine = async () => {
-    if (!id || !user) {
+    if (!machineId || !user) {
       toast({
         title: "Error",
         description: "Debes iniciar sesión para iniciar una máquina",
@@ -482,7 +484,7 @@ const MachineDetail = () => {
       });
       
       // Call the MachineSessionService to request a new machine
-      const session = await MachineSessionService.requestMachine(user.id, id);
+      const session = await MachineSessionService.requestMachine(user.id, machineId);
       
       if (session) {
         // Success! Navigate to the session page
@@ -493,7 +495,7 @@ const MachineDetail = () => {
         });
         
         // Navigate to the session detail page
-        navigate(`/machines/${id}/session`);
+        navigate(`/machines/${machineId}/session`);
       } else {
         throw new Error("No se pudo solicitar la máquina");
       }
@@ -543,7 +545,7 @@ const MachineDetail = () => {
           <div className="flex-1 md:ml-64 p-4 md:p-6">
             <div className="max-w-3xl mx-auto text-center pt-10">
               <h1 className="text-2xl font-bold text-cybersec-red">Máquina no encontrada</h1>
-              <p className="mt-4 text-gray-400">La máquina con ID "{id}" no existe o ha sido eliminada.</p>
+              <p className="mt-4 text-gray-400">La máquina con ID "{machineId}" no existe o ha sido eliminada.</p>
               <Button asChild className="mt-8">
                 <Link to="/machines" className="flex items-center">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Volver al listado de máquinas

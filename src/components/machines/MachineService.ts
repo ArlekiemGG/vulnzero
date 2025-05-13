@@ -32,8 +32,8 @@ export const MachineService = {
     console.log("Looking for machine with ID:", machineId);
     console.log("Available machine IDs:", machines.map(m => m.id));
     
-    // Find the machine using strict string comparison
-    const machine = machines.find(m => String(m.id) === machineId);
+    // Find the machine with exact string comparison
+    const machine = machines.find(m => m.id === machineId);
     
     if (!machine) {
       console.error(`Machine with ID ${machineId} not found`);
@@ -45,9 +45,9 @@ export const MachineService = {
     // Add additional details that might be needed for the machine detail page
     return {
       ...machine,
-      solvedBy: machine.solvedBy || 0, // Ensure solvedBy has a default value
-      userProgress: machine.userProgress || 0, // Ensure userProgress has a default value
-      image: machine.image || "/placeholder.svg", // Ensure image has a default value
+      solvedBy: machine.solvedBy || 0,
+      userProgress: machine.userProgress || 0,
+      image: machine.image || "/placeholder.svg",
       ipAddress: '10.10.10.' + Math.floor(Math.random() * 254 + 1),
       creator: 'VulnZero Team',
       releaseDate: '2025-01-15',
