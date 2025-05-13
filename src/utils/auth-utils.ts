@@ -3,8 +3,6 @@ import { toast } from "@/components/ui/use-toast";
 
 // Function to clean up auth state
 export const cleanupAuthState = () => {
-  // Remove standard auth tokens
-  localStorage.removeItem('supabase.auth.token');
   // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -60,7 +58,6 @@ export const isCommonPassword = (password: string): boolean => {
     'michael', 'shadow', 'batman', 'dragon', 'master'
   ];
   
-  // Case insensitive check
   return commonPasswords.some(commonPwd => 
     commonPwd.toLowerCase() === password.toLowerCase());
 };
@@ -73,13 +70,10 @@ export const handleEmailConfirmation = async (
   query: string,
   navigate: (path: string) => void
 ) => {
-  console.log("Current URL state:", { path, hash, query });
-  
   // Check if we have an access_token in the URL (email confirmation)
   if (hash && hash.includes('access_token=')) {
     try {
       // The hash contains the access_token which Supabase will handle automatically
-      // We just need to check if it sets up the session correctly
       const { data, error } = await supabase.auth.getSession();
       
       if (error) throw error;
@@ -106,7 +100,6 @@ export const handleEmailConfirmation = async (
   
   // Check for password reset flow
   if (query && query.includes('type=recovery')) {
-    console.log("Detected recovery flow");
     // Redirect to reset password page maintaining the query parameters
     navigate(`/auth${query}`);
   }

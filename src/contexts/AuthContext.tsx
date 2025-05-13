@@ -39,23 +39,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       navigate
     );
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession?.user?.id);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
         
         // Handle specific events
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Defer profile fetching to avoid deadlock
-          setTimeout(() => {
-            // Ensure we redirect to dashboard on successful sign in
-            if (window.location.pathname === '/auth') {
-              navigate('/dashboard');
-            }
-          }, 0);
+          // Ensure we redirect to dashboard on successful sign in
+          if (window.location.pathname === '/auth') {
+            navigate('/dashboard');
+          }
         }
 
         // Handle sign out event
@@ -64,22 +60,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setSession(null);
         }
-        
-        // Handle user updated event (email verification)
-        if (event === 'USER_UPDATED') {
-          try {
-            const { data } = await supabase.auth.getUser();
-            if (data?.user && data.user.email_confirmed_at) {
-              // User's email has been verified
-            }
-          } catch (error) {
-            console.error("Error checking email confirmation:", error);
-          }
-        }
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
