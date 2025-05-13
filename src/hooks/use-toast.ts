@@ -10,10 +10,8 @@ type ToastActionElement = React.ReactElement<{
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-// Define the Toast type here directly
-export type Toast = Omit<ToasterToast, "id">
-
-export type ToasterToast = {
+// Define the Toast and ToasterToast types
+export interface ToasterToast {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
@@ -22,6 +20,8 @@ export type ToasterToast = {
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
+
+export type Toast = Omit<ToasterToast, "id">
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

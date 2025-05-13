@@ -141,7 +141,7 @@ export function Toaster() {
   )
 }
 
-// Export components and types correctly without duplication
+// Export components and types correctly
 export {
   type ToastProps,
   ToastProvider,
