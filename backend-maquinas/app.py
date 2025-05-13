@@ -1,14 +1,19 @@
+
 from flask import Flask, request, jsonify
 import docker
 import uuid
 import time
 import random
 import os
+from flask_cors import CORS
 
 # Asegurar el uso del socket Docker correcto si es necesario (Docker Desktop en macOS suele funcionar sin esta línea)
 # os.environ["DOCKER_HOST"] = "unix:///Users/zephius/.docker/run/docker.sock"
 
 app = Flask(__name__)
+# Habilitar CORS para todas las rutas
+CORS(app, resources={r"/api/*": {"origins": ["https://vulnzero.es", "https://www.vulnzero.es"]}})
+
 client = docker.from_env()
 sesiones_activas = {}
 
@@ -61,7 +66,7 @@ def solicitar_maquina():
     return jsonify({
         "exito": True,
         "sesionId": sesion_id,
-        "ipAcceso": "localhost",
+        "ipAcceso": "api.vulnzero.es",  # Actualizado para producción
         "puertoSSH": puerto,
         "credenciales": {"usuario": "hacker", "password": generar_password()},
         "tiempoLimite": 7200

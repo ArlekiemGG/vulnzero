@@ -25,8 +25,8 @@ export interface MachineSession {
 }
 
 // External API configuration
-// Actualizado para usar la URL del backend de Flask real
-const EXTERNAL_API_URL = "http://localhost:5000"; // Dirección donde se ejecuta Flask
+// Actualizado para usar la URL del backend en producción
+const EXTERNAL_API_URL = "https://api.vulnzero.es"; // URL de producción
 
 // Helper function to map database session to MachineSession interface
 const mapDbSessionToMachineSession = (session: any): MachineSession => {
@@ -139,14 +139,11 @@ export const MachineSessionService = {
   // Check machine status
   getMachineStatus: async (sessionId: string): Promise<string> => {
     try {
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado`, {
+      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          sesionId: sessionId
-        }),
       });
 
       if (!response.ok) {
