@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Función para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
@@ -42,24 +43,19 @@ const fetchProfiles = async () => {
 };
 
 // Función para obtener el profile del usuario actual
-const fetchCurrentUserProfile = async () => {
+const fetchCurrentUserProfile = async (userId: string | undefined) => {
+  if (!userId) {
+    console.log("No user ID provided, cannot fetch profile");
+    return null;
+  }
+  
   try {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.error("Auth error:", authError);
-      return null;
-    }
-    
-    if (!authData.user) {
-      console.log("No authenticated user found");
-      return null;
-    }
+    console.log("Fetching current user profile with ID:", userId);
     
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('id', userId)
       .single();
     
     if (error) {
@@ -78,6 +74,7 @@ const fetchCurrentUserProfile = async () => {
 const Leaderboard = () => {
   const [selectedRegion, setSelectedRegion] = useState("global");
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
+  const { user } = useAuth();
   
   // Consulta para obtener todos los perfiles
   const { 
@@ -95,15 +92,22 @@ const Leaderboard = () => {
   useEffect(() => {
     const loadCurrentUser = async () => {
       try {
-        const profile = await fetchCurrentUserProfile();
-        setCurrentUserProfile(profile);
+        if (user) {
+          const profile = await fetchCurrentUserProfile(user.id);
+          setCurrentUserProfile(profile);
+        }
       } catch (err) {
         console.error("Error fetching current user profile:", err);
+        toast({
+          title: "Error al cargar perfil",
+          description: "No se pudieron cargar tus datos de perfil.",
+          variant: "destructive"
+        });
       }
     };
     
     loadCurrentUser();
-  }, []);
+  }, [user]);
   
   // Convertir perfiles de Supabase en formato LeaderboardUser
   const mapProfilesToLeaderboardUsers = (profilesData: any[]): LeaderboardUser[] => {
@@ -133,6 +137,8 @@ const Leaderboard = () => {
   
   // Para propósitos de depuración
   console.log("Current profiles data:", profiles);
+  console.log("Current user:", user);
+  console.log("Current user profile:", currentUserProfile);
   
   // Preparar datos para la tabla
   const leaderboardUsers = mapProfilesToLeaderboardUsers(profiles);
