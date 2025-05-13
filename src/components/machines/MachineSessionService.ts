@@ -26,12 +26,15 @@ export interface MachineSession {
 }
 
 // External API configuration
-const EXTERNAL_API_URL = "https://api.example.com"; // Replace with your actual API URL
+// Actualizado para usar la URL del backend de Flask real
+const EXTERNAL_API_URL = "http://localhost:5000"; // Dirección donde se ejecuta Flask
 
 export const MachineSessionService = {
   // Request a new machine instance
   requestMachine: async (userId: string, machineTypeId: string): Promise<MachineSession | null> => {
     try {
+      console.log('Requesting machine:', machineTypeId, 'for user:', userId);
+      
       // Call external API to provision a new machine
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
         method: 'POST',
@@ -46,10 +49,15 @@ export const MachineSessionService = {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Error al solicitar la máquina');
+        throw new Error(error.mensaje || 'Error al solicitar la máquina');
       }
 
       const data = await response.json();
+      console.log('Machine requested successfully:', data);
+      
+      if (!data.exito) {
+        throw new Error(data.mensaje || 'Error al solicitar la máquina');
+      }
       
       // Store session data in Supabase
       const { data: sessionData, error } = await supabase
@@ -57,13 +65,20 @@ export const MachineSessionService = {
         .insert({
           user_id: userId,
           machine_type_id: machineTypeId,
-          session_id: data.sessionId,
-          ip_address: data.ipAddress,
-          username: data.username,
-          password: data.password,
-          connection_info: data.connectionInfo || {},
-          status: data.status || 'provisioning',
-          expires_at: new Date(Date.now() + (data.validTimeMinutes * 60 * 1000)).toISOString(),
+          session_id: data.sesionId,
+          ip_address: data.ipAcceso,
+          status: 'running',
+          connection_info: {
+            puertoSSH: data.puertoSSH,
+            username: data.credenciales.usuario,
+            password: data.credenciales.password,
+            sshCommand: `ssh ${data.credenciales.usuario}@${data.ipAcceso} -p ${data.puertoSSH}`,
+            maxTimeMinutes: data.tiempoLimite / 60
+          },
+          username: data.credenciales.usuario,
+          password: data.credenciales.password,
+          expires_at: new Date(Date.now() + (data.tiempoLimite * 1000)).toISOString(),
+          started_at: new Date().toISOString()
         })
         .select()
         .single();
@@ -85,6 +100,7 @@ export const MachineSessionService = {
         startedAt: sessionData.started_at,
         expiresAt: sessionData.expires_at,
         terminatedAt: sessionData.terminated_at,
+        remainingTimeMinutes: Math.floor((new Date(sessionData.expires_at).getTime() - Date.now()) / (60 * 1000))
       };
     } catch (error) {
       console.error('Error requesting machine:', error);
