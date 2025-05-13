@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Activity, Code, User } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -170,10 +171,10 @@ const Dashboard = () => {
       
       try {
         setLoading(true);
-        const { data, error } = await queries.getUserProfile(user.id);
+        const profileData = await queries.getUserProfile(user.id);
           
-        if (error) {
-          console.error('Error fetching user profile:', error);
+        if (!profileData) {
+          console.error('No profile data returned');
           toast({
             title: "Error al cargar perfil",
             description: "No se pudieron cargar tus datos de perfil.",
@@ -182,12 +183,16 @@ const Dashboard = () => {
           return;
         }
         
-        if (data) {
-          setUserProfile(data);
-          setIsAdmin(data.role === 'admin');
-        }
+        console.log("Profile data loaded:", profileData);
+        setUserProfile(profileData);
+        setIsAdmin(profileData.role === 'admin');
       } catch (error) {
         console.error('Error loading profile:', error);
+        toast({
+          title: "Error al cargar perfil",
+          description: "No se pudieron cargar tus datos de perfil.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }

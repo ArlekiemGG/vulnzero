@@ -35,6 +35,7 @@ export const queries = {
   /**
    * Fetch a user's complete profile
    * @param userId The user ID to fetch
+   * @returns The user profile or null if not found
    */
   getUserProfile: async (userId: string | undefined) => {
     if (!userId) return null;
