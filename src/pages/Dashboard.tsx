@@ -15,7 +15,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { ActivityService, UserActivity } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
-import { seedUserActivities } from '@/utils/seed-activities';
 
 // Mock data para insignias - este es un buen candidato para crear una tabla en Supabase
 const badges = [

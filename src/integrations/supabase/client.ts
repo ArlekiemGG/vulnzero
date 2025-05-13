@@ -86,9 +86,35 @@ export const queries = {
     }
   },
   
-  // Function to log user activity
+  // Function to log user activity - ensuring we don't create test data
   logUserActivity: async (userId: string, activityType: string, title: string, points: number = 0) => {
     try {
+      // Skip any test activities to avoid polluting user data
+      if (
+        title.toLowerCase().includes('test') || 
+        title === 'WebIntrusion' ||
+        title === 'Explorador de Redes' ||
+        title === 'Desafío: Semana Forense' ||
+        title === 'Nivel 7'
+      ) {
+        console.log('Skipping test activity:', title);
+        return { success: true, id: null };
+      }
+      
+      // Check for duplicates before inserting
+      const { data: existingActivity } = await supabase
+        .from('user_activities')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', activityType)
+        .eq('title', title)
+        .limit(1);
+      
+      if (existingActivity && existingActivity.length > 0) {
+        console.log('Activity already exists, skipping:', activityType, title);
+        return { success: true, id: existingActivity[0].id };
+      }
+      
       const { data, error } = await supabase.rpc(
         'log_user_activity',
         {

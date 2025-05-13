@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const seedUserActivities = async (userId: string) => {
   // In a real production environment, we don't want to seed test data
-  // Commented out to prevent test activities
+  // Completely disabled to prevent test data from showing up
   console.log('Activity seeding disabled to show only real user activities');
   return;
   

@@ -22,30 +22,47 @@ export const ActivityService = {
    */
   getRecentActivity: async (userId: string, limit = 5): Promise<UserActivity[]> => {
     try {
-      // Only get real activities created by actual user actions
+      console.log('Getting recent activities for user:', userId);
+      
+      // Get real user activities:
+      // 1. Only select activities with positive points
+      // 2. Only select activities with specific types
+      // 3. Filter out any test data
       const { data, error } = await supabase
         .from('user_activities')
         .select('*')
         .eq('user_id', userId)
-        // Only get activities with points (gamified tasks)
+        // Only get activities with points (real gamified tasks)
         .gt('points', 0)
-        // Only get activities of types that represent completed tasks
+        // Only get activities for completed tasks
         .in('type', ['machine_completed', 'badge_earned', 'challenge_completed', 'level_up'])
-        // Filter out test/seeded activities by checking if the title contains "Test" or specific test titles
+        // Filter out any test/demo data
         .not('title', 'ilike', '%Test%')
+        .not('title', 'ilike', '%WebIntrusion%')
+        .not('title', 'ilike', '%Explorador de Redes%')
+        .not('title', 'ilike', '%Desafío: Semana Forense%')
+        .not('title', 'eq', 'Nivel 7')
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching activities:', error);
+        throw error;
+      }
+      
+      console.log('Activities fetched:', data?.length || 0);
       
       if (!data || data.length === 0) {
+        console.log('No activities found');
         return [];
       }
       
-      // Get unique activities by id to avoid duplicates
+      // Get unique activities to avoid any duplicates
       const uniqueActivities = Array.from(
         new Map(data.map(item => [item.id, item])).values()
       );
+      
+      console.log('Unique activities:', uniqueActivities.length);
       
       // Transform the data to match our interface
       return uniqueActivities.map(activity => ({
