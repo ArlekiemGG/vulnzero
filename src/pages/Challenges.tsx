@@ -22,11 +22,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { queries } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { ChallengeService } from '@/components/challenges/ChallengeService';
+import ChallengeCard, { Challenge } from '@/components/challenges/ChallengeCard';
 
 const Challenges = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [userStats, setUserStats] = useState({
     level: 1,
     points: 0,
@@ -37,19 +40,24 @@ const Challenges = () => {
     completedChallenges: 0,
   });
 
-  // Fetch user profile data
+  // Fetch user profile data and challenges
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
+    const fetchData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        
+        // Fetch user profile data
         const profileData = await queries.getUserProfile(user.id);
           
         if (profileData) {
           console.log("Profile data loaded in Challenges:", profileData);
           
-          // Calculate points to next level (simple: nivel actual * 500)
+          // Calculate points to next level (nivel actual * 500)
           const pointsToNextLevel = profileData.level * 500 - profileData.points;
           
           // Calculate progress as percentage
@@ -67,19 +75,17 @@ const Challenges = () => {
             solvedMachines: profileData.solved_machines || 0,
             completedChallenges: profileData.completed_challenges || 0,
           });
-        } else {
-          console.error('No profile data returned');
-          toast({
-            title: "Error al cargar perfil",
-            description: "No se pudieron cargar tus datos de perfil.",
-            variant: "destructive"
-          });
         }
+        
+        // Fetch challenges with completion status
+        const fetchedChallenges = await ChallengeService.getChallenges(user.id);
+        console.log("Challenges loaded with completion status:", fetchedChallenges);
+        setChallenges(fetchedChallenges);
       } catch (error) {
         console.error('Error loading profile in Challenges:', error);
         toast({
-          title: "Error al cargar perfil",
-          description: "No se pudieron cargar tus datos de perfil.",
+          title: "Error al cargar datos",
+          description: "No se pudieron cargar tus datos de perfil o desafíos.",
           variant: "destructive"
         });
       } finally {
@@ -87,98 +93,28 @@ const Challenges = () => {
       }
     };
 
-    fetchUserProfile();
+    fetchData();
   }, [user, toast]);
 
-  const [challenges, setChallenges] = useState([
-    { 
-      id: 1, 
-      title: 'Web Exploitation 101', 
-      category: 'Web', 
-      points: 100, 
-      solved: true,
-      description: 'Explora vulnerabilidades comunes en aplicaciones web como XSS, CSRF, SQLi y más.',
-      deadline: '2023-06-20',
-      difficulty: 'easy',
-      participants: 235
-    },
-    { 
-      id: 2, 
-      title: 'Reverse Engineering Basics', 
-      category: 'Reverse Engineering', 
-      points: 150, 
-      solved: false,
-      description: 'Aprende a analizar binarios y comprender su funcionamiento interno mediante técnicas de ingeniería inversa.',
-      deadline: '2023-06-25',
-      difficulty: 'medium',
-      participants: 187
-    },
-    { 
-      id: 3, 
-      title: 'Cryptography Challenges', 
-      category: 'Cryptography', 
-      points: 200, 
-      solved: false,
-      description: 'Desafíos para romper esquemas criptográficos mal implementados y entender algoritmos criptográficos.',
-      deadline: '2023-06-30',
-      difficulty: 'hard',
-      participants: 156
-    },
-    { 
-      id: 4, 
-      title: 'Network Analysis', 
-      category: 'Network', 
-      points: 120, 
-      solved: true,
-      description: 'Analiza capturas de paquetes para encontrar información relevante y detectar anomalías en el tráfico de red.',
-      deadline: '2023-06-18',
-      difficulty: 'medium',
-      participants: 203
-    },
-    { 
-      id: 5, 
-      title: 'OSINT Challenge', 
-      category: 'OSINT', 
-      points: 180, 
-      solved: false,
-      description: 'Utiliza técnicas de recopilación de inteligencia de fuentes abiertas para encontrar información oculta.',
-      deadline: '2023-07-05',
-      difficulty: 'medium',
-      participants: 178
-    },
-    { 
-      id: 6, 
-      title: 'Binary Exploitation', 
-      category: 'Exploitation', 
-      points: 250, 
-      solved: false,
-      description: 'Explota vulnerabilidades en aplicaciones binarias utilizando técnicas como buffer overflows y ROP.',
-      deadline: '2023-07-10',
-      difficulty: 'hard',
-      participants: 124
-    },
-  ]);
-
   const categories = [...new Set(challenges.map(challenge => challenge.category))];
-  const weeklyChallenge = challenges[5]; // Binary Exploitation como desafío semanal
+  const weeklyChallenge = challenges.find(c => c.isActive) || challenges[0]; // Use first challenge as fallback
 
-  const getDifficultyColor = (difficulty) => {
-    switch(difficulty) {
-      case 'easy': return 'text-green-500';
-      case 'medium': return 'text-yellow-500';
-      case 'hard': return 'text-red-500';
-      default: return 'text-gray-500';
-    }
-  };
-
-  const getDifficultyBadgeVariant = (difficulty) => {
-    switch(difficulty) {
-      case 'easy': return 'outline';
-      case 'medium': return 'secondary';
-      case 'hard': return 'destructive';
-      default: return 'outline';
-    }
-  };
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cybersec-black">
+        <Navbar />
+        <div className="flex pt-16">
+          <Sidebar userStats={userStats} />
+          <main className="flex-1 md:ml-64 p-4 md:p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-xl font-bold text-cybersec-neongreen">Cargando desafíos...</h1>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cybersec-black">
@@ -252,7 +188,9 @@ const Challenges = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Desafíos activos</span>
-                        <span className="text-2xl font-bold text-cybersec-neongreen">{challenges.length}</span>
+                        <span className="text-2xl font-bold text-cybersec-neongreen">
+                          {challenges.filter(c => c.isActive).length}
+                        </span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
                         <Flag className="h-5 w-5 text-cybersec-neongreen" />
@@ -265,7 +203,9 @@ const Challenges = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Completados</span>
-                        <span className="text-2xl font-bold text-cybersec-yellow">{userStats.completedChallenges}</span>
+                        <span className="text-2xl font-bold text-cybersec-yellow">
+                          {challenges.filter(c => c.isCompleted).length}
+                        </span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
                         <Check className="h-5 w-5 text-cybersec-yellow" />
@@ -294,7 +234,9 @@ const Challenges = () => {
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Progreso general</span>
                         <span className="text-2xl font-bold text-cybersec-neongreen">
-                          {Math.round((userStats.completedChallenges / challenges.length) * 100) || 0}%
+                          {challenges.length > 0 
+                            ? Math.round((challenges.filter(c => c.isCompleted).length / challenges.length) * 100)
+                            : 0}%
                         </span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
@@ -305,53 +247,52 @@ const Challenges = () => {
                 </Card>
               </div>
 
-              <Card className="bg-cybersec-darkgray border-cybersec-darkgray mb-6">
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <Trophy className="h-5 w-5 text-cybersec-yellow" />
-                    <CardTitle className="text-cybersec-yellow">Desafío Semanal</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">{weeklyChallenge.title}</h3>
-                      <p className="text-gray-400 mb-4">{weeklyChallenge.description}</p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge variant="outline" className="bg-cybersec-black text-cybersec-yellow">
-                          {weeklyChallenge.category}
-                        </Badge>
-                        <Badge variant={getDifficultyBadgeVariant(weeklyChallenge.difficulty)} className="bg-cybersec-black">
-                          {weeklyChallenge.difficulty.charAt(0).toUpperCase() + weeklyChallenge.difficulty.slice(1)}
-                        </Badge>
-                        <Badge variant="secondary" className="bg-cybersec-black">
-                          {weeklyChallenge.points} pts
-                        </Badge>
+              {weeklyChallenge && (
+                <Card className="bg-cybersec-darkgray border-cybersec-darkgray mb-6">
+                  <CardHeader>
+                    <div className="flex items-center space-x-2">
+                      <Trophy className="h-5 w-5 text-cybersec-yellow" />
+                      <CardTitle className="text-cybersec-yellow">Desafío Semanal</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2">{weeklyChallenge.title}</h3>
+                        <p className="text-gray-400 mb-4">{weeklyChallenge.description}</p>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <Badge variant="outline" className="bg-cybersec-black text-cybersec-yellow">
+                            {weeklyChallenge.category}
+                          </Badge>
+                          <Badge variant="secondary" className="bg-cybersec-black">
+                            {weeklyChallenge.points} pts
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Button variant="default" className="bg-cybersec-yellow text-cybersec-black hover:bg-cybersec-yellow/80">
+                            {weeklyChallenge.isCompleted ? 'Ver detalles' : 'Comenzar desafío'}
+                          </Button>
+                          <p className="text-sm text-gray-400">
+                            <span className="font-semibold">{weeklyChallenge.participants}</span> participantes
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Button variant="default" className="bg-cybersec-yellow text-cybersec-black hover:bg-cybersec-yellow/80">
-                          Comenzar desafío
-                        </Button>
-                        <p className="text-sm text-gray-400">
-                          <span className="font-semibold">{weeklyChallenge.participants}</span> participantes
-                        </p>
+                      <div className="md:w-1/3 flex flex-col justify-center">
+                        <div className="mb-2 flex justify-between text-sm">
+                          <span className="text-gray-400">Tiempo restante</span>
+                          <span className="text-cybersec-yellow">3 días, 8 horas</span>
+                        </div>
+                        <Progress value={65} className="h-2 mb-4" />
+                        <div className="p-3 bg-cybersec-black rounded-lg text-center">
+                          <span className="block text-sm text-gray-400">Recompensa</span>
+                          <span className="text-lg font-bold text-cybersec-yellow">+{weeklyChallenge.points * 2} pts</span>
+                          <span className="block text-xs text-gray-400">+ Badge exclusivo</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="md:w-1/3 flex flex-col justify-center">
-                      <div className="mb-2 flex justify-between text-sm">
-                        <span className="text-gray-400">Tiempo restante</span>
-                        <span className="text-cybersec-yellow">3 días, 8 horas</span>
-                      </div>
-                      <Progress value={65} className="h-2 mb-4" />
-                      <div className="p-3 bg-cybersec-black rounded-lg text-center">
-                        <span className="block text-sm text-gray-400">Recompensa</span>
-                        <span className="text-lg font-bold text-cybersec-yellow">+{weeklyChallenge.points * 2} pts</span>
-                        <span className="block text-xs text-gray-400">+ Badge exclusivo</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </header>
 
             <Tabs defaultValue="all" className="w-full">
@@ -371,49 +312,7 @@ const Challenges = () => {
               <TabsContent value="all" className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {challenges.map(challenge => (
-                    <Card key={challenge.id} className="bg-cybersec-darkgray border-cybersec-darkgray hover:border-cybersec-neongreen/50 transition-all">
-                      <CardHeader>
-                        <CardTitle className="flex justify-between items-start">
-                          <span className="flex-1">{challenge.title}</span>
-                          {challenge.solved && (
-                            <Badge variant="secondary" className="ml-2">
-                              <Check className="h-4 w-4 mr-2" />
-                              Resuelto
-                            </Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription>Categoría: {challenge.category}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-400 mb-4">{challenge.description}</p>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <Badge variant={getDifficultyBadgeVariant(challenge.difficulty)} className="bg-cybersec-black">
-                            <span className={cn("mr-1", getDifficultyColor(challenge.difficulty))}>•</span>
-                            {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
-                          </Badge>
-                          <Badge variant="secondary" className="bg-cybersec-black">
-                            <Trophy className="h-3 w-3 mr-1" />
-                            {challenge.points} pts
-                          </Badge>
-                          <Badge variant="outline" className="bg-cybersec-black">
-                            {challenge.participants} participantes
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-gray-400 flex justify-between items-center">
-                          <span>Fecha límite: {new Date(challenge.deadline).toLocaleDateString()}</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="justify-between">
-                        <Button variant="default" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
-                          {challenge.solved ? 'Ver solución' : 'Comenzar'}
-                        </Button>
-                        {!challenge.solved && (
-                          <Button variant="outline" className="border-cybersec-neongreen text-cybersec-neongreen">
-                            Pistas
-                          </Button>
-                        )}
-                      </CardFooter>
-                    </Card>
+                    <ChallengeCard key={challenge.id} challenge={challenge} />
                   ))}
                 </div>
               </TabsContent>
@@ -424,49 +323,7 @@ const Challenges = () => {
                     {challenges
                       .filter(challenge => challenge.category === category)
                       .map(challenge => (
-                        <Card key={challenge.id} className="bg-cybersec-darkgray border-cybersec-darkgray hover:border-cybersec-neongreen/50 transition-all">
-                          <CardHeader>
-                            <CardTitle className="flex justify-between items-start">
-                              <span className="flex-1">{challenge.title}</span>
-                              {challenge.solved && (
-                                <Badge variant="secondary" className="ml-2">
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Resuelto
-                                </Badge>
-                              )}
-                            </CardTitle>
-                            <CardDescription>Categoría: {challenge.category}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-400 mb-4">{challenge.description}</p>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              <Badge variant={getDifficultyBadgeVariant(challenge.difficulty)} className="bg-cybersec-black">
-                                <span className={cn("mr-1", getDifficultyColor(challenge.difficulty))}>•</span>
-                                {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
-                              </Badge>
-                              <Badge variant="secondary" className="bg-cybersec-black">
-                                <Trophy className="h-3 w-3 mr-1" />
-                                {challenge.points} pts
-                              </Badge>
-                              <Badge variant="outline" className="bg-cybersec-black">
-                                {challenge.participants} participantes
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-gray-400 flex justify-between items-center">
-                              <span>Fecha límite: {new Date(challenge.deadline).toLocaleDateString()}</span>
-                            </div>
-                          </CardContent>
-                          <CardFooter className="justify-between">
-                            <Button variant="default" className="bg-cybersec-neongreen text-cybersec-black hover:bg-cybersec-neongreen/80">
-                              {challenge.solved ? 'Ver solución' : 'Comenzar'}
-                            </Button>
-                            {!challenge.solved && (
-                              <Button variant="outline" className="border-cybersec-neongreen text-cybersec-neongreen">
-                                Pistas
-                              </Button>
-                            )}
-                          </CardFooter>
-                        </Card>
+                        <ChallengeCard key={challenge.id} challenge={challenge} />
                       ))}
                   </div>
                 </TabsContent>
