@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, HardDrive, Network, AlertTriangle } from 'lucide-react';
@@ -10,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { machines, MachineType } from '@/components/machines/MachineData';
+import { MachineService } from '@/components/machines/MachineService';
+import { MachineType } from '@/components/machines/MachineData';
 
 const Machines = () => {
   const { user } = useAuth();
@@ -18,19 +20,32 @@ const Machines = () => {
   const [osFilter, setOsFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [userProgress, setUserProgress] = useState({});
+  const [machines, setMachines] = useState<MachineType[]>([]);
+
+  useEffect(() => {
+    // Obtener todas las máquinas disponibles
+    const fetchMachines = () => {
+      const allMachines = MachineService.getAllMachines();
+      setMachines(allMachines);
+    };
+
+    fetchMachines();
+  }, []);
 
   useEffect(() => {
     // Simula la obtención del progreso del usuario para cada máquina
     const fetchUserProgress = async () => {
       const progressData = {};
       machines.forEach(machine => {
-        progressData[machine.id] = Math.floor(Math.random() * 101); // Simula un progreso aleatorio
+        progressData[machine.id] = machine.userProgress || Math.floor(Math.random() * 101); // Usa el progreso existente o simula uno
       });
       setUserProgress(progressData);
     };
 
-    fetchUserProgress();
-  }, []);
+    if (machines.length > 0) {
+      fetchUserProgress();
+    }
+  }, [machines]);
 
   const filteredMachines = useMemo(() => {
     return machines
@@ -80,6 +95,7 @@ const Machines = () => {
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="linux">Linux</SelectItem>
                     <SelectItem value="windows">Windows</SelectItem>
+                    <SelectItem value="other">Otro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

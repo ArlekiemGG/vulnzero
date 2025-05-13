@@ -148,6 +148,71 @@ export const ChallengeService = {
       console.error('Error al completar el desafío:', error);
       return false;
     }
+  },
+
+  /**
+   * Registra a un usuario en un curso
+   */
+  registerForCourse: async (userId: string, courseId: string): Promise<boolean> => {
+    try {
+      // Verificar si el usuario ya está registrado en este curso
+      const { data: existingProgress } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .single();
+      
+      if (existingProgress) {
+        // El usuario ya está registrado, simplemente devolvemos true
+        return true;
+      }
+      
+      // Registrar al usuario en el curso
+      const { error } = await supabase
+        .from('user_course_progress')
+        .insert({
+          user_id: userId,
+          course_id: courseId,
+          started_at: new Date().toISOString(),
+          completed: false,
+          progress_percentage: 0
+        });
+      
+      if (error) throw error;
+      
+      // Registrar la actividad
+      await ActivityService.logActivity(
+        userId,
+        'course_enrolled',
+        `Curso iniciado: ${courseId}`,
+        10 // Puntos por inscribirse en un curso
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error al registrar en el curso:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Obtiene el progreso de un usuario en un curso
+   */
+  getUserCourseProgress: async (userId: string, courseId: string) => {
+    try {
+      const { data } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .single();
+      
+      return data || null;
+    } catch (error) {
+      console.error('Error al obtener progreso del curso:', error);
+      return null;
+    }
   }
 };
 
