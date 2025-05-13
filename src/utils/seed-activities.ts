@@ -3,9 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Seeds initial activity data for a user for testing purposes.
- * Call this function when you want to add test activities for a user.
+ * This function is disabled in production to prevent test data from appearing.
  */
 export const seedUserActivities = async (userId: string) => {
+  // In a real production environment, we don't want to seed test data
+  // Commented out to prevent test activities
+  console.log('Activity seeding disabled to show only real user activities');
+  return;
+  
+  /* 
   if (!userId) return;
   
   try {
@@ -70,4 +76,5 @@ export const seedUserActivities = async (userId: string) => {
   } catch (error) {
     console.error('Error seeding user activities:', error);
   }
+  */
 };

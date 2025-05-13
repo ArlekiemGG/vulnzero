@@ -22,6 +22,7 @@ export const ActivityService = {
    */
   getRecentActivity: async (userId: string, limit = 5): Promise<UserActivity[]> => {
     try {
+      // Only get real activities created by actual user actions
       const { data, error } = await supabase
         .from('user_activities')
         .select('*')
@@ -30,10 +31,16 @@ export const ActivityService = {
         .gt('points', 0)
         // Only get activities of types that represent completed tasks
         .in('type', ['machine_completed', 'badge_earned', 'challenge_completed', 'level_up'])
+        // Filter out test/seeded activities by checking if the title contains "Test" or specific test titles
+        .not('title', 'ilike', '%Test%')
         .order('created_at', { ascending: false })
         .limit(limit);
       
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
       
       // Get unique activities by id to avoid duplicates
       const uniqueActivities = Array.from(

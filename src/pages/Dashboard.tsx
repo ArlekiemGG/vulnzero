@@ -144,10 +144,7 @@ const Dashboard = () => {
         setUserProfile(profileData);
         setIsAdmin(profileData.role === 'admin');
         
-        // Seed initial activities if needed (for testing)
-        await seedUserActivities(user.id);
-        
-        // Load user activity from real data
+        // Load user activity from real data only
         const activity = await ActivityService.getRecentActivity(user.id);
         setRecentActivity(activity);
         
