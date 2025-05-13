@@ -1,4 +1,4 @@
-import { leaderboard, userProfiles, type Profiles } from '@/integrations/supabase/client';
+import { queries, type Profiles } from '@/integrations/supabase/client';
 import { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
 import { toast } from '@/components/ui/use-toast';
 
@@ -49,7 +49,7 @@ export const fetchLeaderboardData = async (
           await new Promise(resolve => setTimeout(resolve, delay));
         }
         
-        const profiles = await leaderboard.get(limit, offset);
+        const profiles = await queries.getLeaderboard(limit, offset);
         // If we got an empty array but no error, try one more time with a delay
         if (profiles.length === 0 && attempts < maxAttempts - 1) {
           attempts++;
@@ -91,7 +91,7 @@ export const getCurrentUserLeaderboardPosition = async (
   
   // Otherwise, fetch user's profile and determine rank
   try {
-    const userProfile = await userProfiles.get(userId);
+    const userProfile = await queries.getUserProfile(userId);
     
     if (!userProfile) return null;
     
