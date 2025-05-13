@@ -81,55 +81,66 @@ export const CourseService = {
         .insert(courseData)
         .select();
       
-      if (coursesError) throw coursesError;
+      if (coursesError) {
+        console.error('Error inserting courses:', coursesError);
+        throw coursesError;
+      }
       
       console.log(`Successfully inserted ${coursesData?.length} courses`);
       
       // Crear secciones para cada curso
-      for (const course of (coursesData || [])) {
-        // Crear 3-5 secciones por curso
-        const sectionCount = Math.floor(Math.random() * 3) + 3; // 3-5 secciones
-        
-        const sections = [];
-        for (let i = 1; i <= sectionCount; i++) {
-          sections.push({
-            course_id: course.id,
-            title: `Módulo ${i}: ${this.getSectionTitle(course.title, i)}`,
-            position: i
-          });
-        }
-        
-        const { data: sectionsData, error: sectionsError } = await supabase
-          .from('course_sections')
-          .insert(sections)
-          .select();
-        
-        if (sectionsError) throw sectionsError;
-        
-        console.log(`Created ${sectionsData.length} sections for course ${course.title}`);
-        
-        // Crear lecciones para cada sección
-        for (const section of sectionsData) {
-          // Crear 3-7 lecciones por sección
-          const lessonCount = Math.floor(Math.random() * 5) + 3; // 3-7 lecciones
+      if (coursesData && coursesData.length > 0) {
+        for (const course of coursesData) {
+          // Crear 3-5 secciones por curso
+          const sectionCount = Math.floor(Math.random() * 3) + 3; // 3-5 secciones
           
-          const lessons = [];
-          for (let i = 1; i <= lessonCount; i++) {
-            lessons.push({
-              section_id: section.id,
-              title: `Lección ${i}: ${this.getLessonTitle(section.title, i)}`,
-              content: this.getLessonContent(section.title, i),
-              duration_minutes: Math.floor(Math.random() * 25) + 15, // 15-40 minutos
-              position: i,
-              video_url: Math.random() > 0.5 ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null // 50% chance to have a video
+          const sections = [];
+          for (let i = 1; i <= sectionCount; i++) {
+            sections.push({
+              course_id: course.id,
+              title: `Módulo ${i}: ${this.getSectionTitle(course.title, i)}`,
+              position: i
             });
           }
           
-          const { error: lessonsError } = await supabase
-            .from('course_lessons')
-            .insert(lessons);
+          const { data: sectionsData, error: sectionsError } = await supabase
+            .from('course_sections')
+            .insert(sections)
+            .select();
           
-          if (lessonsError) throw lessonsError;
+          if (sectionsError) {
+            console.error('Error inserting sections:', sectionsError);
+            throw sectionsError;
+          }
+          
+          console.log(`Created ${sectionsData.length} sections for course ${course.title}`);
+          
+          // Crear lecciones para cada sección
+          for (const section of sectionsData) {
+            // Crear 3-7 lecciones por sección
+            const lessonCount = Math.floor(Math.random() * 5) + 3; // 3-7 lecciones
+            
+            const lessons = [];
+            for (let i = 1; i <= lessonCount; i++) {
+              lessons.push({
+                section_id: section.id,
+                title: `Lección ${i}: ${this.getLessonTitle(section.title, i)}`,
+                content: this.getLessonContent(section.title, i),
+                duration_minutes: Math.floor(Math.random() * 25) + 15, // 15-40 minutos
+                position: i,
+                video_url: Math.random() > 0.5 ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null // 50% chance to have a video
+              });
+            }
+            
+            const { error: lessonsError } = await supabase
+              .from('course_lessons')
+              .insert(lessons);
+            
+            if (lessonsError) {
+              console.error('Error inserting lessons:', lessonsError);
+              throw lessonsError;
+            }
+          }
         }
       }
       
@@ -179,6 +190,30 @@ export const CourseService = {
         'Configuración avanzada'
       ];
       return toolLessons[lessonNumber - 1] || `Herramienta especializada ${lessonNumber}`;
+    }
+    
+    if (sectionTitle.includes('Metodología')) {
+      const methodLessons = [
+        'Marco de trabajo para pruebas de penetración',
+        'Gestión de vulnerabilidades',
+        'Documentación y reportes',
+        'Comunicación efectiva',
+        'Automatización de procesos',
+        'Integración en ciclos DevSecOps'
+      ];
+      return methodLessons[lessonNumber - 1] || `Metodología avanzada ${lessonNumber}`;
+    }
+
+    if (sectionTitle.includes('Casos Prácticos')) {
+      const caseLessons = [
+        'Análisis de incidentes reales',
+        'Identificación de patrones de ataque',
+        'Respuesta a incidentes',
+        'Mitigación de vulnerabilidades',
+        'Prevención y hardening',
+        'Lecciones aprendidas'
+      ];
+      return caseLessons[lessonNumber - 1] || `Caso práctico ${lessonNumber}`;
     }
     
     return `Contenido especializado ${lessonNumber}`;

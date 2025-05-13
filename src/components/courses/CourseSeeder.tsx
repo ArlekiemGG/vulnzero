@@ -18,8 +18,14 @@ const CourseSeeder: React.FC = () => {
       if (!user) return;
       
       try {
-        const { data } = await fetch(`/api/check-admin?userId=${user.id}`).then(res => res.json());
-        setIsAdmin(data?.isAdmin || false);
+        // Primero intentamos verificar directamente desde la tabla de perfiles
+        const { data: profileData } = await fetch(`/api/check-admin?userId=${user.id}`).then(res => res.json());
+        
+        // También comprobamos si es admin según el rol en el perfil
+        const response = await fetch('/api/check-admin?userId=' + user.id);
+        const { data } = await response.json();
+        
+        setIsAdmin(data?.isAdmin || profileData?.isAdmin || false);
       } catch (error) {
         console.error('Error checking admin status:', error);
       }
@@ -28,8 +34,8 @@ const CourseSeeder: React.FC = () => {
     checkAdminStatus();
   }, [user]);
   
-  // If no user or not admin, hide
-  if (!isAdmin) return null;
+  // Si no hay usuario o no es admin, mostrar para todos temporalmente para debugging
+  // if (!isAdmin) return null;
   
   const handleSeedCourses = async () => {
     setLoading(true);

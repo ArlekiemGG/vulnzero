@@ -49,12 +49,13 @@ const Tutorials = () => {
         // Obtener todos los cursos
         const allCourses = await CourseService.getCourses();
         setCourses(allCourses);
+        console.log("Cursos cargados:", allCourses.length, allCourses);
 
         // Si no hay cursos después de intentar sembrarlos, mostrar un mensaje
         if (allCourses.length === 0) {
           toast({
             title: "Información",
-            description: "No se encontraron cursos disponibles. Por favor, contacta al administrador.",
+            description: "No se encontraron cursos disponibles. Intenta crear cursos con el botón 'Crear cursos de prueba'.",
             variant: "default",
           });
         }
@@ -81,16 +82,18 @@ const Tutorials = () => {
           // Obtener cursos en progreso
           const inProgress = await CourseService.getInProgressCourses(user.id);
           setInProgressCourses(inProgress);
+          console.log("Cursos en progreso:", inProgress.length);
 
           // Obtener cursos completados
           const completed = await CourseService.getCompletedCourses(user.id);
           setCompletedCourses(completed);
+          console.log("Cursos completados:", completed.length);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar los cursos",
+          description: "No se pudieron cargar los cursos. Inténtalo de nuevo.",
           variant: "destructive",
         });
       } finally {
@@ -248,7 +251,7 @@ const Tutorials = () => {
                   </div>
                 ) : (
                   <div className="bg-cybersec-darkgray rounded-md p-8 text-center">
-                    <p className="text-gray-400">No se encontraron cursos que coincidan con los filtros aplicados.</p>
+                    <p className="text-gray-400">No se encontraron cursos. Pulsa el botón "Crear cursos de prueba" para añadir contenido.</p>
                     <Button 
                       variant="link" 
                       className="text-cybersec-electricblue mt-2"

@@ -1,6 +1,6 @@
 
 // Instead of using Partial<Course>, let's define a type that matches what Supabase expects
-type CourseInsert = {
+export type CourseInsert = {
   title: string;
   description: string;
   category: string;
