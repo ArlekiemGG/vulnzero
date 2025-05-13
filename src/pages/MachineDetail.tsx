@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -753,72 +752,3 @@ const MachineDetail = () => {
                     <p className="text-gray-300 mb-6">{machine.description}</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium text-cybersec-electricblue mb-2">Requisitos</h4>
-                        <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                          {machine.requirements?.map((req, idx) => (
-                            <li key={idx}>{req}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-cybersec-electricblue mb-2">Habilidades</h4>
-                        <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                          {machine.skills?.map((skill, idx) => (
-                            <li key={idx}>{skill}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              {/* Columna derecha - Progreso, pistas y recursos */}
-              <div className="space-y-6">
-                <MachineProgress 
-                  tasks={machineTasks} 
-                  isLoading={loading} 
-                />
-                
-                <MachineHints 
-                  hints={machine.hints || []} 
-                  onUnlockHint={handleUnlockHint}
-                  isLoading={loading}
-                />
-                
-                <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-medium text-cybersec-neongreen mb-4">Recursos</h3>
-                    
-                    <div className="space-y-3">
-                      <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
-                        <a href="#" className="flex items-center">
-                          <FileText className="h-4 w-4 mr-2" /> Guía general de pentesting
-                        </a>
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
-                        <a href="#" className="flex items-center">
-                          <Database className="h-4 w-4 mr-2" /> Cheatsheet de comandos
-                        </a>
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
-                        <a href="#" className="flex items-center">
-                          <LinkIcon className="h-4 w-4 mr-2" /> Foro de discusión
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-};
-
-export default MachineDetail;
