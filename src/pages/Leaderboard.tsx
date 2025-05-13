@@ -20,7 +20,7 @@ import { supabase, queries } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-// Función optimizada para obtener el ranking desde Supabase
+// Function to fetch profiles from Supabase
 const fetchProfiles = async () => {
   try {
     console.log("Fetching profiles from Supabase...");
@@ -34,7 +34,7 @@ const fetchProfiles = async () => {
   }
 };
 
-// Función optimizada para obtener el perfil del usuario actual
+// Function to fetch current user profile
 const fetchCurrentUserProfile = async (userId: string | undefined) => {
   if (!userId) {
     console.log("No user ID provided, cannot fetch profile");
@@ -54,7 +54,7 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
   }
 };
 
-// Función para crear un perfil si no existe
+// Function to ensure user profile exists
 const ensureUserProfile = async (userId: string | undefined, username: string | undefined) => {
   if (!userId) {
     console.log("No user ID provided, cannot ensure profile exists");
@@ -76,14 +76,15 @@ const Leaderboard = () => {
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
   const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
+  const [hasAttemptedProfileCreation, setHasAttemptedProfileCreation] = useState(false);
   
-  // Asegurarnos de que el usuario tenga un perfil
+  // Ensure user has a profile - but only once
   useEffect(() => {
-    if (!user) return;
+    if (!user || hasAttemptedProfileCreation) return;
     
     const setupUserProfile = async () => {
       try {
-        // Extraemos el username del user metadata si está disponible
+        // Extract username from user metadata if available
         const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
         
         const profile = await ensureUserProfile(user.id, username);
@@ -95,13 +96,15 @@ const Leaderboard = () => {
       } catch (err) {
         console.error("Error setting up user profile:", err);
         setDiagnosticInfo(`Error al configurar perfil: ${(err as Error).message}`);
+      } finally {
+        setHasAttemptedProfileCreation(true);
       }
     };
     
     setupUserProfile();
-  }, [user]);
+  }, [user, hasAttemptedProfileCreation]);
   
-  // Consulta para obtener todos los perfiles
+  // Query to fetch profiles - limited retries
   const { 
     data: profiles = [], 
     isLoading,
@@ -113,16 +116,17 @@ const Leaderboard = () => {
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: fetchProfiles,
-    retry: 5,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-    refetchOnWindowFocus: false
+    retry: 2, // Lower the retry count to 2
+    retryDelay: 1000, // Use a consistent retry delay
+    refetchOnWindowFocus: false,
+    staleTime: 60000, // Data stays fresh for 1 minute
   });
   
-  // Obtener el perfil del usuario actual
+  // Get current user profile just once when user changes
   useEffect(() => {
+    if (!user || hasAttemptedProfileCreation) return;
+    
     const loadCurrentUser = async () => {
-      if (!user) return;
-      
       try {
         const profile = await fetchCurrentUserProfile(user.id);
         if (profile) {
@@ -143,15 +147,17 @@ const Leaderboard = () => {
           description: "No se pudieron cargar tus datos de perfil.",
           variant: "destructive"
         });
+      } finally {
+        setHasAttemptedProfileCreation(true);
       }
     };
     
     loadCurrentUser();
-  }, [user]);
+  }, [user, hasAttemptedProfileCreation]);
   
-  // Error handling
+  // Error handling - show errors only once
   useEffect(() => {
-    if (error) {
+    if (error && !diagnosticInfo) {
       console.error("Leaderboard error:", error);
       setDiagnosticInfo(`Error: ${(error as Error).message}`);
       
@@ -160,54 +166,37 @@ const Leaderboard = () => {
         description: (error as Error).message,
         variant: "destructive"
       });
-    } else {
+    } else if (!error) {
       setDiagnosticInfo(null);
     }
-  }, [error]);
+  }, [error, diagnosticInfo]);
   
-  // Convertir perfiles de Supabase en formato LeaderboardUser y marcar el usuario actual
+  // Map profiles to leaderboard format only if they've changed
   useEffect(() => {
-    console.log("Processing profiles for leaderboard display:", profiles);
-    if (profiles && profiles.length > 0) {
-      const mappedUsers: LeaderboardUser[] = profiles.map((profile: any, index: number) => ({
-        id: profile.id,
-        rank: index + 1,
-        username: profile.username || 'Usuario',
-        avatar: profile.avatar_url,
-        points: profile.points || 0,
-        level: profile.level || 1,
-        solvedMachines: profile.solved_machines || 0,
-        rankChange: 'same',
-        isCurrentUser: user ? profile.id === user.id : false
-      }));
-      
-      setLeaderboardUsers(mappedUsers);
-      console.log("Leaderboard users mapped:", mappedUsers);
-      
-      // Log del usuario actual para debugging
-      if (user) {
-        const currentUser = mappedUsers.find(u => u.isCurrentUser);
-        console.log("Current user in leaderboard:", currentUser);
-      }
-    } else {
+    if (!profiles || profiles.length === 0) {
       setLeaderboardUsers([]);
-      console.log("No leaderboard data available to map");
-      
-      // Si no hay datos pero hay un usuario logueado, intentamos crear su perfil
-      if (user && !isLoading && !isRefetching) {
-        console.log("No leaderboard data but user is logged in, ensuring profile exists");
-        ensureUserProfile(
-          user.id, 
-          user.user_metadata?.username || user.email?.split('@')[0] || 'User'
-        ).then(() => {
-          // Recargamos después de crear el perfil
-          setTimeout(() => refetch(), 1000);
-        });
-      }
+      return;
     }
-  }, [profiles, user, isLoading, isRefetching, refetch]);
+    
+    console.log("Processing profiles for leaderboard display:", profiles);
+    
+    const mappedUsers: LeaderboardUser[] = profiles.map((profile: any, index: number) => ({
+      id: profile.id,
+      rank: index + 1,
+      username: profile.username || 'Usuario',
+      avatar: profile.avatar_url,
+      points: profile.points || 0,
+      level: profile.level || 1,
+      solvedMachines: profile.solved_machines || 0,
+      rankChange: 'same',
+      isCurrentUser: user ? profile.id === user.id : false
+    }));
+    
+    setLeaderboardUsers(mappedUsers);
+    console.log("Leaderboard users mapped:", mappedUsers);
+  }, [profiles, user]);
   
-  // Función para scrollear a la posición del usuario
+  // Function to scroll to user position
   const scrollToCurrentUser = () => {
     if (!user || !leaderboardUsers.length) {
       toast({
@@ -218,7 +207,7 @@ const Leaderboard = () => {
       return;
     }
     
-    // Buscar si el usuario actual está en el leaderboard
+    // Find current user row
     const currentUserRow = document.getElementById('current-user-row');
     if (currentUserRow) {
       currentUserRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -231,11 +220,11 @@ const Leaderboard = () => {
     }
   };
   
-  // Función para forzar la recarga de datos
+  // Function to manually refresh data
   const handleRefresh = async () => {
     console.log("Manually refreshing leaderboard data...");
     
-    // Si hay usuario pero sin perfil, intentar crear uno primero
+    // If there's user without profile, try to create one first
     if (user && !currentUserProfile) {
       try {
         await ensureUserProfile(
@@ -247,7 +236,7 @@ const Leaderboard = () => {
       }
     }
     
-    // Refrescar los datos
+    // Refresh data
     refetch();
     
     toast({
@@ -256,48 +245,17 @@ const Leaderboard = () => {
     });
   };
   
-  // Para debugging: Contar usuarios en leaderboard
-  useEffect(() => {
-    console.log(`Current leaderboard has ${leaderboardUsers.length} users`);
-    
-    // Si está vacío, mostramos información sobre la sesión actual
-    if (leaderboardUsers.length === 0 && !isLoading) {
-      const checkSession = async () => {
-        const { data } = await supabase.auth.getSession();
-        console.log("Current session when leaderboard is empty:", data.session);
-        
-        if (data.session && data.session.user) {
-          // Intentamos crear un perfil ya que el leaderboard está vacío
-          try {
-            console.log("Creating profile for current user since leaderboard is empty");
-            await queries.createProfileIfNotExists(
-              data.session.user.id,
-              data.session.user.user_metadata?.username || 
-              data.session.user.email?.split('@')[0] || 
-              'User'
-            );
-            // Recargamos después de crear el perfil
-            setTimeout(() => refetch(), 1000);
-          } catch (err) {
-            console.error("Error creating profile for empty leaderboard:", err);
-          }
-        }
-      };
-      checkSession();
-    }
-  }, [leaderboardUsers.length, isLoading, refetch]);
-  
-  // Obtenemos los top 3 para el showcase
+  // Get top 3 users for the showcase
   const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
 
-  // Para propósitos de depuración
+  // For debugging purposes
   console.log("Current profiles data:", profiles);
   console.log("Current user:", user);
   console.log("Current user profile:", currentUserProfile);
   console.log("Leaderboard users:", leaderboardUsers);
   console.log("Is there a current user row?", document.getElementById('current-user-row'));
   
-  // Preparar datos para pestañas mensuales y semanales basados en los datos reales
+  // Prepare data for monthly and weekly tabs based on real data
   const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20));
   const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15));
 
@@ -308,8 +266,8 @@ const Leaderboard = () => {
         <Sidebar userStats={currentUserProfile ? {
           level: currentUserProfile.level || 1,
           points: currentUserProfile.points || 0,
-          pointsToNextLevel: 500, // Este valor debería calcularse según tu lógica de niveles
-          progress: 0, // Esto también debería calcularse
+          pointsToNextLevel: 500, // This value should be calculated based on your level logic
+          progress: 0, // This should also be calculated
           rank: leaderboardUsers.find(u => u.isCurrentUser)?.rank || 0,
           solvedMachines: currentUserProfile.solved_machines || 0,
           completedChallenges: currentUserProfile.completed_challenges || 0,
@@ -376,7 +334,7 @@ const Leaderboard = () => {
               </Alert>
             )}
 
-            {isError && failureCount > 3 && (
+            {isError && failureCount > 2 && (
               <Alert className="mb-4 bg-amber-900/20 border-amber-900">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Problemas técnicos</AlertTitle>
@@ -490,7 +448,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={leaderboardUsers} 
                   currentPeriod="Global" 
-                  isLoading={isLoading || isRefetching}
+                  isLoading={isLoading}
                 />
               </TabsContent>
               
@@ -498,7 +456,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={monthlyLeaderboardUsers} 
                   currentPeriod={`${new Date().toLocaleString('es', { month: 'long' })} ${new Date().getFullYear()}`} 
-                  isLoading={isLoading || isRefetching}
+                  isLoading={isLoading}
                 />
               </TabsContent>
               
@@ -506,7 +464,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={weeklyLeaderboardUsers}
                   currentPeriod={`Semana ${Math.ceil(new Date().getDate() / 7)} - ${new Date().toLocaleString('es', { month: 'long' })}`} 
-                  isLoading={isLoading || isRefetching}
+                  isLoading={isLoading}
                 />
               </TabsContent>
             </Tabs>
