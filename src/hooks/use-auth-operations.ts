@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
@@ -22,7 +21,6 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       // Usar el origen completo para redirección
       const currentOrigin = window.location.origin;
       const redirectUrl = `${currentOrigin}/dashboard`;
-      console.log("Login redirect URL:", redirectUrl);
       
       // Modificamos la llamada para usar opciones de redirección conforme a la API de supabase
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -42,7 +40,6 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         return;
       }
       
-      console.log("Login successful, redirecting to dashboard");
       // Usamos la URL completa para la redirección
       window.location.href = `${currentOrigin}/dashboard`;
     } catch (error: any) {
