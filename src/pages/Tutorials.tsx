@@ -21,8 +21,8 @@ const Tutorials = () => {
   const [inProgressCourses, setInProgressCourses] = useState<(Course & { progress: number })[]>([]);
   const [completedCourses, setCompletedCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [levelFilter, setLevelFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
   const [userStats, setUserStats] = useState({
     level: 1,
     points: 0,
@@ -94,8 +94,8 @@ const Tutorials = () => {
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       course.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
-    const matchesLevel = levelFilter === '' || course.level === levelFilter;
+    const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
+    const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
 
     return matchesSearch && matchesCategory && matchesLevel;
   });
@@ -103,8 +103,8 @@ const Tutorials = () => {
   // Resetear filtros
   const handleResetFilters = () => {
     setSearchQuery('');
-    setCategoryFilter('');
-    setLevelFilter('');
+    setCategoryFilter('all');
+    setLevelFilter('all');
   };
 
   // Función para navegar a las pestañas
@@ -123,7 +123,7 @@ const Tutorials = () => {
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-cybersec-neongreen mb-2">Tutoriales y Cursos</h1>
+              <h1 className="text-3xl font-bold text-cybersec-neongreen mb-2">Cursos y Tutoriales</h1>
               <p className="text-gray-400">Aprende ciberseguridad con nuestros cursos estructurados y detallados</p>
             </div>
 
