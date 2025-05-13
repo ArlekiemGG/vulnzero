@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { courseData } from '@/data/courseData';
 
@@ -61,91 +60,105 @@ export const CourseService = {
   async ensureCoursesExist(): Promise<boolean> {
     try {
       // Verificar si ya existen cursos
-      const { count, error: countError } = await supabase
+      const { data: existingCourses, count, error: countError } = await supabase
         .from('courses')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact' })
+        .limit(1);
       
-      if (countError) throw countError;
+      if (countError) {
+        console.error('Error fetching courses:', countError);
+        throw countError;
+      }
       
       // Si ya existen cursos, no hacemos nada
       if (count && count > 0) {
         console.log(`Found ${count} existing courses`);
         return false;
       }
+
+      console.log('No courses found or error occurred, attempting to seed courses...');
       
-      console.log('No courses found, seeding initial courses...');
-      
-      // Insertar cursos desde courseData
-      const { data: coursesData, error: coursesError } = await supabase
-        .from('courses')
-        .insert(courseData)
-        .select();
-      
-      if (coursesError) {
-        console.error('Error inserting courses:', coursesError);
-        throw coursesError;
-      }
-      
-      console.log(`Successfully inserted ${coursesData?.length} courses`);
-      
-      // Crear secciones para cada curso
-      if (coursesData && coursesData.length > 0) {
-        for (const course of coursesData) {
-          // Crear 3-5 secciones por curso
-          const sectionCount = Math.floor(Math.random() * 3) + 3; // 3-5 secciones
-          
-          const sections = [];
-          for (let i = 1; i <= sectionCount; i++) {
-            sections.push({
-              course_id: course.id,
-              title: `Módulo ${i}: ${this.getSectionTitle(course.title, i)}`,
-              position: i
-            });
-          }
-          
-          const { data: sectionsData, error: sectionsError } = await supabase
-            .from('course_sections')
-            .insert(sections)
+      // Si no hay cursos, intentamos crearlos uno por uno para identificar el problema
+      for (const course of courseData) {
+        try {
+          const { data, error } = await supabase
+            .from('courses')
+            .insert(course)
             .select();
-          
-          if (sectionsError) {
-            console.error('Error inserting sections:', sectionsError);
-            throw sectionsError;
-          }
-          
-          console.log(`Created ${sectionsData.length} sections for course ${course.title}`);
-          
-          // Crear lecciones para cada sección
-          for (const section of sectionsData) {
-            // Crear 3-7 lecciones por sección
-            const lessonCount = Math.floor(Math.random() * 5) + 3; // 3-7 lecciones
             
-            const lessons = [];
-            for (let i = 1; i <= lessonCount; i++) {
-              lessons.push({
-                section_id: section.id,
-                title: `Lección ${i}: ${this.getLessonTitle(section.title, i)}`,
-                content: this.getLessonContent(section.title, i),
-                duration_minutes: Math.floor(Math.random() * 25) + 15, // 15-40 minutos
-                position: i,
-                video_url: Math.random() > 0.5 ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null // 50% chance to have a video
-              });
+          if (error) {
+            console.error('Error inserting course:', course.title, error);
+            // Continue trying with other courses
+          } else {
+            console.log(`Successfully inserted course: ${course.title}`);
+            
+            // For each successful course, create some sample sections
+            const courseId = data[0].id;
+            const sectionCount = Math.floor(Math.random() * 3) + 3; // 3-5 sections
+            
+            for (let i = 1; i <= sectionCount; i++) {
+              try {
+                const sectionData = {
+                  course_id: courseId,
+                  title: `Módulo ${i}: ${this.getSectionTitle(course.title, i)}`,
+                  position: i
+                };
+                
+                const { data: sectionResult, error: sectionError } = await supabase
+                  .from('course_sections')
+                  .insert(sectionData)
+                  .select();
+                
+                if (sectionError) {
+                  console.error('Error creating section:', sectionError);
+                } else {
+                  const sectionId = sectionResult[0].id;
+                  const lessonCount = Math.floor(Math.random() * 5) + 3; // 3-7 lessons
+                  
+                  // Create lessons for each section
+                  for (let j = 1; j <= lessonCount; j++) {
+                    const lessonData = {
+                      section_id: sectionId,
+                      title: `Lección ${j}: ${this.getLessonTitle(sectionData.title, j)}`,
+                      content: this.getLessonContent(sectionData.title, j),
+                      duration_minutes: Math.floor(Math.random() * 25) + 15, // 15-40 minutes
+                      position: j,
+                      video_url: Math.random() > 0.5 ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null
+                    };
+                    
+                    const { error: lessonError } = await supabase
+                      .from('course_lessons')
+                      .insert(lessonData);
+                    
+                    if (lessonError) {
+                      console.error('Error creating lesson:', lessonError);
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('Error in section/lesson creation:', err);
+              }
             }
-            
-            const { error: lessonsError } = await supabase
-              .from('course_lessons')
-              .insert(lessons);
-            
-            if (lessonsError) {
-              console.error('Error inserting lessons:', lessonsError);
-              throw lessonsError;
-            }
           }
+        } catch (err) {
+          console.error('Error processing course:', err);
         }
       }
       
-      console.log('Course seeding completed successfully!');
-      return true;
+      // Check if we successfully created any courses
+      const { count: newCount, error: newCountError } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true });
+      
+      if (newCountError) throw newCountError;
+      
+      if (newCount && newCount > 0) {
+        console.log(`Successfully seeded ${newCount} courses`);
+        return true;
+      } else {
+        console.log('No courses were successfully seeded');
+        return false;
+      }
     } catch (error) {
       console.error('Error ensuring courses exist:', error);
       return false;
@@ -271,24 +284,47 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
 ---
 
 > "La seguridad no es un producto, sino un proceso." - Bruce Schneier
-  `;
-  },
-
-  // Obtener todos los cursos
+  `,
+  
+  // Get all courses
   async getCourses(): Promise<Course[]> {
-    // Primero verificamos si hay cursos, y si no, los sembramos
-    await this.ensureCoursesExist();
+    try {
+      // Attempt to create courses if none exist
+      await this.ensureCoursesExist();
+
+      // Try to fetch courses
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
     
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return (data as unknown) as Course[] || [];
+      if (error) throw error;
+
+      // If still no courses, create mock courses for display
+      if (!data || data.length === 0) {
+        console.log('No courses found in database, creating mock courses for display');
+        return courseData.map((course, index) => ({
+          id: `mock-${index}`,
+          ...course,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })) as Course[];
+      }
+      
+      return data as Course[];
+    } catch (error) {
+      console.error('Error getting courses:', error);
+      // Return mock courses as fallback
+      return courseData.map((course, index) => ({
+        id: `mock-${index}`,
+        ...course,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })) as Course[];
+    }
   },
 
-  // Obtener un curso por ID
+  // Get a course by ID
   async getCourseById(courseId: string): Promise<Course | null> {
     const { data, error } = await supabase
       .from('courses')
@@ -300,7 +336,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as Course;
   },
 
-  // Obtener secciones de un curso
+  // Get course sections
   async getCourseSections(courseId: string): Promise<CourseSection[]> {
     const { data, error } = await supabase
       .from('course_sections')
@@ -312,7 +348,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as CourseSection[] || [];
   },
 
-  // Obtener lecciones de una sección
+  // Get section lessons
   async getSectionLessons(sectionId: string): Promise<CourseLesson[]> {
     const { data, error } = await supabase
       .from('course_lessons')
@@ -324,7 +360,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as CourseLesson[] || [];
   },
 
-  // Obtener una lección por ID
+  // Get a lesson by ID
   async getLessonById(lessonId: string): Promise<CourseLesson | null> {
     const { data, error } = await supabase
       .from('course_lessons')
@@ -336,7 +372,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as CourseLesson;
   },
   
-  // Obtener progreso del curso para un usuario
+  // Get course progress for a user
   async getCourseProgress(userId: string, courseId: string): Promise<CourseProgress | null> {
     const { data, error } = await supabase
       .from('user_course_progress')
@@ -349,14 +385,14 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as CourseProgress | null;
   },
 
-  // Iniciar o actualizar progreso del curso
+  // Update course progress
   async updateCourseProgress(
     userId: string, 
     courseId: string, 
     lessonId: string | null = null, 
     percentage: number = 0
   ): Promise<void> {
-    // Verificar si ya existe un registro de progreso
+    // Verify if there is already a progress record
     const { data: existingProgress } = await supabase
       .from('user_course_progress')
       .select('*') // Changed from just 'id' to '*' to get all fields including last_lesson_id
@@ -365,7 +401,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
       .maybeSingle();
 
     if (existingProgress) {
-      // Actualizar progreso existente
+      // Update existing progress
       const { error } = await supabase
         .from('user_course_progress')
         .update({
@@ -378,7 +414,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
       
       if (error) throw error;
     } else {
-      // Crear nuevo registro de progreso
+      // Create new progress record
       const { error } = await supabase
         .from('user_course_progress')
         .insert({
@@ -394,9 +430,9 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     }
   },
 
-  // Marcar una lección como completada
+  // Mark a lesson as completed
   async markLessonCompleted(userId: string, lessonId: string): Promise<void> {
-    // Verificar si ya existe un registro de progreso para esta lección
+    // Verify if there is already a progress record for this lesson
     const { data: existingProgress } = await supabase
       .from('user_lesson_progress')
       .select('id')
@@ -405,7 +441,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
       .maybeSingle();
 
     if (existingProgress) {
-      // Actualizar progreso existente
+      // Update existing progress
       const { error } = await supabase
         .from('user_lesson_progress')
         .update({
@@ -416,7 +452,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
       
       if (error) throw error;
     } else {
-      // Crear nuevo registro de progreso
+      // Create new progress record
       const { error } = await supabase
         .from('user_lesson_progress')
         .insert({
@@ -429,11 +465,11 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
       if (error) throw error;
     }
 
-    // Actualizar el progreso general del curso
+    // Update the course progress
     await this.recalculateCourseProgress(userId, lessonId);
   },
 
-  // Obtener el estado de una lección para un usuario
+  // Get the progress of a lesson for a user
   async getLessonProgress(userId: string, lessonId: string): Promise<LessonProgress | null> {
     const { data, error } = await supabase
       .from('user_lesson_progress')
@@ -446,9 +482,9 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     return (data as unknown) as LessonProgress | null;
   },
 
-  // Recalcular el progreso general del curso
+  // Recalculate the course progress
   async recalculateCourseProgress(userId: string, lessonId: string): Promise<void> {
-    // Primero, obtener la lección para encontrar la sección y el curso
+    // First, get the lesson to find the section and course
     const { data: lessonData, error: lessonError } = await supabase
       .from('course_lessons')
       .select('section_id')
@@ -457,7 +493,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     
     if (lessonError) throw lessonError;
 
-    // Obtener la sección para encontrar el curso
+    // Get the section to find the course
     const { data: sectionData, error: sectionError } = await supabase
       .from('course_sections')
       .select('course_id')
@@ -468,7 +504,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
 
     const courseId = sectionData.course_id;
 
-    // Obtener todas las secciones del curso
+    // Get all sections of the course
     const { data: sectionsData, error: sectionsError } = await supabase
       .from('course_sections')
       .select('id')
@@ -508,53 +544,67 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     
     if (completedError) throw completedError;
 
-    // Calcular porcentaje de progreso
+    // Calculate progress percentage
     const percentage = totalLessons && totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
-    // Actualizar el progreso del curso
+    // Update the course progress
     await this.updateCourseProgress(userId, courseId, lessonId, percentage);
   },
 
-  // Obtener cursos completados por el usuario
+  // Get courses completed by the user
   async getCompletedCourses(userId: string): Promise<Course[]> {
-    const { data, error } = await supabase
-      .from('user_course_progress')
-      .select(`
-        course_id,
-        courses:course_id (*)
-      `)
-      .eq('user_id', userId)
-      .eq('completed', true);
-    
-    if (error) throw error;
-    
-    // Extract course data from the result and return as Course[]
-    return data && data.length > 0 
-      ? data.map(item => ((item.courses || {}) as unknown) as Course) 
-      : [];
+    try {
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select(`
+          course_id,
+          courses:course_id (*)
+        `)
+        .eq('user_id', userId)
+        .eq('completed', true);
+      
+      if (error) throw error;
+      
+      // Extract course data from the result and return as Course[]
+      return data && data.length > 0 
+        ? data.map(item => ((item.courses || {}) as unknown) as Course) 
+        : [];
+    } catch (error) {
+      console.error('Error getting completed courses:', error);
+      return [];
+    }
   },
 
-  // Obtener cursos en progreso por el usuario
+  // Get courses in progress by the user
   async getInProgressCourses(userId: string): Promise<(Course & { progress: number })[]> {
-    const { data, error } = await supabase
-      .from('user_course_progress')
-      .select(`
-        progress_percentage,
-        course_id,
-        courses:course_id (*)
-      `)
-      .eq('user_id', userId)
-      .eq('completed', false)
-      .order('progress_percentage', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Extract course data with progress and return
-    return data && data.length > 0
-      ? data.map(item => ({
-          ...((item.courses || {}) as unknown as Course),
-          progress: item.progress_percentage
-        }))
-      : [];
+    try {
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select(`
+          progress_percentage,
+          course_id,
+          courses:course_id (*)
+        `)
+        .eq('user_id', userId)
+        .eq('completed', false)
+        .order('progress_percentage', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Extract course data with progress and return
+      return data && data.length > 0
+        ? data.map(item => ({
+            ...((item.courses || {}) as unknown as Course),
+            progress: item.progress_percentage
+          }))
+        : [];
+    } catch (error) {
+      console.error('Error getting in-progress courses:', error);
+      return [];
+    }
   }
 };

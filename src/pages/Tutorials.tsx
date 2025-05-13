@@ -43,13 +43,15 @@ const Tutorials = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        console.log("Fetching courses data...");
         // Asegurar que existan cursos en la base de datos
-        await CourseService.ensureCoursesExist();
+        const coursesCreated = await CourseService.ensureCoursesExist();
+        console.log("Courses creation attempt result:", coursesCreated);
         
         // Obtener todos los cursos
         const allCourses = await CourseService.getCourses();
         setCourses(allCourses);
-        console.log("Cursos cargados:", allCourses.length, allCourses);
+        console.log("Courses loaded:", allCourses.length, allCourses);
 
         // Si no hay cursos después de intentar sembrarlos, mostrar un mensaje
         if (allCourses.length === 0) {
@@ -61,8 +63,14 @@ const Tutorials = () => {
         }
 
         // Extraer categorías y niveles únicos
-        setCategories([...new Set(allCourses.map(course => course.category))]);
-        setLevels([...new Set(allCourses.map(course => course.level))]);
+        const uniqueCategories = [...new Set(allCourses.map(course => course.category))];
+        const uniqueLevels = [...new Set(allCourses.map(course => course.level))];
+        
+        setCategories(uniqueCategories);
+        setLevels(uniqueLevels);
+        
+        console.log("Unique categories:", uniqueCategories);
+        console.log("Unique levels:", uniqueLevels);
 
         if (user) {
           // Obtener el perfil del usuario para mostrar sus estadísticas reales

@@ -2,73 +2,69 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
 import { CourseService } from '@/services/CourseService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
-const CourseSeeder: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+const CourseSeeder = () => {
   const { user } = useAuth();
-  
-  // Only show for admins (based on role in profile)
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  React.useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) return;
-      
-      try {
-        // Primero intentamos verificar directamente desde la tabla de perfiles
-        const { data: profileData } = await fetch(`/api/check-admin?userId=${user.id}`).then(res => res.json());
-        
-        // También comprobamos si es admin según el rol en el perfil
-        const response = await fetch('/api/check-admin?userId=' + user.id);
-        const { data } = await response.json();
-        
-        setIsAdmin(data?.isAdmin || profileData?.isAdmin || false);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-      }
-    };
-    
-    checkAdminStatus();
-  }, [user]);
-  
-  // Si no hay usuario o no es admin, mostrar para todos temporalmente para debugging
-  // if (!isAdmin) return null;
-  
-  const handleSeedCourses = async () => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const handleCreateCourses = async () => {
     setLoading(true);
     try {
-      const success = await CourseService.ensureCoursesExist();
-      toast({
-        title: success ? "Éxito" : "Información",
-        description: success 
-          ? "Cursos creados correctamente" 
-          : "Los cursos ya existen en la base de datos",
-        variant: success ? "default" : "default", // Changed from "secondary" to "default" to match allowed variants
-      });
+      const result = await CourseService.ensureCoursesExist();
+      
+      if (result) {
+        toast({
+          title: "Éxito",
+          description: "Cursos creados correctamente. La página se recargará para mostrarlos.",
+          variant: "success",
+        });
+        
+        // Reload the page after short delay to show the new courses
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast({
+          title: "Información",
+          description: "Ya existen cursos en la base de datos o no se pudo completar la operación.",
+          variant: "default",
+        });
+      }
     } catch (error) {
-      console.error('Error seeding courses:', error);
+      console.error("Error creating courses:", error);
       toast({
         title: "Error",
-        description: "No se pudieron crear los cursos",
+        description: "No se pudieron crear los cursos. Verifica la consola para más detalles.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
-  
+
+  // Only show to logged in users
+  if (!user) return null;
+
   return (
-    <div className="mb-4">
-      <Button 
-        onClick={handleSeedCourses} 
-        variant="outline" 
-        className="border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue hover:text-white"
+    <div className="mb-6">
+      <Button
+        variant="outline"
+        className="bg-cybersec-darkgray hover:bg-cybersec-darkgray/80 border-cybersec-electricblue text-cybersec-electricblue"
+        onClick={handleCreateCourses}
         disabled={loading}
       >
-        {loading ? 'Creando cursos...' : 'Crear cursos de prueba'}
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Creando cursos...
+          </>
+        ) : (
+          'Crear cursos de prueba'
+        )}
       </Button>
     </div>
   );

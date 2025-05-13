@@ -1,32 +1,41 @@
 
-import { Request, Response } from 'express';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 
-export default async function handler(req: Request, res: Response) {
-  const { userId } = req.query;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
 
-  if (!userId) {
-    return res.status(400).json({ error: 'Se requiere el ID del usuario' });
+  const { authorization } = req.headers;
+  
+  if (!authorization) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
 
   try {
-    // Comprobar el rol del usuario desde la tabla profiles
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
+    const token = authorization.replace('Bearer ', '');
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (error) {
-      throw error;
+    if (error || !user) {
+      return res.status(401).json({ message: 'Unauthorized', error });
     }
 
-    // Verificar si el rol es admin
-    const isAdmin = data?.role === 'admin';
+    // Get the user's profile to check their role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
 
-    return res.status(200).json({ data: { isAdmin } });
+    if (profileError || !profile) {
+      return res.status(404).json({ message: 'Profile not found', error: profileError });
+    }
+
+    // Return the role
+    return res.status(200).json({ role: profile.role });
   } catch (error) {
     console.error('Error checking admin status:', error);
-    return res.status(500).json({ error: 'Error al verificar el estado de administrador' });
+    return res.status(500).json({ message: 'Internal server error', error });
   }
 }
