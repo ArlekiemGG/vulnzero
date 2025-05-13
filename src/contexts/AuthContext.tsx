@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,15 +91,60 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if there's a hash fragment indicating email confirmation
+    const handleEmailConfirmation = async () => {
+      const hash = window.location.hash;
+      const query = window.location.search;
+      
+      // Check if we have an access_token in the URL (email confirmation)
+      if (hash && hash.includes('access_token=')) {
+        try {
+          // The hash contains the access_token which Supabase will handle automatically
+          // We just need to check if it sets up the session correctly
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) throw error;
+          
+          if (data.session) {
+            toast({
+              title: "Email verificado",
+              description: "Tu correo ha sido verificado correctamente. Ahora puedes iniciar sesión.",
+              variant: "default"
+            });
+            
+            // Redirect to dashboard if user is confirmed
+            navigate('/dashboard');
+          }
+        } catch (error: any) {
+          console.error("Email verification error:", error);
+          toast({
+            title: "Error de verificación",
+            description: "No se pudo verificar tu correo electrónico. Por favor, intenta iniciar sesión o solicita un nuevo enlace de verificación.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Check for password reset flow
+      if (query && query.includes('type=recovery')) {
+        // Redirect to reset password page maintaining the query parameters
+        navigate(`/auth${query}`);
+      }
+    };
+
+    handleEmailConfirmation();
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession?.user?.id);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
         
-        // Defer profile fetching to avoid deadlock
-        if (currentSession?.user && event === 'SIGNED_IN') {
+        // Handle specific events
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          // Defer profile fetching to avoid deadlock
           setTimeout(() => {
             toast({
               title: "Acceso exitoso",
@@ -113,6 +159,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setSession(null);
         }
+        
+        // Handle user updated event (email verification)
+        if (event === 'USER_UPDATED') {
+          try {
+            const { data } = await supabase.auth.getUser();
+            if (data?.user && data.user.email_confirmed_at) {
+              toast({
+                title: "Correo verificado",
+                description: "Tu correo electrónico ha sido verificado correctamente.",
+              });
+            }
+          } catch (error) {
+            console.error("Error checking email confirmation:", error);
+          }
+        }
       }
     );
 
@@ -126,7 +187,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -140,15 +201,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Continue even if this fails
       }
       
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Correo no verificado",
+          description: "Por favor, verifica tu correo electrónico antes de iniciar sesión.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Force page reload for a clean state
       window.location.href = '/dashboard';
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Error de inicio de sesión",
-        description: error.message,
+        description: error.message || "Credenciales incorrectas o cuenta no verificada",
         variant: "destructive"
       });
     }
@@ -182,7 +253,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Obtén la URL completa actual para usar como base para la redirección
       const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/dashboard`;
+      const redirectUrl = `${currentOrigin}/auth?verification=true`;
+      
+      console.log("Redirect URL for email verification:", redirectUrl);
       
       // Utilizando la función signUp sin requerir confirmación de correo electrónico
       const { data, error } = await supabase.auth.signUp({ 

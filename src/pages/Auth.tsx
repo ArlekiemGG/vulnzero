@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useSearchParams } from 'react-router-dom';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, User, Lock, Mail, Github, Chrome, ArrowRight } from 'lucide-react';
+import { Shield, User, Lock, Mail, Github, Chrome, ArrowRight, CheckCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,11 +17,29 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('login');
   
   useEffect(() => {
+    // Handle password reset from query params
     if (searchParams.get('reset') === 'true') {
       setActiveTab('reset');
       toast({
         title: "Restablecimiento de contraseña",
         description: "Puedes establecer una nueva contraseña ahora.",
+      });
+    }
+    
+    // Handle email verification from query params
+    if (searchParams.get('verification') === 'true') {
+      toast({
+        title: "Verifica tu email",
+        description: "Por favor, verifica tu correo electrónico para activar tu cuenta.",
+      });
+    }
+    
+    // If we have type=recovery in the URL, it's a password reset flow
+    if (searchParams.get('type') === 'recovery') {
+      setActiveTab('reset');
+      toast({
+        title: "Restablecimiento de contraseña",
+        description: "Por favor, establece una nueva contraseña para tu cuenta.",
       });
     }
   }, [searchParams]);
@@ -78,7 +95,11 @@ const Auth = () => {
           </TabsContent>
           
           <TabsContent value="reset">
-            <ResetPasswordForm />
+            {searchParams.get('type') === 'recovery' ? (
+              <PasswordResetForm />
+            ) : (
+              <ResetPasswordForm />
+            )}
           </TabsContent>
         </Tabs>
         
@@ -460,6 +481,85 @@ const ResetPasswordForm = () => {
             disabled={isLoading}
           >
             {isLoading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+const PasswordResetForm = () => {
+  const { updatePassword } = useAuth();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    setPasswordError('');
+    setIsLoading(true);
+    
+    try {
+      await updatePassword(password);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card className="border-cybersec-darkgray bg-cybersec-black shadow-xl">
+      <CardHeader>
+        <CardTitle className="text-cybersec-neongreen">Nueva Contraseña</CardTitle>
+        <CardDescription>Establece tu nueva contraseña</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="new-password">Nueva contraseña</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="••••••••"
+                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="••••••••"
+                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+            {passwordError && (
+              <p className="text-sm text-cybersec-red mt-1">{passwordError}</p>
+            )}
+          </div>
+          <Button 
+            type="submit" 
+            className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Actualizando...' : 'Actualizar contraseña'}
           </Button>
         </form>
       </CardContent>
