@@ -35,8 +35,13 @@ export const ActivityService = {
       
       if (error) throw error;
       
+      // Get unique activities by id to avoid duplicates
+      const uniqueActivities = Array.from(
+        new Map(data.map(item => [item.id, item])).values()
+      );
+      
       // Transform the data to match our interface
-      return data.map(activity => ({
+      return uniqueActivities.map(activity => ({
         id: activity.id,
         user_id: activity.user_id,
         type: activity.type as 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up',
@@ -60,6 +65,22 @@ export const ActivityService = {
     points: number = 0
   ): Promise<boolean> => {
     try {
+      // Check if this activity already exists to prevent duplicates
+      const { data: existingActivity } = await supabase
+        .from('user_activities')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', type)
+        .eq('title', title)
+        .limit(1);
+      
+      // If activity already exists, don't log it again
+      if (existingActivity && existingActivity.length > 0) {
+        console.log('Activity already exists, skipping:', type, title);
+        return true;
+      }
+      
+      // Log the new activity
       const { data, error } = await supabase.rpc(
         'log_user_activity',
         {
