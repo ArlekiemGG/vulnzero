@@ -317,3 +317,16 @@ export const leaderboard = {
     }, 60000); // Cache for 1 minute
   }
 };
+
+// Add queries export to maintain backward compatibility with existing code
+export const queries = {
+  getUserProfile: async (userId: string) => {
+    if (!userId) return null;
+    return await userProfiles.get(userId);
+  },
+  
+  // Add other query methods here to maintain compatibility
+  getLeaderboard: async (limit = 100, offset = 0) => {
+    return await leaderboard.get(limit, offset);
+  }
+};
