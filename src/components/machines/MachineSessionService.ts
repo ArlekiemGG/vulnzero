@@ -57,13 +57,19 @@ export const MachineSessionService = {
       console.log('Requesting machine:', machineTypeId, 'for user:', userId);
       
       // First, create a placeholder session in the database with 'requested' status
+      // Fix: Adding the required fields expires_at and session_id
+      const placeholderExpireDate = new Date(Date.now() + (120 * 60 * 1000)).toISOString(); // Default 2 hours
+      const tempSessionId = 'pending-' + Date.now(); // Temporary session ID until we get the real one
+      
       const { data: initialSession, error: initialError } = await supabase
         .from('machine_sessions')
         .insert({
           user_id: userId,
           machine_type_id: machineTypeId,
           status: 'requested',
-          started_at: new Date().toISOString()
+          started_at: new Date().toISOString(),
+          expires_at: placeholderExpireDate, // Add required field
+          session_id: tempSessionId // Add required field
         })
         .select()
         .single();

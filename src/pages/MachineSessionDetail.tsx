@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -114,11 +113,10 @@ const MachineSessionDetail = () => {
   const handleMachineRequested = () => {
     fetchData();
     
-    // Show a toast to inform the user
+    // Fix: Remove 'duration' and use proper Toast type without duration property
     toast({
       title: "Máquina solicitada",
-      description: "La máquina está siendo iniciada. Este proceso puede tardar unos segundos.",
-      duration: 5000,
+      description: "La máquina está siendo iniciada. Este proceso puede tardar unos segundos."
     });
   };
   
