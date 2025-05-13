@@ -1,3 +1,4 @@
+
 import { queries, type Profiles } from '@/integrations/supabase/client';
 import { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
 import { toast } from '@/components/ui/use-toast';
@@ -14,13 +15,9 @@ export const mapProfilesToLeaderboardUsers = (
   }
 
   return profiles.map((profile, index) => {
-    // Create a display username that doesn't expose email addresses
-    let displayName = profile.username || 'Usuario';
-    
-    // If it's an email, extract just the username part before @
-    if (displayName.includes('@') && displayName.includes('.')) {
-      displayName = displayName.split('@')[0];
-    }
+    // Use the username directly from the profile
+    // If username is not available, use a default
+    const displayName = profile.username || 'Usuario';
     
     return {
       id: profile.id,
@@ -105,12 +102,15 @@ export const getCurrentUserLeaderboardPosition = async (
     
     if (!userProfile) return null;
     
+    // Use the username directly from the profile
+    const displayName = userProfile.username || 'Usuario';
+    
     // We would need to fetch total count of users with higher points
     // This is a simplified version
     return {
       id: userProfile.id,
       rank: 0, // Proper rank would be determined by comparing points
-      username: userProfile.username || 'Usuario',
+      username: displayName,
       avatar: userProfile.avatar_url,
       points: userProfile.points || 0,
       level: userProfile.level || 1,
