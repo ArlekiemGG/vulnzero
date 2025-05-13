@@ -1,340 +1,181 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, HardDrive, Network, AlertTriangle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
-import Sidebar from '@/components/layout/Sidebar';
-import MachineCard from '@/components/machines/MachineCard';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Database } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, queries } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { MachineService } from '@/components/machines/MachineService';
-import { MachineProps } from '@/components/machines/MachineCard';
-import { machines } from '@/components/machines/MachineData';
+import { machines, MachineType } from '@/components/machines/MachineData';
 
 const Machines = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOS, setSelectedOS] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
-  const [userStats, setUserStats] = useState({
-    level: 1,
-    points: 0,
-    pointsToNextLevel: 500,
-    progress: 0,
-    rank: 0,
-    solvedMachines: 0,
-    completedChallenges: 0,
-  });
-  
-  const [machinesWithProgress, setMachinesWithProgress] = useState(machines);
-  const [activeSessions, setActiveSessions] = useState<string[]>([]);
-  
-  // Fetch user profile data and active sessions
+  const [searchQuery, setSearchQuery] = useState('');
+  const [osFilter, setOsFilter] = useState('all');
+  const [difficultyFilter, setDifficultyFilter] = useState('all');
+  const [userProgress, setUserProgress] = useState({});
+
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const profileData = await queries.getUserProfile(user.id);
-          
-        if (profileData) {
-          console.log("Profile data loaded in Machines:", profileData);
-          
-          // Calculate points to next level (simple: nivel actual * 500)
-          const pointsToNextLevel = profileData.level * 500 - profileData.points;
-          
-          // Calculate progress as percentage
-          const levelProgress = Math.min(
-            Math.round((profileData.points / (profileData.level * 500)) * 100),
-            100
-          );
-          
-          setUserStats({
-            level: profileData.level || 1,
-            points: profileData.points || 0,
-            pointsToNextLevel: pointsToNextLevel,
-            progress: levelProgress,
-            rank: profileData.rank || 0,
-            solvedMachines: profileData.solved_machines || 0,
-            completedChallenges: profileData.completed_challenges || 0,
-          });
-
-          // Get user active sessions
-          try {
-            const { data: sessions } = await supabase
-              .from('machine_sessions')
-              .select('machine_type_id')
-              .eq('user_id', user.id)
-              .neq('status', 'terminated');
-              
-            if (sessions) {
-              const activeSessionMachineIds = sessions.map(session => session.machine_type_id);
-              setActiveSessions(activeSessionMachineIds);
-            }
-          } catch (error) {
-            console.error('Error fetching active sessions:', error);
-          }
-
-          // Update machine progress for the user
-          const updatedMachines = [...machines];
-          
-          // Get machine progress for each machine (in a real app, this would be a single API call)
-          for (let i = 0; i < updatedMachines.length; i++) {
-            try {
-              const machineProgress = await MachineService.getUserMachineProgress(
-                user.id,
-                updatedMachines[i].id
-              );
-              updatedMachines[i].userProgress = machineProgress.progress;
-            } catch (error) {
-              console.error(`Error fetching progress for machine ${updatedMachines[i].id}:`, error);
-            }
-          }
-          
-          setMachinesWithProgress(updatedMachines);
-        } else {
-          console.error('No profile data returned');
-          toast({
-            title: "Error al cargar perfil",
-            description: "No se pudieron cargar tus datos de perfil.",
-            variant: "destructive"
-          });
-        }
-      } catch (error) {
-        console.error('Error loading profile in Machines:', error);
-        toast({
-          title: "Error al cargar perfil",
-          description: "No se pudieron cargar tus datos de perfil.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
+    // Simula la obtención del progreso del usuario para cada máquina
+    const fetchUserProgress = async () => {
+      const progressData = {};
+      machines.forEach(machine => {
+        progressData[machine.id] = Math.floor(Math.random() * 101); // Simula un progreso aleatorio
+      });
+      setUserProgress(progressData);
     };
 
-    fetchUserProfile();
-  }, [user, toast]);
-  
-  // Filtro de máquinas
-  const filteredMachines = machinesWithProgress.map(machine => ({
-    ...machine,
-    hasActiveSession: activeSessions.includes(machine.id)
-  })).filter(machine => {
-    const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          machine.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          machine.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesOS = selectedOS === 'all' || machine.osType === selectedOS;
-    const matchesDifficulty = selectedDifficulty === 'all' || machine.difficulty === selectedDifficulty;
-    
-    return matchesSearch && matchesOS && matchesDifficulty;
-  });
+    fetchUserProgress();
+  }, []);
 
-  const getCompletedMachines = () => filteredMachines.filter(m => m.userProgress === 100);
-  const getInProgressMachines = () => filteredMachines.filter(m => (m.userProgress > 0 && m.userProgress < 100) || m.hasActiveSession);
-  const getPendingMachines = () => filteredMachines.filter(m => m.userProgress === 0 && !m.hasActiveSession);
+  const filteredMachines = useMemo(() => {
+    return machines
+      .filter(machine => {
+        if (osFilter === 'all') return true;
+        return machine.osType === osFilter;
+      })
+      .filter(machine => {
+        if (difficultyFilter === 'all') return true;
+        return machine.difficulty === difficultyFilter;
+      })
+      .filter(machine => {
+        if (!searchQuery) return true;
+        return machine.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               machine.description.toLowerCase().includes(searchQuery.toLowerCase());
+      });
+  }, [machines, osFilter, difficultyFilter, searchQuery]);
 
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
-      <div className="flex pt-16">
-        <Sidebar userStats={userStats} />
-        <main className="flex-1 md:ml-64 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-            <header className="mb-6">
-              <h1 className="text-2xl font-bold text-cybersec-neongreen mb-2">
-                Máquinas Vulnerables
-              </h1>
-              <p className="text-gray-400">
-                Explora y resuelve máquinas vulnerables para mejorar tus habilidades
-              </p>
-            </header>
-
-            {/* Filtros */}
-            <div className="bg-cybersec-darkgray p-4 rounded-lg mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5 relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                  <Input 
-                    type="text" 
-                    placeholder="Buscar por nombre, descripción o categoría..." 
-                    className="bg-cybersec-black pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                
-                <div className="md:col-span-3">
-                  <Select value={selectedOS} onValueChange={setSelectedOS}>
-                    <SelectTrigger className="bg-cybersec-black">
-                      <div className="flex items-center">
-                        <Database className="h-4 w-4 mr-2 text-gray-400" />
-                        <SelectValue placeholder="Sistema Operativo" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-cybersec-darkgray border-cybersec-darkgray">
-                      <SelectItem value="all">Todos los sistemas</SelectItem>
-                      <SelectItem value="linux">Linux</SelectItem>
-                      <SelectItem value="windows">Windows</SelectItem>
-                      <SelectItem value="other">Otros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="md:col-span-3">
-                  <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                    <SelectTrigger className="bg-cybersec-black">
-                      <div className="flex items-center">
-                        <Filter className="h-4 w-4 mr-2 text-gray-400" />
-                        <SelectValue placeholder="Dificultad" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-cybersec-darkgray border-cybersec-darkgray">
-                      <SelectItem value="all">Todas las dificultades</SelectItem>
-                      <SelectItem value="easy">Fácil</SelectItem>
-                      <SelectItem value="medium">Media</SelectItem>
-                      <SelectItem value="hard">Difícil</SelectItem>
-                      <SelectItem value="insane">Insano</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="md:col-span-1">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-cybersec-neongreen text-cybersec-neongreen hover:bg-cybersec-neongreen hover:text-cybersec-black"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setSelectedOS('all');
-                      setSelectedDifficulty('all');
-                    }}
-                  >
-                    Reset
-                  </Button>
-                </div>
+      
+      <main className="pt-20 pb-10 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Encabezado y filtros */}
+          <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <h1 className="text-3xl font-bold text-white">Máquinas</h1>
+            
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <Input
+                type="text"
+                placeholder="Buscar máquinas..."
+                className="bg-cybersec-darkgray text-white flex-grow md:flex-grow-0"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              
+              <div className="flex items-center gap-2">
+                <Label htmlFor="osFilter" className="text-sm text-gray-400">
+                  Sistema Operativo:
+                </Label>
+                <Select value={osFilter} onValueChange={setOsFilter}>
+                  <SelectTrigger className="w-[180px] bg-cybersec-darkgray text-white">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-cybersec-darkgray text-white">
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="linux">Linux</SelectItem>
+                    <SelectItem value="windows">Windows</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Badge variant="outline" className="bg-transparent border-cybersec-electricblue text-cybersec-electricblue">
-                  Linux: {machines.filter(m => m.osType === 'linux').length}
-                </Badge>
-                <Badge variant="outline" className="bg-transparent border-cybersec-electricblue text-cybersec-electricblue">
-                  Windows: {machines.filter(m => m.osType === 'windows').length}
-                </Badge>
-                <Badge variant="outline" className="bg-transparent border-green-500 text-green-500">
-                  Fácil: {machines.filter(m => m.difficulty === 'easy').length}
-                </Badge>
-                <Badge variant="outline" className="bg-transparent border-yellow-500 text-yellow-500">
-                  Media: {machines.filter(m => m.difficulty === 'medium').length}
-                </Badge>
-                <Badge variant="outline" className="bg-transparent border-red-500 text-red-500">
-                  Difícil: {machines.filter(m => m.difficulty === 'hard').length}
-                </Badge>
-                <Badge variant="outline" className="bg-transparent border-purple-500 text-purple-500">
-                  Insano: {machines.filter(m => m.difficulty === 'insane').length}
-                </Badge>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="difficultyFilter" className="text-sm text-gray-400">
+                  Dificultad:
+                </Label>
+                <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                  <SelectTrigger className="w-[150px] bg-cybersec-darkgray text-white">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-cybersec-darkgray text-white">
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="easy">Fácil</SelectItem>
+                    <SelectItem value="medium">Medio</SelectItem>
+                    <SelectItem value="hard">Difícil</SelectItem>
+                    <SelectItem value="insane">Insano</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-
-            {/* Máquinas */}
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="bg-cybersec-darkgray mb-6">
-                <TabsTrigger value="all" className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen">
-                  Todas ({filteredMachines.length})
-                </TabsTrigger>
-                <TabsTrigger value="completed" className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen">
-                  Completadas ({getCompletedMachines().length})
-                </TabsTrigger>
-                <TabsTrigger value="in_progress" className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen">
-                  En Progreso ({getInProgressMachines().length})
-                </TabsTrigger>
-                <TabsTrigger value="pending" className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen">
-                  Pendientes ({getPendingMachines().length})
-                </TabsTrigger>
-              </TabsList>
-
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="rounded-lg bg-cybersec-darkgray h-80 animate-pulse"></div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <TabsContent value="all" className="mt-0">
-                    {filteredMachines.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredMachines.map((machine) => (
-                          <MachineCard key={machine.id} {...machine} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                        <p className="text-gray-400">No se encontraron máquinas con los filtros seleccionados</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="completed" className="mt-0">
-                    {getCompletedMachines().length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {getCompletedMachines().map((machine) => (
-                          <MachineCard key={machine.id} {...machine} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                        <p className="text-gray-400">No has completado ninguna máquina con los filtros seleccionados</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="in_progress" className="mt-0">
-                    {getInProgressMachines().length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {getInProgressMachines().map((machine) => (
-                          <MachineCard key={machine.id} {...machine} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                        <p className="text-gray-400">No tienes máquinas en progreso con los filtros seleccionados</p>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="pending" className="mt-0">
-                    {getPendingMachines().length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {getPendingMachines().map((machine) => (
-                          <MachineCard key={machine.id} {...machine} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                        <p className="text-gray-400">No tienes máquinas pendientes con los filtros seleccionados</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </>
-              )}
-            </Tabs>
           </div>
-        </main>
-      </div>
+          
+          {/* Listado de máquinas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMachines.map(machine => (
+              <Card key={machine.id} className="bg-cybersec-darkgray border-cybersec-darkgray">
+                <CardContent className="p-6">
+                  <div className="relative h-40 rounded-lg overflow-hidden mb-4">
+                    <img 
+                      src={machine.image} 
+                      alt={machine.name} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 p-4">
+                      <h3 className="text-xl font-bold text-white">{machine.name}</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mb-2">
+                    <Badge className={
+                      machine.difficulty === 'easy' ? 'bg-green-900 text-green-400' :
+                      machine.difficulty === 'medium' ? 'bg-yellow-900 text-yellow-400' :
+                      machine.difficulty === 'hard' ? 'bg-red-900 text-red-400' :
+                      'bg-purple-900 text-purple-400'
+                    }>
+                      {machine.difficulty.charAt(0).toUpperCase() + machine.difficulty.slice(1)}
+                    </Badge>
+                    <Badge className={
+                      machine.osType === 'linux' ? 'bg-blue-900 text-blue-400' :
+                      machine.osType === 'windows' ? 'bg-cyan-900 text-cyan-400' :
+                      'bg-gray-900 text-gray-400'
+                    }>
+                      {machine.osType.charAt(0).toUpperCase() + machine.osType.slice(1)}
+                    </Badge>
+                  </div>
+                  
+                  <p className="text-sm text-gray-300 mb-4">{machine.description}</p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+                    <div className="flex items-center gap-1">
+                      <HardDrive className="h-3 w-3" />
+                      <span>{machine.osType}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{machine.difficulty}</span>
+                    </div>
+                    {user && (
+                      <div className="flex items-center gap-1">
+                        <Network className="h-3 w-3" />
+                        <span>{machine.points} Puntos</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {user && (
+                    <>
+                      <div className="text-xs text-gray-400 mb-1">Progreso: {userProgress[machine.id]}%</div>
+                      <Progress value={userProgress[machine.id]} className="mb-4" />
+                    </>
+                  )}
+                  
+                  <Button asChild className="w-full bg-cybersec-black border border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue hover:text-black">
+                    <Link to={`/machines/${machine.id}`}>
+                      Ver detalles
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
