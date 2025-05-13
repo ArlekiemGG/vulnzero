@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from '@/components/ui/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import LeaderboardTable, { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
@@ -14,224 +16,148 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock data para estadísticas de usuario
-const userStats = {
-  level: 7,
-  points: 3450,
-  pointsToNextLevel: 550,
-  progress: 70,
-  rank: 42,
-  solvedMachines: 15,
-  completedChallenges: 8,
+// Función para obtener el ranking desde Supabase
+const fetchProfiles = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('points', { ascending: false })
+    .limit(100);
+  
+  if (error) {
+    throw new Error(`Error al cargar perfiles: ${error.message}`);
+  }
+  
+  return data || [];
 };
 
-// Mock data para usuarios del leaderboard
-const globalLeaderboardUsers: LeaderboardUser[] = [
-  {
-    id: "user1",
-    rank: 1,
-    username: "HackerMaster",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    points: 9850,
-    level: 25,
-    solvedMachines: 98,
-    rankChange: "same",
-  },
-  {
-    id: "user2",
-    rank: 2,
-    username: "CyberNinja",
-    avatar: "https://i.pravatar.cc/100?img=2",
-    points: 9320,
-    level: 24,
-    solvedMachines: 94,
-    rankChange: "up",
-    changeAmount: 1,
-  },
-  {
-    id: "user3",
-    rank: 3,
-    username: "SecureDragon",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    points: 8950,
-    level: 23,
-    solvedMachines: 89,
-    rankChange: "down",
-    changeAmount: 1,
-  },
-  {
-    id: "user4",
-    rank: 4,
-    username: "Pentester01",
-    avatar: "https://i.pravatar.cc/100?img=4",
-    points: 8705,
-    level: 22,
-    solvedMachines: 85,
-    rankChange: "up",
-    changeAmount: 2,
-  },
-  {
-    id: "user5",
-    rank: 5,
-    username: "RootGuru",
-    avatar: "https://i.pravatar.cc/100?img=5",
-    points: 8520,
-    level: 22,
-    solvedMachines: 82,
-    rankChange: "same",
-  },
-  {
-    id: "user42",
-    rank: 42,
-    username: "YourUsername",
-    avatar: "",
-    points: 3450,
-    level: 7,
-    solvedMachines: 15,
-    rankChange: "up",
-    changeAmount: 3,
-    isCurrentUser: true,
-  },
-];
-
-// Leaderboard mensual
-const monthlyLeaderboardUsers: LeaderboardUser[] = [
-  {
-    id: "user4",
-    rank: 1,
-    username: "Pentester01",
-    avatar: "https://i.pravatar.cc/100?img=4",
-    points: 1250,
-    level: 22,
-    solvedMachines: 85,
-    rankChange: "up",
-    changeAmount: 1,
-  },
-  {
-    id: "user3",
-    rank: 2,
-    username: "SecureDragon",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    points: 980,
-    level: 23,
-    solvedMachines: 89,
-    rankChange: "down",
-    changeAmount: 1,
-  },
-  {
-    id: "user1",
-    rank: 3,
-    username: "HackerMaster",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    points: 920,
-    level: 25,
-    solvedMachines: 98,
-    rankChange: "same",
-  },
-  {
-    id: "user5",
-    rank: 4,
-    username: "RootGuru",
-    avatar: "https://i.pravatar.cc/100?img=5",
-    points: 845,
-    level: 22,
-    solvedMachines: 82,
-    rankChange: "up",
-    changeAmount: 3,
-  },
-  {
-    id: "user2",
-    rank: 5,
-    username: "CyberNinja",
-    avatar: "https://i.pravatar.cc/100?img=2",
-    points: 820,
-    level: 24,
-    solvedMachines: 94,
-    rankChange: "down",
-    changeAmount: 2,
-  },
-  {
-    id: "user42",
-    rank: 8,
-    username: "YourUsername",
-    avatar: "",
-    points: 685,
-    level: 7,
-    solvedMachines: 15,
-    rankChange: "up",
-    changeAmount: 5,
-    isCurrentUser: true,
-  },
-];
-
-// Leaderboard semanal
-const weeklyLeaderboardUsers: LeaderboardUser[] = [
-  {
-    id: "user42",
-    rank: 1,
-    username: "YourUsername",
-    avatar: "",
-    points: 320,
-    level: 7,
-    solvedMachines: 15,
-    rankChange: "up",
-    changeAmount: 5,
-    isCurrentUser: true,
-  },
-  {
-    id: "user3",
-    rank: 2,
-    username: "SecureDragon",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    points: 290,
-    level: 23,
-    solvedMachines: 89,
-    rankChange: "up",
-    changeAmount: 3,
-  },
-  {
-    id: "user5",
-    rank: 3,
-    username: "RootGuru",
-    avatar: "https://i.pravatar.cc/100?img=5",
-    points: 275,
-    level: 22,
-    solvedMachines: 82,
-    rankChange: "down",
-    changeAmount: 1,
-  },
-  {
-    id: "user1",
-    rank: 4,
-    username: "HackerMaster",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    points: 260,
-    level: 25,
-    solvedMachines: 98,
-    rankChange: "down",
-    changeAmount: 2,
-  },
-  {
-    id: "user4",
-    rank: 5,
-    username: "Pentester01",
-    avatar: "https://i.pravatar.cc/100?img=4",
-    points: 210,
-    level: 22,
-    solvedMachines: 85,
-    rankChange: "same",
+// Función para obtener el profile del usuario actual
+const fetchCurrentUserProfile = async () => {
+  const { data: authData } = await supabase.auth.getUser();
+  
+  if (!authData.user) {
+    return null;
   }
-];
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authData.user.id)
+    .single();
+  
+  if (error) {
+    console.error("Error al cargar perfil de usuario:", error);
+    return null;
+  }
+  
+  return data;
+};
 
 const Leaderboard = () => {
   const [selectedRegion, setSelectedRegion] = useState("global");
+  const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
+  
+  // Consulta para obtener todos los perfiles
+  const { 
+    data: profiles = [], 
+    isLoading,
+    error 
+  } = useQuery({
+    queryKey: ['leaderboard-profiles', selectedRegion],
+    queryFn: fetchProfiles,
+  });
+  
+  // Obtener el perfil del usuario actual
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const profile = await fetchCurrentUserProfile();
+        setCurrentUserProfile(profile);
+      } catch (err) {
+        console.error("Error fetching current user profile:", err);
+      }
+    };
+    
+    loadCurrentUser();
+  }, []);
+  
+  // Convertir perfiles de Supabase en formato LeaderboardUser
+  const mapProfilesToLeaderboardUsers = (profilesData: any[]): LeaderboardUser[] => {
+    return profilesData.map((profile, index) => ({
+      id: profile.id,
+      rank: index + 1,
+      username: profile.username || 'Usuario',
+      avatar: profile.avatar_url,
+      points: profile.points || 0,
+      level: profile.level || 1,
+      solvedMachines: profile.solved_machines || 0,
+      rankChange: 'same', // Por defecto todos son 'same' ya que no tenemos datos históricos
+      isCurrentUser: currentUserProfile ? profile.id === currentUserProfile.id : false
+    }));
+  };
+  
+  // Error handling
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error al cargar el leaderboard",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    }
+  }, [error]);
+  
+  // Preparar datos para la tabla
+  const leaderboardUsers = mapProfilesToLeaderboardUsers(profiles);
+  
+  // Simular datos para pestañas mensuales y semanales - En una app real, estos vendrían de la base de datos
+  // con datos filtrados por periodo
+  const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20))
+    .map(user => ({...user, points: Math.round(user.points * 0.3)}));
+    
+  const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15))
+    .map(user => ({...user, points: Math.round(user.points * 0.1)}));
+    
+  // Función para scrollear a la posición del usuario
+  const scrollToCurrentUser = () => {
+    const userRow = document.getElementById('current-user-row');
+    if (userRow) {
+      userRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      toast({
+        title: "Usuario no encontrado",
+        description: "No pudimos encontrar tu posición en el ranking actual",
+        variant: "default"
+      });
+    }
+  };
+  
+  // Obtenemos los top 3 para el showcase
+  const top3Users = leaderboardUsers.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
       <div className="flex pt-16">
-        <Sidebar userStats={userStats} />
+        <Sidebar userStats={currentUserProfile ? {
+          level: currentUserProfile.level || 1,
+          points: currentUserProfile.points || 0,
+          pointsToNextLevel: 500, // Este valor debería calcularse según tu lógica de niveles
+          progress: 0, // Esto también debería calcularse
+          rank: leaderboardUsers.find(u => u.isCurrentUser)?.rank || 0,
+          solvedMachines: currentUserProfile.solved_machines || 0,
+          completedChallenges: currentUserProfile.completed_challenges || 0,
+        } : {
+          level: 1,
+          points: 0,
+          pointsToNextLevel: 500,
+          progress: 0,
+          rank: 0,
+          solvedMachines: 0,
+          completedChallenges: 0,
+        }} />
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <header className="mb-6 flex justify-between items-center">
@@ -256,7 +182,11 @@ const Leaderboard = () => {
                     <SelectItem value="oceania">Oceanía</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" className="border-cybersec-neongreen text-cybersec-neongreen">
+                <Button 
+                  variant="outline" 
+                  className="border-cybersec-neongreen text-cybersec-neongreen"
+                  onClick={scrollToCurrentUser}
+                >
                   Mi posición
                 </Button>
               </div>
@@ -269,7 +199,7 @@ const Leaderboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {globalLeaderboardUsers.slice(0, 3).map((user, index) => (
+                    {top3Users.map((user, index) => (
                       <Card key={user.id} className={`bg-cybersec-black ${
                         index === 0 ? 'border-cybersec-yellow' : 
                         index === 1 ? 'border-gray-400' : 
@@ -340,15 +270,27 @@ const Leaderboard = () => {
               </TabsList>
 
               <TabsContent value="global">
-                <LeaderboardTable users={globalLeaderboardUsers} currentPeriod="Global" />
+                <LeaderboardTable 
+                  users={leaderboardUsers} 
+                  currentPeriod="Global" 
+                  isLoading={isLoading}
+                />
               </TabsContent>
               
               <TabsContent value="monthly">
-                <LeaderboardTable users={monthlyLeaderboardUsers} currentPeriod="Mayo 2023" />
+                <LeaderboardTable 
+                  users={monthlyLeaderboardUsers} 
+                  currentPeriod={`${new Date().toLocaleString('es', { month: 'long' })} ${new Date().getFullYear()}`} 
+                  isLoading={isLoading}
+                />
               </TabsContent>
               
               <TabsContent value="weekly">
-                <LeaderboardTable users={weeklyLeaderboardUsers} currentPeriod="15-22 Mayo 2023" />
+                <LeaderboardTable 
+                  users={weeklyLeaderboardUsers}
+                  currentPeriod={`Semana ${Math.ceil(new Date().getDate() / 7)} - ${new Date().toLocaleString('es', { month: 'long' })}`} 
+                  isLoading={isLoading}
+                />
               </TabsContent>
             </Tabs>
           </div>

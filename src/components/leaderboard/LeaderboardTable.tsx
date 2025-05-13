@@ -34,11 +34,13 @@ export interface LeaderboardUser {
 interface LeaderboardTableProps {
   users: LeaderboardUser[];
   currentPeriod: string;
+  isLoading?: boolean;
 }
 
 const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   users,
   currentPeriod,
+  isLoading = false,
 }) => {
   const getRankChangeIcon = (change: 'up' | 'down' | 'same', amount?: number) => {
     switch (change) {
@@ -78,6 +80,29 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
+        <div className="p-8 text-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 w-40 bg-cybersec-darkgray/50 rounded mb-4"></div>
+            <div className="h-4 w-60 bg-cybersec-darkgray/30 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (users.length === 0) {
+    return (
+      <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
+        <div className="p-8 text-center">
+          <p className="text-gray-400">No hay datos disponibles para este período</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
       <Table>
@@ -109,10 +134,10 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   <Avatar className="h-8 w-8 border border-cybersec-darkgray">
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback className="bg-cybersec-black text-cybersec-neongreen">
-                      {user.username.substring(0, 2).toUpperCase()}
+                      {user.username ? user.username.substring(0, 2).toUpperCase() : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="font-medium">{user.username}</div>
+                  <div className="font-medium">{user.username || "Usuario"}</div>
                   {user.isCurrentUser && (
                     <Badge variant="outline" className="ml-2 border-cybersec-neongreen text-cybersec-neongreen text-xs">
                       Tú
