@@ -577,30 +577,30 @@ const MachineDetail = () => {
               <div className="lg:w-2/3">
                 <div className="relative h-64 md:h-80 rounded-lg overflow-hidden">
                   <img 
-                    src={machine.image} 
-                    alt={machine.name} 
+                    src={machine?.image} 
+                    alt={machine?.name} 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                   <div className="absolute bottom-0 left-0 p-6">
                     <div className="flex gap-2 mb-2">
                       <Badge className={
-                        machine.difficulty === 'easy' ? 'bg-green-900 text-green-400' :
-                        machine.difficulty === 'medium' ? 'bg-yellow-900 text-yellow-400' :
-                        machine.difficulty === 'hard' ? 'bg-red-900 text-red-400' :
+                        machine?.difficulty === 'easy' ? 'bg-green-900 text-green-400' :
+                        machine?.difficulty === 'medium' ? 'bg-yellow-900 text-yellow-400' :
+                        machine?.difficulty === 'hard' ? 'bg-red-900 text-red-400' :
                         'bg-purple-900 text-purple-400'
                       }>
-                        {machine.difficulty.charAt(0).toUpperCase() + machine.difficulty.slice(1)}
+                        {machine?.difficulty?.charAt(0).toUpperCase() + machine?.difficulty?.slice(1)}
                       </Badge>
                       <Badge className={
-                        machine.osType === 'linux' ? 'bg-blue-900 text-blue-400' :
-                        machine.osType === 'windows' ? 'bg-cyan-900 text-cyan-400' :
+                        machine?.osType === 'linux' ? 'bg-blue-900 text-blue-400' :
+                        machine?.osType === 'windows' ? 'bg-cyan-900 text-cyan-400' :
                         'bg-gray-900 text-gray-400'
                       }>
-                        {machine.osType.charAt(0).toUpperCase() + machine.osType.slice(1)}
+                        {machine?.osType?.charAt(0).toUpperCase() + machine?.osType?.slice(1)}
                       </Badge>
                     </div>
-                    <h1 className="text-3xl font-bold text-white">{machine.name}</h1>
+                    <h1 className="text-3xl font-bold text-white">{machine?.name}</h1>
                   </div>
                 </div>
               </div>
@@ -613,34 +613,34 @@ const MachineDetail = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between">
                         <span className="text-gray-400">IP Address</span>
-                        <code className="font-mono text-cybersec-electricblue">{machine.ipAddress}</code>
+                        <code className="font-mono text-cybersec-electricblue">{machine?.ipAddress}</code>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-400">Puntos</span>
                         <span className="flex items-center">
                           <Trophy className="h-4 w-4 mr-1 text-cybersec-yellow" />
-                          {machine.points}
+                          {machine?.points}
                         </span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-400">Resuelto por</span>
-                        <span>{machine.solvedBy} usuarios</span>
+                        <span>{machine?.solvedBy} usuarios</span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-400">Creador</span>
-                        <span>{machine.creator}</span>
+                        <span>{machine?.creator}</span>
                       </div>
                       
                       <div className="flex justify-between">
                         <span className="text-gray-400">Lanzamiento</span>
-                        <span>{new Date(machine.releaseDate || '').toLocaleDateString()}</span>
+                        <span>{machine?.releaseDate ? new Date(machine.releaseDate).toLocaleDateString() : '-'}</span>
                       </div>
                       
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {machine.categories.map((cat, idx) => (
+                        {machine?.categories?.map((cat, idx) => (
                           <Badge key={idx} variant="outline" className="bg-transparent border-cybersec-electricblue text-cybersec-electricblue">
                             {cat}
                           </Badge>
@@ -655,7 +655,7 @@ const MachineDetail = () => {
                             ? 'bg-cybersec-red/20 border border-cybersec-red text-cybersec-red hover:bg-cybersec-red hover:text-black'
                             : 'bg-cybersec-darkgray border border-cybersec-neongreen text-cybersec-neongreen hover:bg-cybersec-neongreen hover:text-black'
                         }`}
-                        onClick={handleConnectToggle}
+                        onClick={() => setIsConnected(!isConnected)}
                       >
                         {isConnected ? 'Desconectar' : 'Conectar VPN'}
                       </Button>

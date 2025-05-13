@@ -32,8 +32,8 @@ export const MachineService = {
     console.log("Looking for machine with ID:", machineId);
     console.log("Available machine IDs:", machines.map(m => m.id));
     
-    // Find the machine using direct string comparison - no coercion
-    const machine = machines.find(machine => machine.id === machineId);
+    // Find the machine using strict string comparison
+    const machine = machines.find(m => String(m.id) === machineId);
     
     if (!machine) {
       console.error(`Machine with ID ${machineId} not found`);
