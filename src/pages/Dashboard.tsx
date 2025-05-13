@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import { supabase, queries, Profiles } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { ActivityService, UserActivity } from '@/components/dashboard/ActivityService';
+import { ActivityService } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
 import { BadgeService } from '@/components/dashboard/BadgeService';
 
@@ -65,7 +65,7 @@ const Dashboard = () => {
   const [userProfile, setUserProfile] = useState<Profiles | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [badges, setBadges] = useState<AchievementBadge[]>([]);
   const [activeChallenge, setActiveChallenge] = useState<{
     id: string;
@@ -108,11 +108,14 @@ const Dashboard = () => {
         
         // Load user activity from real data only
         const activity = await ActivityService.getRecentActivity(user.id);
+        console.log("Loaded activity:", activity);
         setRecentActivity(activity);
         
-        // Load user badges data
-        const badges = await BadgeService.getUserBadges(user.id);
-        setBadges(badges);
+        // Initialize badges for new users and then load user badges data
+        await BadgeService.initializeUserBadges(user.id);
+        const userBadges = await BadgeService.getUserBadges(user.id);
+        console.log("Loaded badges:", userBadges);
+        setBadges(userBadges);
         
         // Load active challenge
         const challenges = await ChallengeService.getChallenges();

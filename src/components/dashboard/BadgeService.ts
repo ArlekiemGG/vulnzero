@@ -26,18 +26,23 @@ export const BadgeService = {
    */
   getUserBadges: async (userId: string): Promise<AchievementBadge[]> => {
     try {
-      // First, get all available badges
+      console.log('Fetching badges for user:', userId);
+      
+      // First, try to get all available badges
       const { data: badges, error: badgesError } = await supabase
         .from('badges')
         .select('*');
 
       if (badgesError) {
         console.error('Error fetching badges:', badgesError);
-        return [];
+        return getDefaultBadges();
       }
+
+      console.log('Fetched badges:', badges);
 
       // If no badges exist in the database, return default ones for display
       if (!badges || badges.length === 0) {
+        console.log('No badges found in database, using defaults');
         return getDefaultBadges();
       }
 
@@ -49,8 +54,24 @@ export const BadgeService = {
 
       if (progressError) {
         console.error('Error fetching user badge progress:', progressError);
-        return [];
+        // If we can't get progress, still show badges with default progress
+        return badges.map(badge => {
+          const icon = getBadgeIcon(badge.icon_name);
+          
+          return {
+            id: badge.id,
+            name: badge.name,
+            description: badge.description,
+            icon: icon,
+            earned: false,
+            progress: 0,
+            total: badge.required_count,
+            rarity: badge.rarity as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+          };
+        });
       }
+
+      console.log('Fetched user badge progress:', userProgress);
 
       // Map badges with user progress
       return badges.map(badge => {
@@ -71,6 +92,52 @@ export const BadgeService = {
     } catch (error) {
       console.error('Error in getUserBadges:', error);
       return getDefaultBadges();
+    }
+  },
+
+  /**
+   * Initialize badges for a new user
+   */
+  initializeUserBadges: async (userId: string): Promise<void> => {
+    try {
+      console.log('Initializing badges for user:', userId);
+      
+      // Get all available badges
+      const { data: badges, error: badgesError } = await supabase
+        .from('badges')
+        .select('id');
+        
+      if (badgesError || !badges) {
+        console.error('Error fetching badges for initialization:', badgesError);
+        return;
+      }
+
+      console.log(`Found ${badges.length} badges to initialize`);
+
+      // For each badge, create a progress entry
+      const progressEntries = badges.map(badge => ({
+        user_id: userId,
+        badge_id: badge.id,
+        current_progress: 0,
+        earned: false
+      }));
+
+      // Insert all progress entries
+      const { error: insertError } = await supabase
+        .from('user_badge_progress')
+        .upsert(progressEntries, { 
+          onConflict: 'user_id,badge_id', 
+          ignoreDuplicates: true 
+        });
+
+      if (insertError) {
+        console.error('Error initializing user badge progress:', insertError);
+        return;
+      }
+
+      console.log('Badge progress initialized successfully');
+    } catch (error) {
+      console.error('Error in initializeUserBadges:', error);
     }
   }
 };

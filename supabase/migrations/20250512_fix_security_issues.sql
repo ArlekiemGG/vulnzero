@@ -7,9 +7,19 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  SECURITY DEFINER
  SET search_path = public
 AS $function$
+DECLARE
+  badge_id UUID;
 BEGIN
+  -- Create profile for new user
   INSERT INTO public.profiles (id, username, avatar_url)
   VALUES (new.id, new.email, 'https://api.dicebear.com/7.x/pixel-art/svg?seed=' || new.id);
+  
+  -- Initialize badge progress for new user
+  FOR badge_id IN SELECT id FROM public.badges LOOP
+    INSERT INTO public.user_badge_progress (user_id, badge_id, current_progress, earned)
+    VALUES (new.id, badge_id, 0, false);
+  END LOOP;
+  
   RETURN new;
 END;
 $function$;

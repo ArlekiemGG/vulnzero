@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      badges: {
+        Row: {
+          created_at: string
+          description: string
+          icon_name: string
+          id: string
+          name: string
+          rarity: string
+          required_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon_name: string
+          id?: string
+          name: string
+          rarity: string
+          required_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon_name?: string
+          id?: string
+          name?: string
+          rarity?: string
+          required_count?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -77,6 +107,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_badge_progress: {
+        Row: {
+          badge_id: string
+          created_at: string
+          current_progress: number
+          earned: boolean
+          earned_at: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          created_at?: string
+          current_progress?: number
+          earned?: boolean
+          earned_at?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          created_at?: string
+          current_progress?: number
+          earned?: boolean
+          earned_at?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badge_progress_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
