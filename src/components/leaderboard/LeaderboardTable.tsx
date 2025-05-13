@@ -127,7 +127,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     );
   }
 
-  // Debug the users array
+  // Debug the users array for troubleshooting
   console.log("LeaderboardTable received users:", users);
 
   return (

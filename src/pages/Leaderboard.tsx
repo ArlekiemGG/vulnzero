@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -18,9 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Función para obtener el ranking desde Supabase
+// Función para obtener el ranking desde Supabase - usando async/await con error handling robusto
 const fetchProfiles = async () => {
   try {
+    // Importante: Usamos 'from' sin especificar un schema porque Supabase
+    // debería usar el schema por defecto configurado en el proyecto
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -32,6 +33,7 @@ const fetchProfiles = async () => {
       throw new Error(`Error al cargar perfiles: ${error.message}`);
     }
     
+    console.log("Successfully fetched profiles:", data);
     return data || [];
   } catch (err) {
     console.error("Exception fetching profiles:", err);
@@ -42,9 +44,15 @@ const fetchProfiles = async () => {
 // Función para obtener el profile del usuario actual
 const fetchCurrentUserProfile = async () => {
   try {
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error("Auth error:", authError);
+      return null;
+    }
     
     if (!authData.user) {
+      console.log("No authenticated user found");
       return null;
     }
     
@@ -59,6 +67,7 @@ const fetchCurrentUserProfile = async () => {
       return null;
     }
     
+    console.log("Successfully fetched user profile:", data);
     return data;
   } catch (err) {
     console.error("Exception fetching current user profile:", err);
