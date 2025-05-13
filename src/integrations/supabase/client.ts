@@ -9,6 +9,11 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Export type definitions for easier use in components
+export type Tables = Database['public']['Tables'];
+export type Profiles = Tables['profiles']['Row'];
+
+// Fixed client configuration with explicit schema definition
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -23,8 +28,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'x-application-name': 'vulnzero'
     }
   },
+  // Important: Explicitly set the schema to public
   db: {
-    schema: 'public'
+    schema: 'public',
   }
 });
 
@@ -143,6 +149,34 @@ export const clearCache = (keyPattern?: string) => {
   }
 };
 
+// Safe query wrapper for better error handling
+export const query = {
+  /**
+   * Safely execute a query with proper error handling
+   * @param table The table name to query
+   * @param builder A function that builds the query
+   * @returns Object with data and error properties
+   */
+  async safe<T = any>(
+    table: keyof Tables, 
+    builder: (query: any) => any
+  ): Promise<{ data: T | null; error: Error | null }> {
+    try {
+      const { data, error } = await builder(supabase.from(table));
+      return { 
+        data, 
+        error: error ? new Error(error.message) : null 
+      };
+    } catch (error) {
+      console.error("Query error:", error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error(String(error)) 
+      };
+    }
+  }
+};
+
 // Helpers to simplify queries
 export const queries = {
   /**
@@ -159,12 +193,11 @@ export const queries = {
       console.log("Fetching user profile with ID:", userId);
       
       try {
-        // Explicitly use public schema to avoid schema errors
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
+        // Use the new safe query method
+        const { data, error } = await query.safe<Profiles>(
+          'profiles',
+          q => q.select('*').eq('id', userId).maybeSingle()
+        );
         
         if (error) {
           console.error("Error fetching user profile:", error);
@@ -205,12 +238,13 @@ export const queries = {
       console.log("Fetching leaderboard with limit:", limit, "offset:", offset);
       
       try {
-        // Using explicit schema to avoid schema errors
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('points', { ascending: false })
-          .range(offset, offset + limit - 1);
+        // Use the new safe query method
+        const { data, error } = await query.safe<Profiles[]>(
+          'profiles',
+          q => q.select('*')
+               .order('points', { ascending: false })
+               .range(offset, offset + limit - 1)
+        );
         
         if (error) {
           console.error("Error fetching leaderboard:", error);
@@ -249,11 +283,12 @@ export const queries = {
               } else {
                 console.log("Successfully created test profile");
                 // Try to get all profiles again
-                const { data: refreshedData } = await supabase
-                  .from('profiles')
-                  .select('*')
-                  .order('points', { ascending: false })
-                  .range(0, limit - 1);
+                const { data: refreshedData } = await query.safe<Profiles[]>(
+                  'profiles',
+                  q => q.select('*')
+                       .order('points', { ascending: false })
+                       .range(0, limit - 1)
+                );
                   
                 return refreshedData || [];
               }
@@ -315,11 +350,10 @@ export const queries = {
     
     try {
       // First check if profile exists
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
+      const { data: existingProfile, error: checkError } = await query.safe<Profiles>(
+        'profiles',
+        q => q.select('id').eq('id', userId).maybeSingle()
+      );
       
       if (checkError) {
         console.error("Error checking if profile exists:", checkError);
@@ -362,11 +396,10 @@ export const queries = {
       }
       
       // If we get here, the profile exists but we need to return the complete profile
-      const { data: completeProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      const { data: completeProfile, error: fetchError } = await query.safe<Profiles>(
+        'profiles',
+        q => q.select('*').eq('id', userId).maybeSingle()
+      );
       
       if (fetchError) {
         console.error("Error fetching existing profile:", fetchError);
