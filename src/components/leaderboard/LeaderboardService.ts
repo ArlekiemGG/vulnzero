@@ -1,4 +1,3 @@
-
 import { leaderboard, userProfiles, type Profiles } from '@/integrations/supabase/client';
 import { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
 import { toast } from '@/components/ui/use-toast';

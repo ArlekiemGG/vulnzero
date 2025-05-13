@@ -1,17 +1,11 @@
 
-import { toast } from "@/components/ui/use-toast";
-
 /**
  * Thoroughly cleans up all Supabase auth state from storage
- * This helps prevent auth limbo states and session conflicts
  */
 export const cleanupAuthState = () => {
-  console.log("Cleaning up auth state...");
-  
   // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-      console.log(`Removing ${key} from localStorage`);
       localStorage.removeItem(key);
     }
   });
@@ -19,14 +13,13 @@ export const cleanupAuthState = () => {
   // Remove from sessionStorage if in use
   Object.keys(sessionStorage || {}).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-      console.log(`Removing ${key} from sessionStorage`);
       sessionStorage.removeItem(key);
     }
   });
 };
 
 /**
- * Checks password strength with detailed feedback
+ * Checks password strength
  */
 export const checkPasswordStrength = (password: string): { isStrong: boolean, message: string } => {
   // Check if password is at least 8 characters long
@@ -64,10 +57,7 @@ export const checkPasswordStrength = (password: string): { isStrong: boolean, me
 export const isCommonPassword = (password: string): boolean => {
   const commonPasswords = [
     'password', 'password123', '123456', '123456789', 'qwerty', 
-    'admin', 'welcome', 'letmein', 'monkey', 'abc123', 
-    'iloveyou', '1234567', '1234567890', 'password1', '12345678',
-    'baseball', 'football', 'superman', 'starwars', 'jennifer',
-    'michael', 'shadow', 'batman', 'dragon', 'master'
+    'admin', 'welcome', 'letmein', 'monkey', 'abc123'
   ];
   
   return commonPasswords.some(commonPwd => 
@@ -75,7 +65,7 @@ export const isCommonPassword = (password: string): boolean => {
 };
 
 /**
- * Process authentication fragments from URL (email confirmations, password resets)
+ * Process authentication fragments from URL
  */
 export const handleEmailConfirmation = async (
   supabase: any,
@@ -84,49 +74,29 @@ export const handleEmailConfirmation = async (
   query: string,
   navigate: (path: string) => void
 ) => {
-  console.log("Checking for auth fragments in URL: path=", path, "hash=", hash, "query=", query);
-  
   // Handle email confirmation via access_token
   if (hash && hash.includes('access_token=')) {
     try {
-      console.log("Processing email verification");
-      
       const { data, error } = await supabase.auth.getSession();
       
-      if (error) {
-        console.error("Error during email verification:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (data.session) {
-        toast({
-          title: "Email verificado",
-          description: "Tu correo ha sido verificado correctamente. Ahora puedes iniciar sesión.",
-          variant: "default"
-        });
-        
         navigate('/dashboard');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Email verification error:", error);
-      toast({
-        title: "Error de verificación",
-        description: "No se pudo verificar tu correo electrónico. Por favor, intenta iniciar sesión o solicita un nuevo enlace de verificación.",
-        variant: "destructive"
-      });
     }
   }
   
   // Handle password reset flow
   if (query && query.includes('type=recovery')) {
-    console.log("Password reset flow detected");
     navigate(`/auth${query}`);
   }
 };
 
 /**
  * Ensures proper auth state before login attempts
- * Helps prevent auth conflicts from multiple sessions
  */
 export const prepareForAuth = async (supabase: any) => {
   try {
@@ -138,7 +108,6 @@ export const prepareForAuth = async (supabase: any) => {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
       // Continue even if this fails
-      console.warn("Global sign out failed during auth preparation:", err);
     }
     
     return true;

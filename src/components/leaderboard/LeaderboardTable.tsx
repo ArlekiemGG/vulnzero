@@ -117,10 +117,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     );
   }
 
-  // Ensure users is always an array
-  const safeUsers = Array.isArray(users) ? users : [];
-
-  if (!safeUsers.length) {
+  if (!users.length) {
     return (
       <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
         <div className="p-8 text-center">
@@ -132,9 +129,6 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
       </div>
     );
   }
-
-  // Debug the users array for troubleshooting
-  console.log("LeaderboardTable received users:", safeUsers);
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
@@ -150,7 +144,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {safeUsers.map((user) => (
+          {users.map((user) => (
             <TableRow 
               key={user.id}
               id={user.isCurrentUser ? 'current-user-row' : undefined}

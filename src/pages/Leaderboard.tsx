@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import Navbar from '@/components/layout/Navbar';
@@ -9,7 +9,7 @@ import {
   fetchLeaderboardData, 
   getCurrentUserLeaderboardPosition 
 } from '@/components/leaderboard/LeaderboardService';
-import { userProfiles, leaderboard } from '@/integrations/supabase/client';
+import { queries } from '@/integrations/supabase/client';
 import { 
   Select, 
   SelectContent, 
@@ -29,9 +29,8 @@ const Leaderboard = () => {
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
-  const [hasAttemptedProfileCreation, setHasAttemptedProfileCreation] = useState(false);
   
-  // Query to fetch leaderboard data with improved error handling
+  // Query to fetch leaderboard data
   const { 
     data: profiles = [], 
     isLoading,
@@ -42,72 +41,23 @@ const Leaderboard = () => {
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: () => fetchLeaderboardData(),
-    retry: 3, // Increased from 2 to 3
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000), // Exponential backoff
+    retry: 2,
     refetchOnWindowFocus: false,
-    staleTime: 60000,
-    onError: (error) => {
-      console.error("Error fetching leaderboard data:", error);
-      toast({
-        title: "Error de carga",
-        description: "No se pudieron cargar los datos del leaderboard. Intentaremos de nuevo automáticamente.",
-        variant: "destructive"
-      });
-    }
+    staleTime: 60000
   });
   
-  // Clear Supabase cache before mounting to ensure fresh data
-  useEffect(() => {
-    leaderboard.clearCache();
-  }, []);
-  
-  // Ensure user profile exists
-  useEffect(() => {
-    if (!user || hasAttemptedProfileCreation) return;
-    
-    const setupUserProfile = async () => {
-      try {
-        if (user) {
-          const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
-          const profile = await userProfiles.createIfNotExists(user.id, username);
-          
-          if (profile) {
-            setCurrentUserProfile(profile);
-          }
-        }
-      } catch (err) {
-        console.error("Error ensuring user profile exists:", err);
-      } finally {
-        setHasAttemptedProfileCreation(true);
-      }
-    };
-    
-    setupUserProfile();
-  }, [user, hasAttemptedProfileCreation]);
-  
-  // Load current user profile with retry logic
+  // Load current user profile
   useEffect(() => {
     if (!user) return;
     
     const loadUserProfile = async () => {
-      let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts) {
-        try {
-          const profile = await userProfiles.get(user.id);
-          if (profile) {
-            setCurrentUserProfile(profile);
-            return;
-          }
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-        } catch (err) {
-          console.error("Error loading user profile:", err);
-          attempts++;
-          if (attempts >= maxAttempts) break;
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      try {
+        const profile = await queries.getUserProfile(user.id);
+        if (profile) {
+          setCurrentUserProfile(profile);
         }
+      } catch (err) {
+        console.error("Error loading user profile:", err);
       }
     };
     
@@ -131,7 +81,7 @@ const Leaderboard = () => {
   }, [profiles, user]);
   
   // Function to scroll to user position
-  const scrollToCurrentUser = useCallback(() => {
+  const scrollToCurrentUser = () => {
     if (!user) {
       toast({
         title: "Usuario no encontrado",
@@ -154,13 +104,11 @@ const Leaderboard = () => {
         description: "No pudimos encontrar tu posición en el ranking actual",
       });
     }
-  }, [user]);
+  };
   
-  // Function to manually refresh data with force flag
+  // Function to manually refresh data
   const handleRefresh = async () => {
     try {
-      // Clear cache first to ensure fresh data
-      leaderboard.clearCache();
       await refetch();
       
       toast({
@@ -171,7 +119,7 @@ const Leaderboard = () => {
       console.error("Error refreshing leaderboard:", err);
       toast({
         title: "Error",
-        description: "No se pudieron actualizar los datos. Intentalo de nuevo.",
+        description: "No se pudieron actualizar los datos",
         variant: "destructive"
       });
     }
@@ -181,7 +129,7 @@ const Leaderboard = () => {
   const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
   
   // Prepare data for monthly and weekly tabs
-  // For a real implementation, these would be fetched separately from the backend
+  // For a real implementation, these would be fetched separately
   const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20));
   const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15));
   
