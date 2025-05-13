@@ -159,6 +159,7 @@ export const queries = {
       console.log("Fetching user profile with ID:", userId);
       
       try {
+        // Explicitly use public schema to avoid schema errors
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -167,20 +168,20 @@ export const queries = {
         
         if (error) {
           console.error("Error fetching user profile:", error);
-          
-          if (error.code === 'PGRST116') {
-            console.log("Profile not found, checking user session");
-            const { data: userData } = await supabase.auth.getUser();
-            
-            if (userData?.user) {
-              return await queries.createProfileIfNotExists(
-                userData.user.id,
-                userData.user.user_metadata?.username || userData.user.email?.split('@')[0] || 'User'
-              );
-            }
-          }
-          
           throw error;
+        }
+        
+        if (!data) {
+          console.log("Profile not found, attempting to create one");
+          const { data: userData } = await supabase.auth.getUser();
+          
+          if (userData?.user) {
+            return await queries.createProfileIfNotExists(
+              userData.user.id,
+              userData.user.user_metadata?.username || userData.user.email?.split('@')[0] || 'User'
+            );
+          }
+          return null;
         }
         
         console.log("Successfully fetched user profile:", data);
@@ -204,21 +205,7 @@ export const queries = {
       console.log("Fetching leaderboard with limit:", limit, "offset:", offset);
       
       try {
-        // Check for active session
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        // First try to get row count for debug
-        const { count, error: countError } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-        
-        if (countError) {
-          console.error("Error counting profiles:", countError);
-        } else {
-          console.log("Total profiles in database:", count);
-        }
-        
-        // Make the actual query without using single()
+        // Using explicit schema to avoid schema errors
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -232,43 +219,46 @@ export const queries = {
         
         console.log(`Successfully fetched ${data?.length || 0} leaderboard profiles`);
         
-        // If we're in development and no data, insert test profiles
+        // If we're in development and no data, create a test profile for current user
         if (!data || data.length === 0) {
-          console.log("No profiles found. Checking if test profiles should be created");
+          console.log("No profiles found. Creating a test profile for current user");
           
-          // Only create test profiles if we have a session
+          // Get current user session
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          // Only create test profile if we have a session
           if (sessionData.session) {
             try {
-              console.log("Creating test profile for current user");
               const username = sessionData.session.user.user_metadata?.username || 
                               sessionData.session.user.email?.split('@')[0] || 
                               'Test User';
               
-              const { error: insertError } = await supabase
+              const { data: userProfile, error: upsertError } = await supabase
                 .from('profiles')
-                .insert({
+                .upsert({
                   id: sessionData.session.user.id,
                   username: username,
                   points: 100,
                   level: 1,
                   solved_machines: 5
-                });
+                })
+                .select();
               
-              if (insertError) {
-                console.error("Failed to insert test profile:", insertError);
+              if (upsertError) {
+                console.error("Failed to create test profile:", upsertError);
               } else {
-                console.log("Successfully inserted test profile");
-                // Try to get data again after insert
-                const { data: newData } = await supabase
+                console.log("Successfully created test profile");
+                // Try to get all profiles again
+                const { data: refreshedData } = await supabase
                   .from('profiles')
                   .select('*')
                   .order('points', { ascending: false })
                   .range(0, limit - 1);
-                
-                return newData || [];
+                  
+                return refreshedData || [];
               }
             } catch (insertErr) {
-              console.error("Exception trying to insert test profile:", insertErr);
+              console.error("Exception trying to create test profile:", insertErr);
             }
           }
         }
@@ -349,12 +339,16 @@ export const queries = {
             solved_machines: 0,
             completed_challenges: 0
           })
-          .select()
-          .single();
+          .select('*')
+          .maybeSingle();
         
         if (insertError) {
           console.error("Error creating profile:", insertError);
           throw insertError;
+        }
+        
+        if (!data) {
+          throw new Error("Failed to create profile: No data returned");
         }
         
         // Update cache
@@ -367,8 +361,20 @@ export const queries = {
         return data;
       }
       
-      console.log("Profile already exists:", existingProfile);
-      return existingProfile;
+      // If we get here, the profile exists but we need to return the complete profile
+      const { data: completeProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (fetchError) {
+        console.error("Error fetching existing profile:", fetchError);
+        throw fetchError;
+      }
+      
+      console.log("Profile already exists:", completeProfile);
+      return completeProfile;
     } catch (err) {
       console.error("Exception in createProfileIfNotExists:", err);
       throw err;

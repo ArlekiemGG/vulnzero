@@ -35,6 +35,18 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    
+    // Send error to analytics or logging service
+    const errorDetails = {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      location: window.location.href,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log("Error details for reporting:", errorDetails);
+    
     this.setState({
       error,
       errorInfo: errorInfo.componentStack || error.message

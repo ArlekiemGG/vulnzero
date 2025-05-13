@@ -20,47 +20,25 @@ import CTFs from "./pages/CTFs";
 import NotFound from "./pages/NotFound";
 import { useState, useEffect } from "react";
 
-// Configure the QueryClient with global settings to prevent infinite loops
+// Configure the QueryClient with strict settings to prevent infinite loops
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1, // Only retry failed queries once
       retryDelay: 2000, // Wait 2 seconds before retrying
-      staleTime: 60000, // Data stays fresh for 1 minute
+      staleTime: 120000, // Data stays fresh for 2 minutes
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       refetchOnReconnect: false, // Don't refetch when reconnecting
+      refetchInterval: false, // Disable automatic refetching
+      refetchIntervalInBackground: false, // Don't refetch in background
+      refetchOnMount: true, // Only fetch when component mounts
     },
+    mutations: {
+      retry: 1, // Only retry failed mutations once
+      retryDelay: 2000, // Wait 2 seconds before retrying
+    }
   },
 });
-
-// Global loading state tracker
-function useGlobalLoadingState() {
-  const [loadingStates, setLoadingStates] = useState(new Map());
-  
-  // Add to loading state
-  const startLoading = (key) => {
-    setLoadingStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(key, true);
-      return newMap;
-    });
-  };
-  
-  // Remove from loading state
-  const finishLoading = (key) => {
-    setLoadingStates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(key);
-      return newMap;
-    });
-  };
-  
-  return {
-    isLoading: loadingStates.size > 0,
-    startLoading,
-    finishLoading
-  };
-}
 
 const App = () => {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -70,6 +48,37 @@ const App = () => {
     if (!isInitialized) {
       setTimeout(() => setIsInitialized(true), 100);
     }
+    
+    // Add safety mechanism to prevent excessive console logs
+    const originalConsoleError = console.error;
+    let errorCount = 0;
+    const maxErrors = 50;
+    const resetTime = 5000;
+    
+    console.error = (...args) => {
+      errorCount++;
+      
+      if (errorCount > maxErrors) {
+        // Only log every 10th error to prevent console flooding
+        if (errorCount % 10 === 0) {
+          originalConsoleError(`Suppressing excessive errors (${errorCount} so far)...`);
+        }
+        
+        // Reset counter after some time
+        setTimeout(() => {
+          errorCount = 0;
+        }, resetTime);
+        
+        return;
+      }
+      
+      originalConsoleError(...args);
+    };
+    
+    // Clean up
+    return () => {
+      console.error = originalConsoleError;
+    };
   }, [isInitialized]);
 
   return (
