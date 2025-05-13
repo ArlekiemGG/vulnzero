@@ -157,6 +157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      machine_hints: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          level: number
+          machine_id: string
+          point_cost: number
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          level: number
+          machine_id: string
+          point_cost?: number
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          level?: number
+          machine_id?: string
+          point_cost?: number
+          title?: string
+        }
+        Relationships: []
+      }
       machine_sessions: {
         Row: {
           connection_info: Json | null
@@ -468,6 +498,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_hints: {
+        Row: {
+          hint_level: number
+          id: string
+          machine_id: string
+          points_spent: number
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          hint_level: number
+          id?: string
+          machine_id: string
+          points_spent: number
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          hint_level?: number
+          id?: string
+          machine_id?: string
+          points_spent?: number
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_lesson_progress: {
         Row: {

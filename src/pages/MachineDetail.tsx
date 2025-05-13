@@ -22,6 +22,8 @@ import MachineHints from '@/components/machines/MachineHints';
 import { MachineService, MachineDetails } from '@/components/machines/MachineService';
 import { MachineSessionService } from '@/components/machines/MachineSessionService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/lib/supabase';
+import { TaskHintService } from '@/components/machines/TaskHintService';
 
 const MachineDetail = () => {
   const { machineId } = useParams<{ machineId: string }>();
@@ -50,7 +52,10 @@ const MachineDetail = () => {
     solvedMachines: 0,
     completedChallenges: 0,
   });
-  
+  const [machineHints, setMachineHints] = useState<MachineHint[]>([]);
+  const [userPoints, setUserPoints] = useState<number>(0);
+  const [loadingHints, setLoadingHints] = useState<boolean>(true);
+
   // Fetch machine and user progress data
   useEffect(() => {
     const fetchData = async () => {
@@ -136,6 +141,43 @@ const MachineDetail = () => {
     };
     
     fetchData();
+  }, [machineId, user, toast]);
+
+  // Add this new hook to fetch hints and user points
+  useEffect(() => {
+    const fetchHintsData = async () => {
+      if (!machineId || !user) return;
+      
+      try {
+        setLoadingHints(true);
+        
+        // Fetch user profile to get current points
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('points')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileData) {
+          setUserPoints(profileData.points || 0);
+        }
+        
+        // Fetch hints for this machine
+        const hints = await TaskHintService.getHints(user.id, machineId);
+        setMachineHints(hints);
+      } catch (error) {
+        console.error('Error loading hints:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las pistas para esta máquina.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingHints(false);
+      }
+    };
+    
+    fetchHintsData();
   }, [machineId, user, toast]);
 
   const handleConnectToggle = () => {
@@ -434,35 +476,44 @@ const MachineDetail = () => {
     }
   };
 
-  const handleUnlockHint = async (hintId: number) => {
-    if (!user || !machine) return;
+  const handleUnlockHint = async (hintId: number, pointCost: number): Promise<boolean> => {
+    if (!user || !machineId) return false;
     
     try {
-      const result = await MachineService.unlockHint(user.id, machine.id, hintId);
+      // Find the hint by ID
+      const hint = machineHints.find(h => h.id === hintId);
+      
+      if (!hint) {
+        toast({
+          title: "Error",
+          description: "Pista no encontrada.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      const result = await TaskHintService.unlockHint(user.id, machineId, hint.level, pointCost);
       
       if (result.success) {
-        // Update the hints in the machine object
-        setMachine(prev => {
-          if (!prev || !prev.hints) return prev;
-          
-          const updatedHints = prev.hints.map(hint => 
-            hint.id === hintId ? { ...hint, locked: false } : hint
-          );
-          
-          return { ...prev, hints: updatedHints };
-        });
+        // Update the hints state to show the hint as unlocked
+        setMachineHints(prevHints => 
+          prevHints.map(h => 
+            h.id === hintId ? { ...h, locked: false } : h
+          )
+        );
         
-        toast({
-          title: "Pista desbloqueada",
-          description: "Has desbloqueado una nueva pista por 50 puntos.",
-          variant: "success"
-        });
+        // Update user points
+        setUserPoints(prev => prev - pointCost);
+        
+        return true;
       } else {
         toast({
           title: "Error",
           description: result.error || "No se pudo desbloquear la pista.",
           variant: "destructive"
         });
+        
+        return false;
       }
     } catch (error) {
       console.error('Error unlocking hint:', error);
@@ -471,6 +522,8 @@ const MachineDetail = () => {
         description: "Ha ocurrido un error al desbloquear la pista.",
         variant: "destructive"
       });
+      
+      return false;
     }
   };
 
@@ -833,9 +886,10 @@ const MachineDetail = () => {
                 />
                 
                 <MachineHints 
-                  hints={machine.hints || []} 
+                  hints={machineHints}
                   onUnlockHint={handleUnlockHint}
-                  isLoading={loading}
+                  isLoading={loadingHints}
+                  userPoints={userPoints}
                 />
                 
                 <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
