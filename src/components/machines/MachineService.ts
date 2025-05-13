@@ -198,16 +198,19 @@ export const MachineService = {
       const isCorrect = flag.toLowerCase().includes('flag');
       
       if (isCorrect) {
+        // Fix: Store a reference to this MachineService object
+        const machineService = MachineService;
+        
         // Actualizar las tareas completadas según el tipo de flag
         const taskId = flagType === 'user' ? 3 : 5; // Tarea 3 = flag de usuario, Tarea 5 = flag de root
         
         // Si es root flag, también marcamos la tarea 4 (escalar privilegios) como completada
         if (flagType === 'root') {
-          await this.completeTask(userId, machineId, 4);
+          await machineService.completeTask(userId, machineId, 4);
         }
         
         // Completar la tarea correspondiente a la flag
-        await this.completeTask(userId, machineId, taskId);
+        await machineService.completeTask(userId, machineId, taskId);
         
         return { 
           success: true, 
