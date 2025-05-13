@@ -18,6 +18,12 @@ export const MachineService = {
 
   // Get a specific machine by ID
   getMachine: (id: string): MachineDetails | null => {
+    // Verificar que el ID no sea nulo o indefinido
+    if (!id) {
+      console.error("ID de máquina no proporcionado");
+      return null;
+    }
+    
     // Make sure ID is a string and in the correct format
     const machineId = String(id).trim();
     console.log("Looking for machine with ID:", machineId);
