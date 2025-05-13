@@ -15,8 +15,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [redirected, setRedirected] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
   
-  // Change: Use useRef instead of useState for timeout
-  const authCheckTimeoutRef = useRef<number | null>(null);
+  // Use useRef instead of useState for timeout
+  const authCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Anti-infinite loop protection
   useEffect(() => {
@@ -49,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       console.error("Potential infinite loading loop detected in ProtectedRoute");
       
       // Force break the potential loop after 3 seconds
-      authCheckTimeoutRef.current = window.setTimeout(() => {
+      authCheckTimeoutRef.current = setTimeout(() => {
         if (loading) {
           toast({
             title: "Problema detectado",
@@ -68,10 +68,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [showLoading, setShowLoading] = useState(false);
   
   useEffect(() => {
-    let timer: number;
+    let timer: NodeJS.Timeout;
     if (loading) {
       // Only show loading indicator after 300ms to prevent flashing
-      timer = window.setTimeout(() => setShowLoading(true), 300);
+      timer = setTimeout(() => setShowLoading(true), 300);
     } else {
       setShowLoading(false);
     }
