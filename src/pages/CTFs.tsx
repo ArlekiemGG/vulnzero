@@ -14,13 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 
-// Type for user stats
+// Type for user stats - making sure it aligns with what Sidebar expects
 interface UserStats {
   level: number;
   points: number;
   pointsToNextLevel: number;
   progress: number;
-  rank?: number;
+  rank: number; // Changed to required to match what Sidebar expects
   solvedMachines: number;
   completedChallenges: number;
 }
@@ -153,6 +153,7 @@ const CTFs = () => {
     points: 0,
     pointsToNextLevel: 100,
     progress: 0,
+    rank: 0, // Initialize with a default value
     solvedMachines: 0,
     completedChallenges: 0,
   });
@@ -187,7 +188,7 @@ const CTFs = () => {
             points: profile.points || 0,
             pointsToNextLevel: nextLevelPoints - profile.points,
             progress: progressToNextLevel,
-            rank: profile.rank,
+            rank: profile.rank || 0, // Provide default value if rank is null
             solvedMachines: profile.solved_machines || 0,
             completedChallenges: profile.completed_challenges || 0,
           });
