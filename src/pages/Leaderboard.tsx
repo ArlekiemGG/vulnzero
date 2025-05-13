@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -17,11 +18,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Función para obtener el ranking desde Supabase - usando async/await con error handling robusto
+// Función para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
   try {
-    // Importante: Usamos 'from' sin especificar un schema porque Supabase
-    // debería usar el schema por defecto configurado en el proyecto
+    // Especificar explícitamente el esquema 'public'
     const { data, error } = await supabase
       .from('profiles')
       .select('*')

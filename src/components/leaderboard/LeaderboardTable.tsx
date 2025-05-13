@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Trophy, 
@@ -117,7 +116,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     );
   }
 
-  if (users.length === 0) {
+  if (!users || users.length === 0) {
     return (
       <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
         <div className="p-8 text-center">
