@@ -62,6 +62,7 @@ export const MachineService = {
     // Add additional details that might be needed for the machine detail page
     return {
       ...machine,
+      solvedBy: machine.solvedBy || 0, // Ensure solvedBy has a default value
       ipAddress: '10.10.10.' + Math.floor(Math.random() * 254 + 1),
       creator: 'VulnZero Team',
       releaseDate: '2025-01-15',
@@ -188,11 +189,22 @@ export const MachineService = {
         // If it's the root flag, increment the user's solved machines count
         if (flagType === 'root') {
           try {
-            // Update the profile directly to increment solved_machines
-            await supabase
+            // Get the current profile data
+            const { data: profile } = await supabase
               .from('profiles')
-              .update({ solved_machines: supabase.rpc('solved_machines') + 1 })
-              .eq('id', userId);
+              .select('solved_machines')
+              .eq('id', userId)
+              .single();
+            
+            if (profile) {
+              // Update with incremented value
+              await supabase
+                .from('profiles')
+                .update({ 
+                  solved_machines: (profile.solved_machines || 0) + 1 
+                })
+                .eq('id', userId);
+            }
           } catch (err) {
             console.error('Error updating solved machines count:', err);
           }

@@ -78,9 +78,9 @@ const MachineDetail = () => {
           // Update the tasks with completed status based on user progress
           if (machineData && machineData.tasks) {
             // Convert machine tasks to MachineTask format for the component
-            const updatedTasks: MachineTask[] = machineData.tasks.map(task => ({
+            const updatedTasks = machineData.tasks.map(task => ({
               id: task.id,
-              title: task.name,
+              title: task.name, // Map 'name' to 'title' for MachineTask interface
               description: task.description,
               completed: derivedCompletedTasks.includes(task.id)
             }));
