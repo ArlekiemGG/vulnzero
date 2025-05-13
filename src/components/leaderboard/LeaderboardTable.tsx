@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Trophy, 
@@ -120,7 +121,10 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     return (
       <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
         <div className="p-8 text-center">
-          <p className="text-gray-400">No hay datos disponibles para este período</p>
+          <p className="text-gray-400 mb-2">No hay datos disponibles para este período</p>
+          <p className="text-xs text-gray-500">
+            Los datos aparecerán automáticamente cuando haya usuarios en el sistema.
+          </p>
         </div>
       </div>
     );

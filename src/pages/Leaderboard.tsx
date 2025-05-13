@@ -15,9 +15,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy } from 'lucide-react';
+import { Trophy, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase, queries } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Función optimizada para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
@@ -25,7 +26,7 @@ const fetchProfiles = async () => {
     console.log("Fetching profiles from Supabase...");
     const data = await queries.getLeaderboard();
     
-    console.log("Successfully fetched profiles:", data);
+    console.log("Fetched profiles count:", data.length);
     return data || [];
   } catch (err) {
     console.error("Exception fetching profiles:", err);
@@ -74,6 +75,7 @@ const Leaderboard = () => {
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
+  const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
   
   // Asegurarnos de que el usuario tenga un perfil
   useEffect(() => {
@@ -84,10 +86,15 @@ const Leaderboard = () => {
         // Extraemos el username del user metadata si está disponible
         const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
         
-        await ensureUserProfile(user.id, username);
-        console.log("User profile setup complete");
+        const profile = await ensureUserProfile(user.id, username);
+        console.log("User profile setup complete:", profile);
+        
+        if (profile) {
+          setCurrentUserProfile(profile);
+        }
       } catch (err) {
         console.error("Error setting up user profile:", err);
+        setDiagnosticInfo(`Error al configurar perfil: ${(err as Error).message}`);
       }
     };
     
@@ -99,11 +106,15 @@ const Leaderboard = () => {
     data: profiles = [], 
     isLoading,
     error,
-    refetch 
+    refetch,
+    isError,
+    failureCount,
+    isRefetching
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: fetchProfiles,
-    retry: 3,
+    retry: 5,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
     refetchOnWindowFocus: false
   });
   
@@ -114,7 +125,17 @@ const Leaderboard = () => {
       
       try {
         const profile = await fetchCurrentUserProfile(user.id);
-        setCurrentUserProfile(profile);
+        if (profile) {
+          setCurrentUserProfile(profile);
+          console.log("Current user profile loaded successfully:", profile);
+        } else {
+          console.log("No profile found for current user, attempting to create");
+          const newProfile = await ensureUserProfile(
+            user.id, 
+            user.user_metadata?.username || user.email?.split('@')[0] || 'User'
+          );
+          setCurrentUserProfile(newProfile);
+        }
       } catch (err) {
         console.error("Error fetching current user profile:", err);
         toast({
@@ -132,16 +153,21 @@ const Leaderboard = () => {
   useEffect(() => {
     if (error) {
       console.error("Leaderboard error:", error);
+      setDiagnosticInfo(`Error: ${(error as Error).message}`);
+      
       toast({
         title: "Error al cargar el leaderboard",
         description: (error as Error).message,
         variant: "destructive"
       });
+    } else {
+      setDiagnosticInfo(null);
     }
   }, [error]);
   
   // Convertir perfiles de Supabase en formato LeaderboardUser y marcar el usuario actual
   useEffect(() => {
+    console.log("Processing profiles for leaderboard display:", profiles);
     if (profiles && profiles.length > 0) {
       const mappedUsers: LeaderboardUser[] = profiles.map((profile: any, index: number) => ({
         id: profile.id,
@@ -166,8 +192,20 @@ const Leaderboard = () => {
     } else {
       setLeaderboardUsers([]);
       console.log("No leaderboard data available to map");
+      
+      // Si no hay datos pero hay un usuario logueado, intentamos crear su perfil
+      if (user && !isLoading && !isRefetching) {
+        console.log("No leaderboard data but user is logged in, ensuring profile exists");
+        ensureUserProfile(
+          user.id, 
+          user.user_metadata?.username || user.email?.split('@')[0] || 'User'
+        ).then(() => {
+          // Recargamos después de crear el perfil
+          setTimeout(() => refetch(), 1000);
+        });
+      }
     }
-  }, [profiles, user]);
+  }, [profiles, user, isLoading, isRefetching, refetch]);
   
   // Función para scrollear a la posición del usuario
   const scrollToCurrentUser = () => {
@@ -194,9 +232,24 @@ const Leaderboard = () => {
   };
   
   // Función para forzar la recarga de datos
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     console.log("Manually refreshing leaderboard data...");
+    
+    // Si hay usuario pero sin perfil, intentar crear uno primero
+    if (user && !currentUserProfile) {
+      try {
+        await ensureUserProfile(
+          user.id, 
+          user.user_metadata?.username || user.email?.split('@')[0] || 'User'
+        );
+      } catch (err) {
+        console.error("Error ensuring profile exists during refresh:", err);
+      }
+    }
+    
+    // Refrescar los datos
     refetch();
+    
     toast({
       title: "Actualizando leaderboard",
       description: "Obteniendo los datos más recientes...",
@@ -208,14 +261,31 @@ const Leaderboard = () => {
     console.log(`Current leaderboard has ${leaderboardUsers.length} users`);
     
     // Si está vacío, mostramos información sobre la sesión actual
-    if (leaderboardUsers.length === 0) {
+    if (leaderboardUsers.length === 0 && !isLoading) {
       const checkSession = async () => {
         const { data } = await supabase.auth.getSession();
         console.log("Current session when leaderboard is empty:", data.session);
+        
+        if (data.session && data.session.user) {
+          // Intentamos crear un perfil ya que el leaderboard está vacío
+          try {
+            console.log("Creating profile for current user since leaderboard is empty");
+            await queries.createProfileIfNotExists(
+              data.session.user.id,
+              data.session.user.user_metadata?.username || 
+              data.session.user.email?.split('@')[0] || 
+              'User'
+            );
+            // Recargamos después de crear el perfil
+            setTimeout(() => refetch(), 1000);
+          } catch (err) {
+            console.error("Error creating profile for empty leaderboard:", err);
+          }
+        }
       };
       checkSession();
     }
-  }, [leaderboardUsers]);
+  }, [leaderboardUsers.length, isLoading, refetch]);
   
   // Obtenemos los top 3 para el showcase
   const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
@@ -286,13 +356,35 @@ const Leaderboard = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-cybersec-electricblue text-cybersec-electricblue"
+                  className="border-cybersec-electricblue text-cybersec-electricblue flex items-center gap-2"
                   onClick={handleRefresh}
+                  disabled={isRefetching}
                 >
-                  Actualizar datos
+                  <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                  {isRefetching ? 'Actualizando...' : 'Actualizar datos'}
                 </Button>
               </div>
             </header>
+
+            {diagnosticInfo && (
+              <Alert className="mb-4 bg-red-900/20 border-red-900">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Información de diagnóstico</AlertTitle>
+                <AlertDescription className="font-mono text-sm">
+                  {diagnosticInfo}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isError && failureCount > 3 && (
+              <Alert className="mb-4 bg-amber-900/20 border-amber-900">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Problemas técnicos</AlertTitle>
+                <AlertDescription>
+                  Estamos experimentando problemas para cargar el leaderboard. Por favor, intenta refrescar la página o vuelve más tarde.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="mb-8">
               <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
@@ -356,7 +448,24 @@ const Leaderboard = () => {
                       ))
                     ) : (
                       <div className="col-span-3 text-center py-8 text-gray-400">
-                        No hay datos disponibles en el leaderboard
+                        {isLoading ? (
+                          <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cybersec-neongreen mb-4"></div>
+                            <p>Cargando los mejores hackers...</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="mb-4">No hay datos disponibles en el leaderboard</p>
+                            <Button 
+                              variant="outline" 
+                              className="border-cybersec-neongreen text-cybersec-neongreen"
+                              onClick={handleRefresh}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Intentar cargar de nuevo
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -381,7 +490,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={leaderboardUsers} 
                   currentPeriod="Global" 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
               
@@ -389,7 +498,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={monthlyLeaderboardUsers} 
                   currentPeriod={`${new Date().toLocaleString('es', { month: 'long' })} ${new Date().getFullYear()}`} 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
               
@@ -397,7 +506,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={weeklyLeaderboardUsers}
                   currentPeriod={`Semana ${Math.ceil(new Date().getDate() / 7)} - ${new Date().toLocaleString('es', { month: 'long' })}`} 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
             </Tabs>
