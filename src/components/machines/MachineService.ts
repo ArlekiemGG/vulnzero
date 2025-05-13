@@ -20,6 +20,9 @@ export const MachineService = {
   getMachine: (id: string): MachineDetails | null => {
     // Manejar correctamente los IDs numéricos desde la URL
     const machineId = id.toString();
+    console.log("Looking for machine with ID:", machineId);
+    console.log("Available machine IDs:", machines.map(m => m.id));
+    
     const machine = machines.find(machine => machine.id === machineId);
     
     if (!machine) {
