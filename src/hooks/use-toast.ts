@@ -2,7 +2,7 @@
 import * as React from "react"
 
 // Define ToastActionElement type
-type ToastActionElement = React.ReactElement<{
+export type ToastActionElement = React.ReactElement<{
   className: string
   altText?: string
   onClick: () => void
