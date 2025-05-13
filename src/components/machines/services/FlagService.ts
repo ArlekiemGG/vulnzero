@@ -31,9 +31,9 @@ export const FlagService = {
       }
       
       // Check if user has already submitted this flag
-      const { data: progressData } = await supabase
+      const { data: progressData, error } = await supabase
         .from('user_machine_progress')
-        .select('flags, progress')
+        .select('*')
         .eq('user_id', userId)
         .eq('machine_id', machineId)
         .single();
@@ -42,7 +42,7 @@ export const FlagService = {
       const pointsForFlag = flagType === 'user' ? 50 : 100;
       const flagMessage = flagType === 'user' ? 'user.txt' : 'root.txt';
       
-      if (progressData) {
+      if (progressData && !error) {
         const existingFlags = progressData.flags || [];
         
         // Check if flag was already submitted

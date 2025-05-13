@@ -558,6 +558,42 @@ export type Database = {
           },
         ]
       }
+      user_machine_progress: {
+        Row: {
+          completed_at: string | null
+          completed_tasks: number[] | null
+          flags: string[] | null
+          id: string
+          last_activity_at: string
+          machine_id: string
+          progress: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_tasks?: number[] | null
+          flags?: string[] | null
+          id?: string
+          last_activity_at?: string
+          machine_id: string
+          progress?: number
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_tasks?: number[] | null
+          flags?: string[] | null
+          id?: string
+          last_activity_at?: string
+          machine_id?: string
+          progress?: number
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

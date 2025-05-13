@@ -8,7 +8,7 @@ export const ProgressService = {
   getUserMachineProgress: async (userId: string, machineId: string): Promise<MachineProgress> => {
     try {
       // Check if the user has progress record for this machine in the database
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData, error } = await supabase
         .from('user_machine_progress')
         .select('*')
         .eq('user_id', userId)
@@ -16,7 +16,7 @@ export const ProgressService = {
         .single();
       
       // If there's existing progress data, use it
-      if (progressData && !progressError) {
+      if (progressData && !error) {
         return {
           machineId,
           userId,
@@ -24,7 +24,8 @@ export const ProgressService = {
           flags: progressData.flags || [],
           startedAt: progressData.started_at,
           lastActivityAt: progressData.last_activity_at,
-          completedAt: progressData.completed_at
+          completedAt: progressData.completed_at,
+          completedTasks: progressData.completed_tasks || []
         };
       }
       
@@ -182,6 +183,7 @@ const saveUserMachineProgress = async (
           flags: progressData.flags,
           last_activity_at: progressData.lastActivityAt,
           completed_at: progressData.completedAt,
+          completed_tasks: progressData.completedTasks || existingProgress.completed_tasks
         })
         .eq('user_id', userId)
         .eq('machine_id', machineId);
@@ -199,6 +201,7 @@ const saveUserMachineProgress = async (
           started_at: progressData.startedAt || new Date().toISOString(),
           last_activity_at: progressData.lastActivityAt || new Date().toISOString(),
           completed_at: progressData.completedAt,
+          completed_tasks: progressData.completedTasks || []
         });
       
       if (error) throw error;

@@ -1,7 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { MachineHint } from '@/pages/MachineDetail'; // Importar la interfaz MachineHint
+
+// Define la interfaz MachineHint aquí para solucionar el error
+export interface MachineHint {
+  id: number;
+  title: string;
+  content: string;
+  level: number;
+  pointCost: number;
+  locked: boolean;
+}
 
 export const TaskHintService = {
   // Complete a specific task in a machine
@@ -16,14 +25,14 @@ export const TaskHintService = {
       });
       
       // Update the user's machine progress to reflect completed tasks
-      const { data: progressData } = await supabase
+      const { data: progressData, error } = await supabase
         .from('user_machine_progress')
-        .select('progress, completed_tasks')
+        .select('*')
         .eq('user_id', userId)
         .eq('machine_id', machineId)
         .single();
       
-      if (progressData) {
+      if (progressData && !error) {
         let completedTasks = progressData.completed_tasks || [];
         if (!completedTasks.includes(taskId)) {
           completedTasks.push(taskId);
