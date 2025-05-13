@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface LeaderboardUser {
   id: string;
@@ -83,12 +84,35 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   if (isLoading) {
     return (
       <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
-        <div className="p-8 text-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-40 bg-cybersec-darkgray/50 rounded mb-4"></div>
-            <div className="h-4 w-60 bg-cybersec-darkgray/30 rounded"></div>
-          </div>
-        </div>
+        <Table>
+          <TableHeader className="bg-cybersec-darkgray">
+            <TableRow>
+              <TableHead className="w-12 text-cybersec-neongreen">Rank</TableHead>
+              <TableHead className="text-cybersec-neongreen">Usuario</TableHead>
+              <TableHead className="text-cybersec-neongreen">Nivel</TableHead>
+              <TableHead className="text-right text-cybersec-neongreen">Máquinas</TableHead>
+              <TableHead className="text-right text-cybersec-neongreen">Puntos</TableHead>
+              <TableHead className="text-right text-cybersec-neongreen w-24">Cambio</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-6 w-6" /></TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </TableCell>
+                <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-6 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
@@ -120,6 +144,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
           {users.map((user) => (
             <TableRow 
               key={user.id}
+              id={user.isCurrentUser ? 'current-user-row' : undefined}
               className={
                 user.isCurrentUser 
                   ? "bg-cybersec-neongreen/10 hover:bg-cybersec-neongreen/20" 

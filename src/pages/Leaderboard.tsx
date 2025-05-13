@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -112,14 +111,10 @@ const Leaderboard = () => {
   // Preparar datos para la tabla
   const leaderboardUsers = mapProfilesToLeaderboardUsers(profiles);
   
-  // Simular datos para pestañas mensuales y semanales - En una app real, estos vendrían de la base de datos
-  // con datos filtrados por periodo
-  const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20))
-    .map(user => ({...user, points: Math.round(user.points * 0.3)}));
-    
-  const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15))
-    .map(user => ({...user, points: Math.round(user.points * 0.1)}));
-    
+  // Preparar datos para pestañas mensuales y semanales basados en los datos reales
+  const monthlyLeaderboardUsers = mapProfilesToLeaderboardUsers(profiles.slice(0, Math.min(profiles.length, 20)));
+  const weeklyLeaderboardUsers = mapProfilesToLeaderboardUsers(profiles.slice(0, Math.min(profiles.length, 15)));
+  
   // Función para scrollear a la posición del usuario
   const scrollToCurrentUser = () => {
     const userRow = document.getElementById('current-user-row');
