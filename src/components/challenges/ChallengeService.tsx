@@ -60,6 +60,58 @@ export const ChallengeService = {
   },
   
   /**
+   * Gets the active weekly challenge with user progress
+   */
+  getActiveWeeklyChallenge: async (userId: string) => {
+    try {
+      // Get all challenges
+      const challenges = await ChallengeService.getChallenges(userId);
+      
+      // Find the first active challenge
+      const activeChallenge = challenges.find(c => c.isActive && !c.isCompleted);
+      
+      if (!activeChallenge) return null;
+      
+      // Get user profile to check their progress on solved machines
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('solved_machines')
+        .eq('id', userId)
+        .single();
+      
+      // Get user's recent machine completions (last 7 days)
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const { data: recentActivities } = await supabase
+        .from('user_activities')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('type', 'machine_completed')
+        .gte('created_at', oneWeekAgo.toISOString())
+        .order('created_at', { ascending: false });
+      
+      // Calculate progress based on recent activities
+      const weeklyProgress = recentActivities ? recentActivities.length : 0;
+      
+      // For this example, we assume the challenge requires completing 3 machines
+      const challengeTotal = 3;
+      
+      return {
+        id: activeChallenge.id,
+        title: activeChallenge.title,
+        progress: weeklyProgress,
+        total: challengeTotal,
+        points: activeChallenge.points,
+        isCompleted: weeklyProgress >= challengeTotal
+      };
+    } catch (error) {
+      console.error('Error getting active weekly challenge:', error);
+      return null;
+    }
+  },
+  
+  /**
    * Marks a challenge as completed for a user
    */
   completeChallenge: async (userId: string, challenge: Challenge): Promise<boolean> => {

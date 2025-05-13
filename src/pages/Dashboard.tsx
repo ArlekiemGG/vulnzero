@@ -117,17 +117,11 @@ const Dashboard = () => {
         console.log("Loaded badges:", userBadges);
         setBadges(userBadges);
         
-        // Load active challenge
-        const challenges = await ChallengeService.getChallenges();
-        const activeChallenge = challenges.find(c => c.isActive && !c.isCompleted);
-        if (activeChallenge) {
-          setActiveChallenge({
-            id: activeChallenge.id,
-            title: activeChallenge.title,
-            progress: 1, // Mock progress for now
-            total: 3,    // Mock total for now
-            points: activeChallenge.points
-          });
+        // Load active weekly challenge with real user progress
+        const weeklyChallenge = await ChallengeService.getActiveWeeklyChallenge(user.id);
+        if (weeklyChallenge) {
+          console.log("Loaded weekly challenge:", weeklyChallenge);
+          setActiveChallenge(weeklyChallenge);
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -359,7 +353,7 @@ const Dashboard = () => {
                       </>
                     ) : (
                       <p className="text-sm mb-3">
-                        Resuelve 3 máquinas Linux esta semana y gana puntos extra e insignias exclusivas.
+                        No hay desafíos semanales activos en este momento. ¡Vuelve pronto para ver nuevos desafíos!
                       </p>
                     )}
                     <Button className="w-full mt-4 bg-cybersec-darkgray border border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue hover:text-cybersec-black" asChild>

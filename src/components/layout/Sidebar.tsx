@@ -37,15 +37,13 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
       if (!user) return;
       
       try {
-        const challenges = await ChallengeService.getChallenges();
-        const activeChallenge = challenges.find(c => c.isActive && !c.isCompleted);
+        const activeChallenge = await ChallengeService.getActiveWeeklyChallenge(user.id);
         
         if (activeChallenge) {
-          // En una implementación real, también obtendríamos el progreso del usuario
           setWeeklyChallenge({
             title: activeChallenge.title,
-            progress: 1, // Mock progress for now
-            total: 3     // Mock total for now
+            progress: activeChallenge.progress,
+            total: activeChallenge.total
           });
         }
       } catch (error) {
