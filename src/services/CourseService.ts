@@ -138,7 +138,7 @@ export const CourseService = {
     // Verificar si ya existe un registro de progreso
     const { data: existingProgress } = await supabase
       .from('user_course_progress')
-      .select('id')
+      .select('*') // Changed from just 'id' to '*' to get all fields including last_lesson_id
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
@@ -247,31 +247,43 @@ export const CourseService = {
 
     const courseId = sectionData.course_id;
 
-    // Obtener total de lecciones en el curso mediante una subconsulta
-    const courseSectionsQuery = supabase
+    // Obtener todas las secciones del curso
+    const { data: sectionsData, error: sectionsError } = await supabase
       .from('course_sections')
       .select('id')
       .eq('course_id', courseId);
+      
+    if (sectionsError) throw sectionsError;
 
+    // Extract section IDs into an array
+    const sectionIds = sectionsData.map(section => section.id);
+
+    // Get total lessons count using the section IDs array
     const { count: totalLessons, error: countError } = await supabase
       .from('course_lessons')
       .select('*', { count: 'exact', head: true })
-      .in('section_id', courseSectionsQuery);
+      .in('section_id', sectionIds);
     
     if (countError) throw countError;
 
-    // Obtener lecciones completadas por el usuario mediante una subconsulta
-    const courseLessonsQuery = supabase
+    // Get lessons from course sections to form an array of lesson IDs
+    const { data: lessonsData, error: lessonsError } = await supabase
       .from('course_lessons')
       .select('id')
-      .in('section_id', courseSectionsQuery);
+      .in('section_id', sectionIds);
+      
+    if (lessonsError) throw lessonsError;
+    
+    // Extract lesson IDs into an array
+    const lessonIds = lessonsData.map(lesson => lesson.id);
 
+    // Get completed lessons count using the lesson IDs array
     const { count: completedLessons, error: completedError } = await supabase
       .from('user_lesson_progress')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('completed', true)
-      .in('lesson_id', courseLessonsQuery);
+      .in('lesson_id', lessonIds);
     
     if (completedError) throw completedError;
 
@@ -294,6 +306,8 @@ export const CourseService = {
       .eq('completed', true);
     
     if (error) throw error;
+    
+    // Extract course data from the result and return as Course[]
     return data && data.length > 0 
       ? data.map(item => ((item.courses || {}) as unknown) as Course) 
       : [];
@@ -314,6 +328,7 @@ export const CourseService = {
     
     if (error) throw error;
     
+    // Extract course data with progress and return
     return data && data.length > 0
       ? data.map(item => ({
           ...((item.courses || {}) as unknown as Course),
