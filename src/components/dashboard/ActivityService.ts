@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/client';
 
@@ -17,6 +18,7 @@ export interface UserActivity {
 export const ActivityService = {
   /**
    * Gets recent activity for the current user
+   * Only retrieves activities related to completed gamified tasks
    */
   getRecentActivity: async (userId: string, limit = 5): Promise<UserActivity[]> => {
     try {
@@ -24,6 +26,10 @@ export const ActivityService = {
         .from('user_activities')
         .select('*')
         .eq('user_id', userId)
+        // Only get activities with points (gamified tasks)
+        .gt('points', 0)
+        // Only get activities of types that represent completed tasks
+        .in('type', ['machine_completed', 'badge_earned', 'challenge_completed', 'level_up'])
         .order('created_at', { ascending: false })
         .limit(limit);
       
