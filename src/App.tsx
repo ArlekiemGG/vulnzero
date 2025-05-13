@@ -11,6 +11,8 @@ import Challenges from './pages/Challenges';
 import CTFs from './pages/CTFs';
 import Labs from './pages/Labs';
 import Tutorials from './pages/Tutorials';
+import CourseDetails from './pages/CourseDetails';
+import LessonViewer from './pages/LessonViewer';
 import Leaderboard from './pages/Leaderboard';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
@@ -82,11 +84,9 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              <Route path="/tutorials" element={
-                <ProtectedRoute>
-                  <Tutorials />
-                </ProtectedRoute>
-              } />
+              <Route path="/tutorials" element={<Tutorials />} />
+              <Route path="/tutorials/:courseId" element={<CourseDetails />} />
+              <Route path="/tutorials/:courseId/lesson/:lessonId" element={<LessonViewer />} />
               
               <Route path="/leaderboard" element={<Leaderboard />} />
               
