@@ -64,7 +64,7 @@ const Auth = () => {
             <h1 className="text-3xl font-bold tracking-tight text-cybersec-neongreen">
               <span className="flex items-center justify-center">
                 <Shield className="h-8 w-8 mr-2" />
-                CyberChallenge
+                VulnZero
               </span>
             </h1>
           </Link>
@@ -111,7 +111,7 @@ const Auth = () => {
         </Tabs>
         
         <div className="mt-8 text-center text-gray-500 text-sm">
-          <p>&copy; 2023 CyberChallenge. Todos los derechos reservados.</p>
+          <p>&copy; 2023 VulnZero. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>

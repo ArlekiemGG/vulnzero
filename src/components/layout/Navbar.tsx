@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronDown, Shield, LogOut } from 'lucide-react';
@@ -53,7 +52,7 @@ const Navbar = () => {
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center">
                 <Shield className="h-8 w-8 text-cybersec-neongreen mr-2" />
-                <span className="text-cybersec-neongreen font-bold text-xl">CyberChallenge</span>
+                <span className="text-cybersec-neongreen font-bold text-xl">VulnZero</span>
               </Link>
             </div>
             <div className="hidden md:ml-6 md:flex md:space-x-4">

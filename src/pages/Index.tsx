@@ -15,7 +15,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-cybersec-neongreen sm:text-5xl md:text-6xl">
-              <span className="glitch-text">CyberChallenge</span>
+              <span className="glitch-text">VulnZero</span>
             </h1>
             <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-300 sm:mt-5">
               Aprende ciberseguridad resolviendo máquinas vulnerables en un entorno gamificado
