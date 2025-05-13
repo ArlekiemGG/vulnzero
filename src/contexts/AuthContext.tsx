@@ -210,9 +210,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Continue even if this fails
       }
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Usar el origen completo para redirección
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/dashboard`;
+      console.log("Login redirect URL:", redirectUrl);
+      
+      // Modificamos la llamada para usar opciones de redirección
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email, 
+        password,
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+      
       if (error) throw error;
       
+      // Verificación de correo electrónico
       if (data.user && !data.user.email_confirmed_at) {
         toast({
           title: "Correo no verificado",
@@ -223,8 +237,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Login successful, redirecting to dashboard");
-      // Force page reload for a clean state
-      window.location.href = '/dashboard';
+      // Usamos la URL completa para la redirección
+      window.location.href = `${currentOrigin}/dashboard`;
     } catch (error: any) {
       console.error("Login error:", error);
       toast({

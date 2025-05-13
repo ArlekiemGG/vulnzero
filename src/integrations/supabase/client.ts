@@ -17,7 +17,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     storage: localStorage,
     storageKey: 'sb-auth-token',
-    debug: import.meta.env.DEV // Solo activamos debug en desarrollo
+    debug: true // Activamos siempre debug para mejor diagnóstico
   },
   global: {
     headers: {
