@@ -253,8 +253,7 @@ export const CourseService = {
       .in('section_id', supabase
         .from('course_sections')
         .select('id')
-        .eq('course_id', courseId)
-      );
+        .eq('course_id', courseId))
     
     if (countError) throw countError;
 
@@ -270,9 +269,7 @@ export const CourseService = {
         .in('section_id', supabase
           .from('course_sections')
           .select('id')
-          .eq('course_id', courseId)
-        )
-      );
+          .eq('course_id', courseId)))
     
     if (completedError) throw completedError;
 
@@ -288,7 +285,6 @@ export const CourseService = {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select(`
-        course_id,
         courses:course_id(*)
       `)
       .eq('user_id', userId)
