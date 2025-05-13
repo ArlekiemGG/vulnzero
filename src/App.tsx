@@ -13,6 +13,10 @@ import Machines from "./pages/Machines";
 import MachineDetail from "./pages/MachineDetail";
 import Leaderboard from "./pages/Leaderboard";
 import Challenges from "./pages/Challenges";
+import Tutorials from "./pages/Tutorials";
+import Security from "./pages/Security";
+import Labs from "./pages/Labs";
+import CTFs from "./pages/CTFs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +54,26 @@ const App = () => (
             <Route path="/challenges" element={
               <ProtectedRoute>
                 <Challenges />
+              </ProtectedRoute>
+            } />
+            <Route path="/tutorials" element={
+              <ProtectedRoute>
+                <Tutorials />
+              </ProtectedRoute>
+            } />
+            <Route path="/security" element={
+              <ProtectedRoute>
+                <Security />
+              </ProtectedRoute>
+            } />
+            <Route path="/labs" element={
+              <ProtectedRoute>
+                <Labs />
+              </ProtectedRoute>
+            } />
+            <Route path="/ctfs" element={
+              <ProtectedRoute>
+                <CTFs />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
