@@ -6,8 +6,9 @@ import TaskHintService from './services/TaskHintService';
 import ActivityLogService from './services/ActivityLogService';
 import ProgressService from './services/ProgressService';
 
-export { MachineDetails } from './types/MachineTypes';
-export { MachineProgress } from './types/MachineTypes';
+// Use "export type" for type re-exports when isolatedModules is enabled
+export type { MachineDetails } from './types/MachineTypes';
+export type { MachineProgress } from './types/MachineTypes';
 
 export const MachineService = {
   // Get all available machines
