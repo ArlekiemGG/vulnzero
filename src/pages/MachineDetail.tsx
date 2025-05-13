@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -745,4 +746,30 @@ const MachineDetail = () => {
                   <div className="space-y-3">
                     <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
                       <a href="#" className="flex items-center">
-                        <FileText className
+                        <FileText className="h-4 w-4 mr-2" /> Guía general de pentesting
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
+                      <a href="#" className="flex items-center">
+                        <Database className="h-4 w-4 mr-2" /> Cheatsheet de comandos
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="w-full justify-start text-left border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue/10" asChild>
+                      <a href="#" className="flex items-center">
+                        <LinkIcon className="h-4 w-4 mr-2" /> Foro de discusión
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default MachineDetail;
