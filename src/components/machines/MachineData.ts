@@ -12,6 +12,20 @@ export interface MachineType {
   solvedBy?: number;
   userProgress?: number;
   featured?: boolean;
+  requirements?: string[];
+  skills?: string[];
+  tasks?: Array<{
+    id: number;
+    name: string;
+    description: string;
+    completed: boolean;
+  }>;
+  hints?: Array<{
+    id: number;
+    title: string;
+    content: string;
+    locked: boolean;
+  }>;
 }
 
 // Datos de máquina mapeados para tener IDs consistentes con los tipos de máquinas en el backend
