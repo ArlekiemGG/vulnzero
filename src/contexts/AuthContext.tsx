@@ -113,8 +113,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initAuth();
-
-    // No need to return a cleanup function here since we want the auth subscription to persist
   }, [navigate]);
 
   const value = {

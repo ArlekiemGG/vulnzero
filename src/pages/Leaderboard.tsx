@@ -60,14 +60,14 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
     
     if (error) {
       console.error("Error al cargar perfil de usuario:", error);
-      return null;
+      throw error;
     }
     
     console.log("Successfully fetched user profile:", data);
     return data;
   } catch (err) {
     console.error("Exception fetching current user profile:", err);
-    return null;
+    throw err;
   }
 };
 
@@ -80,7 +80,8 @@ const Leaderboard = () => {
   const { 
     data: profiles = [], 
     isLoading,
-    error 
+    error,
+    refetch 
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: fetchProfiles,
@@ -91,11 +92,11 @@ const Leaderboard = () => {
   // Obtener el perfil del usuario actual
   useEffect(() => {
     const loadCurrentUser = async () => {
+      if (!user) return;
+      
       try {
-        if (user) {
-          const profile = await fetchCurrentUserProfile(user.id);
-          setCurrentUserProfile(profile);
-        }
+        const profile = await fetchCurrentUserProfile(user.id);
+        setCurrentUserProfile(profile);
       } catch (err) {
         console.error("Error fetching current user profile:", err);
         toast({
@@ -109,21 +110,6 @@ const Leaderboard = () => {
     loadCurrentUser();
   }, [user]);
   
-  // Convertir perfiles de Supabase en formato LeaderboardUser
-  const mapProfilesToLeaderboardUsers = (profilesData: any[]): LeaderboardUser[] => {
-    return profilesData.map((profile, index) => ({
-      id: profile.id,
-      rank: index + 1,
-      username: profile.username || 'Usuario',
-      avatar: profile.avatar_url,
-      points: profile.points || 0,
-      level: profile.level || 1,
-      solvedMachines: profile.solved_machines || 0,
-      rankChange: 'same', // Por defecto todos son 'same' ya que no tenemos datos históricos
-      isCurrentUser: currentUserProfile ? profile.id === currentUserProfile.id : false
-    }));
-  };
-  
   // Error handling
   useEffect(() => {
     if (error) {
@@ -134,6 +120,21 @@ const Leaderboard = () => {
       });
     }
   }, [error]);
+  
+  // Convertir perfiles de Supabase en formato LeaderboardUser
+  const mapProfilesToLeaderboardUsers = (profilesData: any[]): LeaderboardUser[] => {
+    return profilesData.map((profile, index) => ({
+      id: profile.id,
+      rank: index + 1,
+      username: profile.username || 'Usuario',
+      avatar: profile.avatar_url,
+      points: profile.points || 0,
+      level: profile.level || 1,
+      solvedMachines: profile.solved_machines || 0,
+      rankChange: 'same',
+      isCurrentUser: currentUserProfile ? profile.id === currentUserProfile.id : false
+    }));
+  };
   
   // Para propósitos de depuración
   console.log("Current profiles data:", profiles);
