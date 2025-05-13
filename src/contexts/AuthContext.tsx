@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -200,7 +199,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast({
           title: "Usuario ya registrado",
           description: "Este correo electrónico ya está registrado. Por favor, inicia sesión.",
-          variant: "warning"
+          variant: "default"
         });
         return;
       }
