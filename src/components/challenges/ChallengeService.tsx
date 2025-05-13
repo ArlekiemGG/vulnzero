@@ -73,13 +73,22 @@ export const ChallengeService = {
       );
       
       if (success) {
-        // Update user profile to increment completed challenges count
-        await supabase
+        // Get current profile
+        const { data: profile } = await supabase
           .from('profiles')
-          .update({ 
-            completed_challenges: supabase.rpc('increment', { x: 1 })
-          })
-          .eq('id', userId);
+          .select('completed_challenges')
+          .eq('id', userId)
+          .single();
+          
+        if (profile) {
+          // Update user profile to increment completed challenges count
+          await supabase
+            .from('profiles')
+            .update({ 
+              completed_challenges: (profile.completed_challenges || 0) + 1
+            })
+            .eq('id', userId);
+        }
       }
       
       return success;
