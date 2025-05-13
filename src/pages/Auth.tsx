@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useSearchParams } from 'react-router-dom';
@@ -49,6 +50,13 @@ const Auth = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Manejador para prevenir cambio de pestaña con la tecla Enter
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevenir el comportamiento por defecto
+    }
+  };
+
   return (
     <div className="min-h-screen bg-cybersec-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -64,7 +72,7 @@ const Auth = () => {
           <p className="text-gray-400 mt-2">Plataforma de aprendizaje en ciberseguridad</p>
         </div>
 
-        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full" onKeyDown={handleKeyDown}>
           <TabsList className="grid w-full grid-cols-3 mb-8 bg-cybersec-darkgray">
             <TabsTrigger value="login" className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen">
               Iniciar Sesión
@@ -137,6 +145,14 @@ const LoginForm = ({
     }
   };
 
+  // Manejador específico para la tecla Enter en el formulario de login
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
   return (
     <Card className="border-cybersec-darkgray bg-cybersec-black shadow-xl">
       <CardHeader>
@@ -175,7 +191,7 @@ const LoginForm = ({
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
