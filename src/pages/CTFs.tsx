@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -370,7 +369,7 @@ const CTFs = () => {
                           <div className="text-sm font-semibold">
                             {hasStarted(ctf.startDate) 
                               ? <span className="text-cybersec-neongreen">En progreso</span>
-                              : <span className="text-cybersec-electricblue">Comienza en {Math.ceil((new Date(ctf.startDate) - new Date()) / (1000 * 60 * 60 * 24))} días</span>}
+                              : <span className="text-cybersec-electricblue">Comienza en {Math.ceil((new Date(ctf.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} días</span>}
                           </div>
                           <Button 
                             className={ctf.registered 
