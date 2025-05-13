@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
@@ -15,7 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { queries } from '@/integrations/supabase/client';
+import { supabase, queries } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { MachineService } from '@/components/machines/MachineService';
 import { MachineProps } from '@/components/machines/MachineCard';
