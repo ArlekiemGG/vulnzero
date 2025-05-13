@@ -18,12 +18,12 @@ export const MachineService = {
 
   // Get a specific machine by ID
   getMachine: (id: string): MachineDetails | null => {
-    // Asegurarnos de que el ID sea una cadena y esté en el formato correcto
+    // Make sure ID is a string and in the correct format
     const machineId = String(id).trim();
     console.log("Looking for machine with ID:", machineId);
     console.log("Available machine IDs:", machines.map(m => m.id));
     
-    // Buscar la máquina usando comparación estricta
+    // Find the machine using strict string comparison
     const machine = machines.find(machine => String(machine.id) === machineId);
     
     if (!machine) {
