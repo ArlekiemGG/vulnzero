@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import MachineCard, { MachineProps } from '@/components/machines/MachineCard';
@@ -15,17 +15,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, Database } from 'lucide-react';
-
-// Mock data para estadísticas de usuario
-const userStats = {
-  level: 7,
-  points: 3450,
-  pointsToNextLevel: 550,
-  progress: 70,
-  rank: 42,
-  solvedMachines: 15,
-  completedChallenges: 8,
-};
+import { useAuth } from '@/contexts/AuthContext';
+import { queries } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 // Mock data para máquinas
 const machines: MachineProps[] = [
@@ -130,9 +122,74 @@ const machines: MachineProps[] = [
 ];
 
 const Machines = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOS, setSelectedOS] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({
+    level: 1,
+    points: 0,
+    pointsToNextLevel: 500,
+    progress: 0,
+    rank: 0,
+    solvedMachines: 0,
+    completedChallenges: 0,
+  });
+  
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const profileData = await queries.getUserProfile(user.id);
+          
+        if (profileData) {
+          console.log("Profile data loaded in Machines:", profileData);
+          
+          // Calculate points to next level (simple: nivel actual * 500)
+          const pointsToNextLevel = profileData.level * 500 - profileData.points;
+          
+          // Calculate progress as percentage
+          const levelProgress = Math.min(
+            Math.round((profileData.points / (profileData.level * 500)) * 100),
+            100
+          );
+          
+          setUserStats({
+            level: profileData.level || 1,
+            points: profileData.points || 0,
+            pointsToNextLevel: pointsToNextLevel,
+            progress: levelProgress,
+            rank: profileData.rank || 0,
+            solvedMachines: profileData.solved_machines || 0,
+            completedChallenges: profileData.completed_challenges || 0,
+          });
+        } else {
+          console.error('No profile data returned');
+          toast({
+            title: "Error al cargar perfil",
+            description: "No se pudieron cargar tus datos de perfil.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error loading profile in Machines:', error);
+        toast({
+          title: "Error al cargar perfil",
+          description: "No se pudieron cargar tus datos de perfil.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, toast]);
   
   // Filtro de máquinas
   const filteredMachines = machines.filter(machine => {
