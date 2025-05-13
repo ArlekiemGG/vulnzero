@@ -175,7 +175,7 @@ const Tutorials = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas las categorías</SelectItem>
+                      <SelectItem value="all">Todas las categorías</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
@@ -193,7 +193,7 @@ const Tutorials = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos los niveles</SelectItem>
+                      <SelectItem value="all">Todos los niveles</SelectItem>
                       {levels.map(level => (
                         <SelectItem key={level} value={level}>{level}</SelectItem>
                       ))}
