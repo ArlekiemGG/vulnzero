@@ -8,6 +8,7 @@ export interface MachineProgress {
   startedAt?: string;
   lastActivityAt?: string;
   completedAt?: string;
+  completedTasks?: number[];
 }
 
 // Interface for extended machine details

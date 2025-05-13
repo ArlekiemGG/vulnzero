@@ -1,3 +1,4 @@
+
 import { machines } from './MachineData';
 import { MachineDetails } from './types/MachineTypes';
 import FlagService from './services/FlagService';
@@ -114,6 +115,9 @@ export const MachineService = {
 
   // Get user progress for a specific machine
   getUserMachineProgress: ProgressService.getUserMachineProgress,
+  
+  // Update user progress for a specific machine
+  updateUserMachineProgress: ProgressService.updateUserMachineProgress,
 
   // Submit a flag for a machine
   submitFlag: FlagService.submitFlag,
