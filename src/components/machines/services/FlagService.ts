@@ -5,21 +5,34 @@ export const FlagService = {
   // Submit a flag for a machine
   submitFlag: async (userId: string, machineId: string, flag: string, flagType: 'user' | 'root'): Promise<{ success: boolean; message: string; points?: number }> => {
     try {
-      // Machine flags validation - In a real app, these would be stored in the database and validated against
-      const expectedFlags: Record<string, Record<string, string>> = {
-        '01': {
-          user: 'flag{th1s_1s_us3r_fl4g}',
-          root: 'flag{r00t_pwn3d_m4ch1n3}'
-        },
-        '02': {
-          user: 'flag{b4s1c_us3r_4cc3ss}',
-          root: 'flag{r00t_sh3ll_g41n3d}'
-        },
-        // Add more machines as needed
-      };
+      // First, try to fetch the expected flag from the database
+      const { data: machineFlags, error: flagsError } = await supabase
+        .from('machine_types')
+        .select(`${flagType === 'user' ? 'user_flag' : 'root_flag'}`)
+        .eq('id', machineId)
+        .single();
       
-      // Get the expected flag for this machine and flag type
-      const expectedFlag = expectedFlags[machineId]?.[flagType];
+      let expectedFlag: string;
+      
+      if (machineFlags && !flagsError) {
+        expectedFlag = flagType === 'user' ? machineFlags.user_flag : machineFlags.root_flag;
+      } else {
+        // Fallback to the current hardcoded system if no flags in database
+        // This would be removed once all machine flags are in the database
+        const expectedFlags: Record<string, Record<string, string>> = {
+          '01': {
+            user: 'flag{th1s_1s_us3r_fl4g}',
+            root: 'flag{r00t_pwn3d_m4ch1n3}'
+          },
+          '02': {
+            user: 'flag{b4s1c_us3r_4cc3ss}',
+            root: 'flag{r00t_sh3ll_g41n3d}'
+          }
+        };
+        
+        expectedFlag = expectedFlags[machineId]?.[flagType];
+      }
+      
       if (!expectedFlag) {
         return { success: false, message: 'Flag not available for this machine.' };
       }
