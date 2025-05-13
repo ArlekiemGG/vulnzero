@@ -180,6 +180,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Clean up existing state
       cleanupAuthState();
       
+      // Obtén la URL completa actual para usar como base para la redirección
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/dashboard`;
+      
       // Utilizando la función signUp sin requerir confirmación de correo electrónico
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -188,8 +192,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           data: {
             username
           },
-          // Deshabilitamos la verificación de correo electrónico
-          emailRedirectTo: window.location.origin + '/dashboard'
+          // Usamos la URL completa para la redirección
+          emailRedirectTo: redirectUrl
         }
       });
       
@@ -226,10 +230,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Clean up existing state
       cleanupAuthState();
       
+      // Obtén la URL completa para la redirección
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/dashboard`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
@@ -247,10 +255,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Clean up existing state
       cleanupAuthState();
       
+      // Obtén la URL completa para la redirección
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/dashboard`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
@@ -288,8 +300,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
+      // Obtén la URL completa para la redirección
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/auth?reset=true`;
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth?reset=true',
+        redirectTo: redirectUrl,
       });
       
       if (error) throw error;
