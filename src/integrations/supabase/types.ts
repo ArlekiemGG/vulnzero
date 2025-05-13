@@ -39,6 +39,160 @@ export type Database = {
         }
         Relationships: []
       }
+      machine_sessions: {
+        Row: {
+          connection_info: Json | null
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          machine_type_id: string
+          password: string | null
+          session_id: string
+          started_at: string
+          status: string
+          terminated_at: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          connection_info?: Json | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          machine_type_id: string
+          password?: string | null
+          session_id: string
+          started_at?: string
+          status: string
+          terminated_at?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          connection_info?: Json | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          machine_type_id?: string
+          password?: string | null
+          session_id?: string
+          started_at?: string
+          status?: string
+          terminated_at?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machine_sessions_machine_type_id_fkey"
+            columns: ["machine_type_id"]
+            isOneToOne: false
+            referencedRelation: "machine_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      machine_sessions_history: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          machine_type_id: string
+          session_id: string
+          started_at: string
+          status: string
+          terminated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          machine_type_id: string
+          session_id: string
+          started_at: string
+          status: string
+          terminated_at: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          machine_type_id?: string
+          session_id?: string
+          started_at?: string
+          status?: string
+          terminated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machine_sessions_history_machine_type_id_fkey"
+            columns: ["machine_type_id"]
+            isOneToOne: false
+            referencedRelation: "machine_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      machine_types: {
+        Row: {
+          categories: string[] | null
+          created_at: string
+          creator: string | null
+          description: string
+          difficulty: string
+          id: string
+          image_url: string | null
+          max_time_minutes: number
+          name: string
+          os_type: string
+          points: number
+          requirements: string[] | null
+          skills: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          categories?: string[] | null
+          created_at?: string
+          creator?: string | null
+          description: string
+          difficulty: string
+          id?: string
+          image_url?: string | null
+          max_time_minutes?: number
+          name: string
+          os_type: string
+          points?: number
+          requirements?: string[] | null
+          skills?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          categories?: string[] | null
+          created_at?: string
+          creator?: string | null
+          description?: string
+          difficulty?: string
+          id?: string
+          image_url?: string | null
+          max_time_minutes?: number
+          name?: string
+          os_type?: string
+          points?: number
+          requirements?: string[] | null
+          skills?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

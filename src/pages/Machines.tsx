@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
@@ -141,8 +140,9 @@ const Machines = () => {
   });
   
   const [machinesWithProgress, setMachinesWithProgress] = useState(machines);
+  const [activeSessions, setActiveSessions] = useState<string[]>([]);
   
-  // Fetch user profile data
+  // Fetch user profile data and active sessions
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
@@ -172,6 +172,22 @@ const Machines = () => {
             solvedMachines: profileData.solved_machines || 0,
             completedChallenges: profileData.completed_challenges || 0,
           });
+
+          // Get user active sessions
+          try {
+            const { data: sessions } = await supabase
+              .from('machine_sessions')
+              .select('machine_type_id')
+              .eq('user_id', user.id)
+              .neq('status', 'terminated');
+              
+            if (sessions) {
+              const activeSessionMachineIds = sessions.map(session => session.machine_type_id);
+              setActiveSessions(activeSessionMachineIds);
+            }
+          } catch (error) {
+            console.error('Error fetching active sessions:', error);
+          }
 
           // Update machine progress for the user
           const updatedMachines = [...machines];
@@ -214,7 +230,10 @@ const Machines = () => {
   }, [user, toast]);
   
   // Filtro de máquinas
-  const filteredMachines = machinesWithProgress.filter(machine => {
+  const filteredMachines = machinesWithProgress.map(machine => ({
+    ...machine,
+    hasActiveSession: activeSessions.includes(machine.id)
+  })).filter(machine => {
     const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           machine.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           machine.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -226,8 +245,8 @@ const Machines = () => {
   });
 
   const getCompletedMachines = () => filteredMachines.filter(m => m.userProgress === 100);
-  const getInProgressMachines = () => filteredMachines.filter(m => m.userProgress > 0 && m.userProgress < 100);
-  const getPendingMachines = () => filteredMachines.filter(m => m.userProgress === 0);
+  const getInProgressMachines = () => filteredMachines.filter(m => (m.userProgress > 0 && m.userProgress < 100) || m.hasActiveSession);
+  const getPendingMachines = () => filteredMachines.filter(m => m.userProgress === 0 && !m.hasActiveSession);
 
   return (
     <div className="min-h-screen bg-cybersec-black">
