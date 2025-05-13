@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -389,8 +388,8 @@ const CTFs = () => {
   };
 
   const handleResourcesClick = () => {
-    // Abrimos una ventana nueva con recursos para CTFs
-    window.open('https://ctftime.org/resources/', '_blank');
+    // Update to a valid and relevant CTF resources URL
+    window.open('https://ctf101.org/getting-started/resources/', '_blank');
   };
 
   return (
