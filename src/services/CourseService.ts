@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { courseData } from '@/data/courseData';
 
@@ -284,10 +285,10 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
 ---
 
 > "La seguridad no es un producto, sino un proceso." - Bruce Schneier
-  `,
-  
+`,
+
   // Get all courses
-  async getCourses(): Promise<Course[]> {
+  async getCourses() {
     try {
       // Attempt to create courses if none exist
       await this.ensureCoursesExist();
@@ -325,7 +326,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get a course by ID
-  async getCourseById(courseId: string): Promise<Course | null> {
+  async getCourseById(courseId: string) {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
@@ -337,7 +338,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get course sections
-  async getCourseSections(courseId: string): Promise<CourseSection[]> {
+  async getCourseSections(courseId: string) {
     const { data, error } = await supabase
       .from('course_sections')
       .select('*')
@@ -349,7 +350,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get section lessons
-  async getSectionLessons(sectionId: string): Promise<CourseLesson[]> {
+  async getSectionLessons(sectionId: string) {
     const { data, error } = await supabase
       .from('course_lessons')
       .select('*')
@@ -361,7 +362,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get a lesson by ID
-  async getLessonById(lessonId: string): Promise<CourseLesson | null> {
+  async getLessonById(lessonId: string) {
     const { data, error } = await supabase
       .from('course_lessons')
       .select('*')
@@ -373,7 +374,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
   
   // Get course progress for a user
-  async getCourseProgress(userId: string, courseId: string): Promise<CourseProgress | null> {
+  async getCourseProgress(userId: string, courseId: string) {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select('*')
@@ -391,7 +392,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
     courseId: string, 
     lessonId: string | null = null, 
     percentage: number = 0
-  ): Promise<void> {
+  ) {
     // Verify if there is already a progress record
     const { data: existingProgress } = await supabase
       .from('user_course_progress')
@@ -431,7 +432,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Mark a lesson as completed
-  async markLessonCompleted(userId: string, lessonId: string): Promise<void> {
+  async markLessonCompleted(userId: string, lessonId: string) {
     // Verify if there is already a progress record for this lesson
     const { data: existingProgress } = await supabase
       .from('user_lesson_progress')
@@ -470,7 +471,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get the progress of a lesson for a user
-  async getLessonProgress(userId: string, lessonId: string): Promise<LessonProgress | null> {
+  async getLessonProgress(userId: string, lessonId: string) {
     const { data, error } = await supabase
       .from('user_lesson_progress')
       .select('*')
@@ -483,7 +484,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Recalculate the course progress
-  async recalculateCourseProgress(userId: string, lessonId: string): Promise<void> {
+  async recalculateCourseProgress(userId: string, lessonId: string) {
     // First, get the lesson to find the section and course
     const { data: lessonData, error: lessonError } = await supabase
       .from('course_lessons')
@@ -552,7 +553,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get courses completed by the user
-  async getCompletedCourses(userId: string): Promise<Course[]> {
+  async getCompletedCourses(userId: string) {
     try {
       if (!userId) return [];
       
@@ -578,7 +579,7 @@ Para completar esta lección, deberás responder correctamente al cuestionario y
   },
 
   // Get courses in progress by the user
-  async getInProgressCourses(userId: string): Promise<(Course & { progress: number })[]> {
+  async getInProgressCourses(userId: string) {
     try {
       if (!userId) return [];
       
