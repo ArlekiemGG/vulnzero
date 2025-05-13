@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
-import MachineCard, { MachineProps } from '@/components/machines/MachineCard';
+import MachineCard from '@/components/machines/MachineCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,9 +18,10 @@ import { Search, Filter, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { queries } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { MachineService } from '@/components/machines/MachineService';
 
-// Mock data para máquinas
-const machines: MachineProps[] = [
+// Mock data para máquinas - we'll use this until we implement backend functionality
+const machines = [
   {
     id: "machine1",
     name: "VulnNet",
@@ -29,7 +30,7 @@ const machines: MachineProps[] = [
     categories: ["Web", "Privilege Escalation"],
     points: 20,
     solvedBy: 1250,
-    userProgress: 100,
+    userProgress: 0,
     image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=320&auto=format&fit=crop",
     osType: "linux",
     featured: true
@@ -138,6 +139,8 @@ const Machines = () => {
     completedChallenges: 0,
   });
   
+  const [machinesWithProgress, setMachinesWithProgress] = useState(machines);
+  
   // Fetch user profile data
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -168,6 +171,24 @@ const Machines = () => {
             solvedMachines: profileData.solved_machines || 0,
             completedChallenges: profileData.completed_challenges || 0,
           });
+
+          // Update machine progress for the user
+          const updatedMachines = [...machines];
+          
+          // Get machine progress for each machine (in a real app, this would be a single API call)
+          for (let i = 0; i < updatedMachines.length; i++) {
+            try {
+              const machineProgress = await MachineService.getUserMachineProgress(
+                user.id,
+                updatedMachines[i].id
+              );
+              updatedMachines[i].userProgress = machineProgress.progress;
+            } catch (error) {
+              console.error(`Error fetching progress for machine ${updatedMachines[i].id}:`, error);
+            }
+          }
+          
+          setMachinesWithProgress(updatedMachines);
         } else {
           console.error('No profile data returned');
           toast({
@@ -192,7 +213,7 @@ const Machines = () => {
   }, [user, toast]);
   
   // Filtro de máquinas
-  const filteredMachines = machines.filter(machine => {
+  const filteredMachines = machinesWithProgress.filter(machine => {
     const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           machine.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           machine.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -326,61 +347,71 @@ const Machines = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="all" className="mt-0">
-                {filteredMachines.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredMachines.map((machine) => (
-                      <MachineCard key={machine.id} {...machine} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                    <p className="text-gray-400">No se encontraron máquinas con los filtros seleccionados</p>
-                  </div>
-                )}
-              </TabsContent>
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="rounded-lg bg-cybersec-darkgray h-80 animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <TabsContent value="all" className="mt-0">
+                    {filteredMachines.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredMachines.map((machine) => (
+                          <MachineCard key={machine.id} {...machine} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
+                        <p className="text-gray-400">No se encontraron máquinas con los filtros seleccionados</p>
+                      </div>
+                    )}
+                  </TabsContent>
 
-              <TabsContent value="completed" className="mt-0">
-                {getCompletedMachines().length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {getCompletedMachines().map((machine) => (
-                      <MachineCard key={machine.id} {...machine} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                    <p className="text-gray-400">No has completado ninguna máquina con los filtros seleccionados</p>
-                  </div>
-                )}
-              </TabsContent>
+                  <TabsContent value="completed" className="mt-0">
+                    {getCompletedMachines().length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {getCompletedMachines().map((machine) => (
+                          <MachineCard key={machine.id} {...machine} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
+                        <p className="text-gray-400">No has completado ninguna máquina con los filtros seleccionados</p>
+                      </div>
+                    )}
+                  </TabsContent>
 
-              <TabsContent value="in_progress" className="mt-0">
-                {getInProgressMachines().length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {getInProgressMachines().map((machine) => (
-                      <MachineCard key={machine.id} {...machine} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                    <p className="text-gray-400">No tienes máquinas en progreso con los filtros seleccionados</p>
-                  </div>
-                )}
-              </TabsContent>
+                  <TabsContent value="in_progress" className="mt-0">
+                    {getInProgressMachines().length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {getInProgressMachines().map((machine) => (
+                          <MachineCard key={machine.id} {...machine} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
+                        <p className="text-gray-400">No tienes máquinas en progreso con los filtros seleccionados</p>
+                      </div>
+                    )}
+                  </TabsContent>
 
-              <TabsContent value="pending" className="mt-0">
-                {getPendingMachines().length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {getPendingMachines().map((machine) => (
-                      <MachineCard key={machine.id} {...machine} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
-                    <p className="text-gray-400">No tienes máquinas pendientes con los filtros seleccionados</p>
-                  </div>
-                )}
-              </TabsContent>
+                  <TabsContent value="pending" className="mt-0">
+                    {getPendingMachines().length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {getPendingMachines().map((machine) => (
+                          <MachineCard key={machine.id} {...machine} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-cybersec-darkgray rounded-lg">
+                        <p className="text-gray-400">No tienes máquinas pendientes con los filtros seleccionados</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </div>
         </main>
