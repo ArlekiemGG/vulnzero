@@ -144,7 +144,7 @@ function dispatch(action: Action) {
   })
 }
 
-export function toast({ ...props }: Toast) {
+export function toast(props: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
