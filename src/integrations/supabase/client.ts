@@ -28,12 +28,50 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Cache for API responses to reduce redundant calls
+// Enhanced Cache for API responses with deduplication and rate limiting
 const responseCache = new Map();
 const pendingRequests = new Map();
+const requestCounts = new Map();
+const REQUEST_LIMIT = 3; // Max allowed request attempts for the same data in a short period
+const PENALTY_TIME = 30000; // 30-second penalty after hitting request limit
+const requestTimestamps = new Map(); // Track when requests were made
 
-// Helper function to handle API requests with caching
+// Helper function to handle API requests with enhanced caching
 const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDuration = 30000) => {
+  // Rate limiting check - prevent too many repeated requests
+  if (requestCounts.has(key)) {
+    const count = requestCounts.get(key) || 0;
+    const lastAttempt = requestTimestamps.get(key) || 0;
+    const timeSinceLastAttempt = Date.now() - lastAttempt;
+    
+    // If we've exceeded the request limit and we're within the penalty period
+    if (count >= REQUEST_LIMIT && timeSinceLastAttempt < PENALTY_TIME) {
+      console.log(`Too many requests for ${key}, enforcing cooldown (${Math.round((PENALTY_TIME - timeSinceLastAttempt)/1000)}s remaining)`);
+      
+      // Return cached data even if expired, or reject if none exists
+      if (responseCache.has(key)) {
+        console.log(`Returning stale cache for ${key} during cooldown period`);
+        return responseCache.get(key).data;
+      }
+      
+      return Promise.reject(new Error(`Request rate limited for ${key}. Try again later.`));
+    }
+    
+    // Reset counter if enough time has passed since penalty period
+    if (timeSinceLastAttempt > PENALTY_TIME) {
+      requestCounts.set(key, 1);
+    } else {
+      // Increment counter
+      requestCounts.set(key, count + 1);
+    }
+  } else {
+    // First request for this key
+    requestCounts.set(key, 1);
+  }
+  
+  // Update timestamp of the request
+  requestTimestamps.set(key, Date.now());
+
   // Check if we have a cached response that's still valid
   if (responseCache.has(key)) {
     const { data, expiry } = responseCache.get(key);
@@ -50,8 +88,13 @@ const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDu
     return pendingRequests.get(key);
   }
   
-  // Create new request promise
-  const requestPromise = requestFn()
+  // Create new request promise with timeout safety
+  const requestPromise = Promise.race([
+    requestFn(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Request timeout for ${key}`)), 15000)
+    )
+  ])
     .then(result => {
       // Cache the result
       responseCache.set(key, {
@@ -63,6 +106,13 @@ const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDu
     })
     .catch(error => {
       pendingRequests.delete(key);
+      
+      // If we have stale cache data, return it on error
+      if (responseCache.has(key)) {
+        console.warn(`Request failed for ${key}, using stale cache data:`, error);
+        return responseCache.get(key).data;
+      }
+      
       throw error;
     });
   
@@ -70,6 +120,27 @@ const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDu
   pendingRequests.set(key, requestPromise);
   
   return requestPromise;
+};
+
+// Function to clear cache entries
+export const clearCache = (keyPattern?: string) => {
+  if (keyPattern) {
+    // Clear specific cache entries matching the pattern
+    for (const key of responseCache.keys()) {
+      if (key.includes(keyPattern)) {
+        console.log(`Clearing cache for ${key}`);
+        responseCache.delete(key);
+        requestCounts.delete(key);
+        requestTimestamps.delete(key);
+      }
+    }
+  } else {
+    // Clear all cache
+    responseCache.clear();
+    requestCounts.clear();
+    requestTimestamps.clear();
+    console.log('Cleared all cache entries');
+  }
 };
 
 // Helpers to simplify queries
@@ -230,7 +301,7 @@ export const queries = {
         console.error("Error updating profile:", response.error);
       } else {
         // Invalidate cache for this user
-        responseCache.delete(`profile-${userId}`);
+        clearCache(`profile-${userId}`);
       }
       
       return response;
