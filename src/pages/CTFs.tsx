@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -211,13 +212,23 @@ const CTFs = () => {
       if (error) throw error;
 
       // Convertimos los datos a nuestro formato de leaderboard
-      const leaderboardData: LeaderboardEntry[] = profiles.map((profile, index) => ({
-        rank: index + 1,
-        name: profile.username || `Usuario ${profile.id.substring(0, 5)}`,
-        points: profile.points || 0,
-        solved: profile.solved_machines || 0,
-        isCurrentUser: user && profile.id === user.id
-      }));
+      const leaderboardData: LeaderboardEntry[] = profiles.map((profile, index) => {
+        // Create a display username that doesn't expose email addresses
+        let displayName = profile.username || `Usuario`;
+        
+        // If it's an email, extract just the username part before @
+        if (displayName.includes('@') && displayName.includes('.')) {
+          displayName = displayName.split('@')[0];
+        }
+        
+        return {
+          rank: index + 1,
+          name: displayName,
+          points: profile.points || 0,
+          solved: profile.solved_machines || 0,
+          isCurrentUser: user && profile.id === user.id
+        };
+      });
 
       // Si el usuario actual no está en el top 5, añadirlo al final
       if (user && !leaderboardData.some(entry => entry.isCurrentUser)) {
@@ -234,9 +245,17 @@ const CTFs = () => {
             .select('*', { count: 'exact', head: true })
             .gt('points', userProfile.points || 0);
 
+          // Create a display username that doesn't expose email addresses
+          let displayName = userProfile.username || `Usuario`;
+          
+          // If it's an email, extract just the username part before @
+          if (displayName.includes('@') && displayName.includes('.')) {
+            displayName = displayName.split('@')[0];
+          }
+
           leaderboardData.push({
             rank: (userRank || 0) + 1,
-            name: userProfile.username || `Usuario ${userProfile.id.substring(0, 5)}`,
+            name: displayName,
             points: userProfile.points || 0,
             solved: userProfile.solved_machines || 0,
             isCurrentUser: true

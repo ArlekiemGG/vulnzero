@@ -13,18 +13,28 @@ export const mapProfilesToLeaderboardUsers = (
     return [];
   }
 
-  return profiles.map((profile, index) => ({
-    id: profile.id,
-    rank: index + 1,
-    username: profile.username || 'Usuario',
-    avatar: profile.avatar_url,
-    points: profile.points || 0,
-    level: profile.level || 1,
-    solvedMachines: profile.solved_machines || 0,
-    rankChange: 'same', // Could be calculated by comparing with previous data
-    changeAmount: 0,     // Could be calculated by comparing with previous data
-    isCurrentUser: currentUserId ? profile.id === currentUserId : false
-  }));
+  return profiles.map((profile, index) => {
+    // Create a display username that doesn't expose email addresses
+    let displayName = profile.username || 'Usuario';
+    
+    // If it's an email, extract just the username part before @
+    if (displayName.includes('@') && displayName.includes('.')) {
+      displayName = displayName.split('@')[0];
+    }
+    
+    return {
+      id: profile.id,
+      rank: index + 1,
+      username: displayName,
+      avatar: profile.avatar_url,
+      points: profile.points || 0,
+      level: profile.level || 1,
+      solvedMachines: profile.solved_machines || 0,
+      rankChange: 'same', // Could be calculated by comparing with previous data
+      changeAmount: 0,     // Could be calculated by comparing with previous data
+      isCurrentUser: currentUserId ? profile.id === currentUserId : false
+    };
+  });
 };
 
 /**

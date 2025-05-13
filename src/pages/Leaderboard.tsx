@@ -71,11 +71,22 @@ const Leaderboard = () => {
       return;
     }
     
-    const mappedUsers = Array.isArray(profiles) ? profiles.map((profile: LeaderboardUser, index: number) => ({
-      ...profile,
-      rank: index + 1,
-      isCurrentUser: user ? profile.id === user.id : false
-    })) : [];
+    const mappedUsers = Array.isArray(profiles) ? profiles.map((profile: LeaderboardUser, index: number) => {
+      // Create a display username that doesn't expose email addresses
+      let displayName = profile.username || 'Usuario';
+      
+      // If it's an email, extract just the username part before @
+      if (displayName.includes('@') && displayName.includes('.')) {
+        displayName = displayName.split('@')[0];
+      }
+      
+      return {
+        ...profile,
+        username: displayName,
+        rank: index + 1,
+        isCurrentUser: user ? profile.id === user.id : false
+      };
+    }) : [];
     
     setLeaderboardUsers(mappedUsers);
   }, [profiles, user]);
