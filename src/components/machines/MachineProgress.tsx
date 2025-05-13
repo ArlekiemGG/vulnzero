@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Activity } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export interface MachineTask {
   id: number;
@@ -17,6 +18,11 @@ interface MachineProgressProps {
 }
 
 const MachineProgress: React.FC<MachineProgressProps> = ({ tasks, isLoading }) => {
+  // Calculate progress percentage based on completed tasks
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const totalTasks = tasks.length;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
   if (isLoading) {
     return (
       <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
@@ -36,6 +42,15 @@ const MachineProgress: React.FC<MachineProgressProps> = ({ tasks, isLoading }) =
     <Card className="bg-cybersec-darkgray border-cybersec-darkgray">
       <CardContent className="p-6">
         <h3 className="text-lg font-medium text-cybersec-neongreen mb-4">Progreso</h3>
+        
+        {/* Progress indicator */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-400">Completado</span>
+            <span className="text-sm font-medium text-cybersec-neongreen">{progressPercentage}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
         
         <div className="space-y-4">
           {tasks.map((task) => (
