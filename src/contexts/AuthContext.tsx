@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -180,28 +181,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Clean up existing state
       cleanupAuthState();
       
-      const { error } = await supabase.auth.signUp({ 
+      // Utilizando la función signUp sin requerir confirmación de correo electrónico
+      const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
             username
           },
-          emailRedirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
+          // Deshabilitamos la verificación de correo electrónico
+          emailRedirectTo: window.location.origin + '/dashboard'
         }
       });
+      
       if (error) throw error;
+      
+      if (data?.user?.identities && data.user.identities.length === 0) {
+        toast({
+          title: "Usuario ya registrado",
+          description: "Este correo electrónico ya está registrado. Por favor, inicia sesión.",
+          variant: "warning"
+        });
+        return;
+      }
       
       toast({
         title: "Registro exitoso",
-        description: "Por favor, revisa tu correo para confirmar tu cuenta."
+        description: "Tu cuenta ha sido creada. Revisa tu correo para confirmar tu cuenta.",
       });
       
-      navigate('/auth');
+      // No redirigimos, dejamos al usuario en la página de autenticación
+      // hasta que confirme su correo electrónico
     } catch (error: any) {
+      console.error("Error en el registro:", error);
       toast({
         title: "Error de registro",
-        description: error.message,
+        description: error.message || "Ha ocurrido un error durante el registro",
         variant: "destructive"
       });
     }
@@ -215,7 +230,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
+          redirectTo: window.location.origin + '/dashboard'
         }
       });
       if (error) throw error;
@@ -236,7 +251,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://vulnzero.es/dashboard' // Usar URL específica del dominio
+          redirectTo: window.location.origin + '/dashboard'
         }
       });
       if (error) throw error;
