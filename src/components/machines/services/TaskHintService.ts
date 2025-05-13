@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-// Define la interfaz MachineHint aquí para solucionar el error
+// Update the MachineHint interface to use the correct id type
 export interface MachineHint {
   id: number;
   title: string;
@@ -111,12 +111,12 @@ export const TaskHintService = {
         console.error('Error al obtener las pistas desbloqueadas del usuario:', userHintsError);
       }
       
-      // Convert to the expected MachineHint format
+      // Convert to the expected MachineHint format and ensure proper type conversion
       const hints: MachineHint[] = machineHints.map(hint => {
         const isUnlocked = userHints?.some(uh => uh.hint_level === hint.level) || false;
         
         return {
-          id: hint.id,
+          id: Number(hint.id), // Convert the ID to number to match the interface
           title: hint.title,
           content: hint.content,
           level: hint.level,
