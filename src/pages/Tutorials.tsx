@@ -43,9 +43,21 @@ const Tutorials = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Asegurar que existan cursos en la base de datos
+        await CourseService.ensureCoursesExist();
+        
         // Obtener todos los cursos
         const allCourses = await CourseService.getCourses();
         setCourses(allCourses);
+
+        // Si no hay cursos después de intentar sembrarlos, mostrar un mensaje
+        if (allCourses.length === 0) {
+          toast({
+            title: "Información",
+            description: "No se encontraron cursos disponibles. Por favor, contacta al administrador.",
+            variant: "default",
+          });
+        }
 
         // Extraer categorías y niveles únicos
         setCategories([...new Set(allCourses.map(course => course.category))]);

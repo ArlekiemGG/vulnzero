@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { courseData } from '@/data/courseData';
 
 // Define interfaces for our course system
 export interface Course {
@@ -56,8 +57,193 @@ export interface LessonProgress {
 }
 
 export const CourseService = {
+  // Verificar si hay cursos y sembrarlos si es necesario
+  async ensureCoursesExist(): Promise<boolean> {
+    try {
+      // Verificar si ya existen cursos
+      const { count, error: countError } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      
+      // Si ya existen cursos, no hacemos nada
+      if (count && count > 0) {
+        console.log(`Found ${count} existing courses`);
+        return false;
+      }
+      
+      console.log('No courses found, seeding initial courses...');
+      
+      // Insertar cursos desde courseData
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .insert(courseData)
+        .select();
+      
+      if (coursesError) throw coursesError;
+      
+      console.log(`Successfully inserted ${coursesData?.length} courses`);
+      
+      // Crear secciones para cada curso
+      for (const course of (coursesData || [])) {
+        // Crear 3-5 secciones por curso
+        const sectionCount = Math.floor(Math.random() * 3) + 3; // 3-5 secciones
+        
+        const sections = [];
+        for (let i = 1; i <= sectionCount; i++) {
+          sections.push({
+            course_id: course.id,
+            title: `Módulo ${i}: ${this.getSectionTitle(course.title, i)}`,
+            position: i
+          });
+        }
+        
+        const { data: sectionsData, error: sectionsError } = await supabase
+          .from('course_sections')
+          .insert(sections)
+          .select();
+        
+        if (sectionsError) throw sectionsError;
+        
+        console.log(`Created ${sectionsData.length} sections for course ${course.title}`);
+        
+        // Crear lecciones para cada sección
+        for (const section of sectionsData) {
+          // Crear 3-7 lecciones por sección
+          const lessonCount = Math.floor(Math.random() * 5) + 3; // 3-7 lecciones
+          
+          const lessons = [];
+          for (let i = 1; i <= lessonCount; i++) {
+            lessons.push({
+              section_id: section.id,
+              title: `Lección ${i}: ${this.getLessonTitle(section.title, i)}`,
+              content: this.getLessonContent(section.title, i),
+              duration_minutes: Math.floor(Math.random() * 25) + 15, // 15-40 minutos
+              position: i,
+              video_url: Math.random() > 0.5 ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null // 50% chance to have a video
+            });
+          }
+          
+          const { error: lessonsError } = await supabase
+            .from('course_lessons')
+            .insert(lessons);
+          
+          if (lessonsError) throw lessonsError;
+        }
+      }
+      
+      console.log('Course seeding completed successfully!');
+      return true;
+    } catch (error) {
+      console.error('Error ensuring courses exist:', error);
+      return false;
+    }
+  },
+
+  // Helper methods for generating course content
+  getSectionTitle(courseTitle: string, sectionNumber: number): string {
+    const basicSectionTitles = [
+      'Introducción y Conceptos Fundamentales',
+      'Instalación y Configuración de Herramientas',
+      'Metodología y Mejores Prácticas',
+      'Casos Prácticos',
+      'Técnicas Avanzadas',
+      'Mitigación y Protección',
+      'Evaluación y Continuidad'
+    ];
+    
+    return basicSectionTitles[sectionNumber - 1] || `Contenido Avanzado ${sectionNumber}`;
+  },
+
+  getLessonTitle(sectionTitle: string, lessonNumber: number): string {
+    if (sectionTitle.includes('Introducción')) {
+      const introLessons = [
+        'Panorama actual de la ciberseguridad',
+        'Tipos de amenazas y vectores de ataque',
+        'Terminología esencial',
+        'Principios de seguridad',
+        'Configuración del entorno de trabajo',
+        'Recursos y comunidades'
+      ];
+      return introLessons[lessonNumber - 1] || `Tema introductorio ${lessonNumber}`;
+    }
+    
+    if (sectionTitle.includes('Herramientas')) {
+      const toolLessons = [
+        'Herramientas de reconocimiento',
+        'Analizadores de vulnerabilidades',
+        'Herramientas de explotación',
+        'Frameworks de seguridad',
+        'Soluciones de monitorización',
+        'Configuración avanzada'
+      ];
+      return toolLessons[lessonNumber - 1] || `Herramienta especializada ${lessonNumber}`;
+    }
+    
+    return `Contenido especializado ${lessonNumber}`;
+  },
+
+  getLessonContent(sectionTitle: string, lessonNumber: number): string {
+    // Generate markdown content for the lesson
+    return `
+# ${sectionTitle} - Lección ${lessonNumber}
+
+## Objetivos de aprendizaje
+- Comprender los conceptos fundamentales de esta lección
+- Aplicar conocimientos en situaciones prácticas
+- Desarrollar habilidades técnicas específicas
+
+## Contenido principal
+
+Este módulo aborda aspectos esenciales sobre ciberseguridad y técnicas defensivas y ofensivas. 
+Los contenidos han sido estructurados de manera progresiva para facilitar el aprendizaje.
+
+### Conceptos clave
+
+1. **Seguridad por capas**: Implementación de múltiples mecanismos de defensa.
+2. **Principio de menor privilegio**: Limitar accesos solo a lo necesario.
+3. **Actualización continua**: Mantener sistemas y conocimientos al día.
+
+### Demostración práctica
+
+\`\`\`python
+def security_check(system):
+    vulnerabilities = scan_system(system)
+    for vuln in vulnerabilities:
+        print(f"Vulnerabilidad encontrada: {vuln.name}")
+        print(f"Nivel de riesgo: {vuln.risk_level}")
+        print(f"Recomendación: {vuln.mitigation}")
+    return len(vulnerabilities)
+\`\`\`
+
+## Ejercicios prácticos
+
+1. Analizar un sistema utilizando las herramientas presentadas
+2. Identificar posibles vulnerabilidades
+3. Proponer soluciones para mitigar los riesgos encontrados
+
+## Recursos adicionales
+
+- [OWASP Top 10](https://owasp.org/Top10/)
+- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+- [MITRE ATT&CK](https://attack.mitre.org/)
+
+## Evaluación
+
+Para completar esta lección, deberás responder correctamente al cuestionario y realizar el ejercicio práctico propuesto.
+
+---
+
+> "La seguridad no es un producto, sino un proceso." - Bruce Schneier
+  `;
+  },
+
   // Obtener todos los cursos
   async getCourses(): Promise<Course[]> {
+    // Primero verificamos si hay cursos, y si no, los sembramos
+    await this.ensureCoursesExist();
+    
     const { data, error } = await supabase
       .from('courses')
       .select('*')
