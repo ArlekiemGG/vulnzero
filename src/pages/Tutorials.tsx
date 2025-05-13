@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, BookOpen, ListFilter } from 'lucide-react';
 import { queries } from '@/integrations/supabase/client';
+import CourseSeeder from '@/components/courses/CourseSeeder';
 
 const Tutorials = () => {
   const { user } = useAuth();
@@ -126,6 +127,8 @@ const Tutorials = () => {
               <h1 className="text-3xl font-bold text-cybersec-neongreen mb-2">Cursos y Tutoriales</h1>
               <p className="text-gray-400">Aprende ciberseguridad con nuestros cursos estructurados y detallados</p>
             </div>
+
+            <CourseSeeder />
 
             <Tabs defaultValue="all" className="mb-8">
               <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
