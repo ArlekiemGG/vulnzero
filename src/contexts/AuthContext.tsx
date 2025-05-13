@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [initialSessionChecked, setInitialSessionChecked] = useState(false);
   const navigate = useNavigate();
   
   const { 
@@ -88,11 +89,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             // Handle specific events
             if (event === 'SIGNED_IN' && currentSession?.user) {
-              // Show success message
-              toast({
-                title: "Inicio de sesión exitoso",
-                description: "Has iniciado sesión correctamente."
-              });
+              // Show success message SOLO cuando el evento es realmente un inicio de sesión
+              // y no cuando se está cargando un estado de sesión existente
+              if (!initialSessionChecked) {
+                // No mostrar toast en la carga inicial
+                setInitialSessionChecked(true);
+              } else {
+                toast({
+                  title: "Inicio de sesión exitoso",
+                  description: "Has iniciado sesión correctamente."
+                });
+              }
               
               // Defer fetching user profile to avoid state conflicts
               setTimeout(() => {
@@ -134,6 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setSession(data.session);
         setUser(data.session?.user ?? null);
+        setInitialSessionChecked(true);
         
         // Verificar rol de admin si hay usuario
         if (data.session?.user) {
