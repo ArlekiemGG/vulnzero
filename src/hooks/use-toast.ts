@@ -11,9 +11,9 @@ const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
 // Define the Toast type here directly
-type Toast = Omit<ToasterToast, "id">
+export type Toast = Omit<ToasterToast, "id">
 
-type ToasterToast = {
+export type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
@@ -145,7 +145,7 @@ function dispatch(action: Action) {
   })
 }
 
-function toast({ ...props }: Toast) {
+export function toast({ ...props }: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -174,7 +174,7 @@ function toast({ ...props }: Toast) {
   }
 }
 
-function useToast() {
+export function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
   React.useEffect(() => {
@@ -194,5 +194,4 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
 export type { Toast, ToasterToast }
