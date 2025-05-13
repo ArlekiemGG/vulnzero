@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,17 +70,42 @@ export const MachineService = {
       // En una implementación real, obtendrías el progreso del usuario para esta máquina desde la base de datos
       console.log('Fetching user progress for machine:', machineId, 'user:', userId);
       
-      // Simulando un retraso de llamada a API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Para una implementación real con Supabase, podríamos hacer algo como:
+      /*
+      const { data, error } = await supabase
+        .from('machine_progress')
+        .select('completed_tasks, progress')
+        .eq('user_id', userId)
+        .eq('machine_id', machineId)
+        .single();
+        
+      if (error || !data) {
+        return { progress: 0, completedTasks: [] };
+      }
       
-      // En una implementación real, aquí consultarías una tabla en la base de datos
-      // que lleve el registro de las tareas completadas por cada usuario en cada máquina
-      
-      // Por ahora, para simular que el usuario no ha comenzado ninguna máquina,
-      // devolvemos un progreso vacío (sin tareas completadas)
       return {
-        progress: 0,  // 0% de progreso inicial
-        completedTasks: []  // Sin tareas completadas inicialmente
+        progress: data.progress || 0,
+        completedTasks: data.completed_tasks || []
+      };
+      */
+      
+      // Por ahora, verificamos si hay datos guardados en localStorage para simular persistencia
+      const storageKey = `machine_progress_${userId}_${machineId}`;
+      const savedProgress = localStorage.getItem(storageKey);
+      
+      if (savedProgress) {
+        const parsed = JSON.parse(savedProgress);
+        console.log('Loaded progress from storage:', parsed);
+        return {
+          progress: parsed.progress || 0,
+          completedTasks: parsed.completedTasks || []
+        };
+      }
+      
+      // Si no hay datos guardados, devolvemos progreso cero
+      return {
+        progress: 0,
+        completedTasks: []
       };
     } catch (error) {
       console.error('Error fetching user machine progress:', error);
@@ -92,12 +118,38 @@ export const MachineService = {
       // En una implementación real, actualizarías la base de datos
       console.log('Completing task:', taskId, 'for machine:', machineId, 'user:', userId);
       
-      // Simulando un retraso de llamada a API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Para simular persistencia, guardamos el progreso en localStorage
+      const storageKey = `machine_progress_${userId}_${machineId}`;
+      const savedProgress = localStorage.getItem(storageKey);
+      let completedTasks: number[] = [];
+      let progress = 0;
       
-      // En una implementación real, esto actualizaría una tabla en la base de datos
+      if (savedProgress) {
+        const parsed = JSON.parse(savedProgress);
+        completedTasks = parsed.completedTasks || [];
+        progress = parsed.progress || 0;
+      }
       
-      return { success: true };
+      // Añadir la tarea si no está ya completada
+      if (!completedTasks.includes(taskId)) {
+        completedTasks.push(taskId);
+        
+        // Calcular el nuevo progreso basado en la máquina actual
+        const machine = mockMachines.find(m => m.id === machineId);
+        if (machine) {
+          progress = Math.floor((completedTasks.length / machine.tasks.length) * 100);
+        }
+        
+        // Guardar el progreso actualizado
+        localStorage.setItem(storageKey, JSON.stringify({
+          completedTasks,
+          progress
+        }));
+        
+        console.log('Updated progress:', { completedTasks, progress });
+      }
+      
+      return { success: true, completedTasks, progress };
     } catch (error) {
       console.error('Error completing task:', error);
       return { success: false, error: 'Error al completar la tarea' };
@@ -112,8 +164,20 @@ export const MachineService = {
       // In a real implementation, you would deduct points from the user's profile
       // and record this transaction in the user_activities table
       
-      // Simulating an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Para simular persistencia, guardamos las pistas desbloqueadas en localStorage
+      const storageKey = `machine_hints_${userId}_${machineId}`;
+      const savedHints = localStorage.getItem(storageKey);
+      let unlockedHints: number[] = [];
+      
+      if (savedHints) {
+        unlockedHints = JSON.parse(savedHints);
+      }
+      
+      // Añadir la pista si no está ya desbloqueada
+      if (!unlockedHints.includes(hintId)) {
+        unlockedHints.push(hintId);
+        localStorage.setItem(storageKey, JSON.stringify(unlockedHints));
+      }
       
       return { success: true };
     } catch (error) {
@@ -134,8 +198,16 @@ export const MachineService = {
       const isCorrect = flag.toLowerCase().includes('flag');
       
       if (isCorrect) {
-        // In a real implementation, you would update the user's progress and award points
-        // Also record this achievement in the user_activities table
+        // Actualizar las tareas completadas según el tipo de flag
+        const taskId = flagType === 'user' ? 3 : 5; // Tarea 3 = flag de usuario, Tarea 5 = flag de root
+        
+        // Si es root flag, también marcamos la tarea 4 (escalar privilegios) como completada
+        if (flagType === 'root') {
+          await this.completeTask(userId, machineId, 4);
+        }
+        
+        // Completar la tarea correspondiente a la flag
+        await this.completeTask(userId, machineId, taskId);
         
         return { 
           success: true, 
@@ -154,6 +226,22 @@ export const MachineService = {
         success: false, 
         message: 'Error al procesar la flag. Inténtalo más tarde.'
       };
+    }
+  },
+
+  resetProgress: async (userId: string, machineId: string) => {
+    try {
+      // Eliminar el progreso guardado
+      const progressKey = `machine_progress_${userId}_${machineId}`;
+      const hintsKey = `machine_hints_${userId}_${machineId}`;
+      
+      localStorage.removeItem(progressKey);
+      localStorage.removeItem(hintsKey);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting progress:', error);
+      return { success: false };
     }
   },
 
