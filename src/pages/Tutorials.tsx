@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, BookOpen, ListFilter } from 'lucide-react';
+import { queries } from '@/integrations/supabase/client';
 
 const Tutorials = () => {
   const { user } = useAuth();
@@ -50,6 +51,20 @@ const Tutorials = () => {
         setLevels([...new Set(allCourses.map(course => course.level))]);
 
         if (user) {
+          // Obtener el perfil del usuario para mostrar sus estadísticas reales
+          const userProfile = await queries.getUserProfile(user.id);
+          if (userProfile) {
+            setUserStats({
+              level: userProfile.level || 1,
+              points: userProfile.points || 0,
+              pointsToNextLevel: 100 - (userProfile.points % 100) || 0,
+              progress: (userProfile.points % 100) || 0,
+              rank: userProfile.rank || 0,
+              solvedMachines: userProfile.solved_machines || 0,
+              completedChallenges: userProfile.completed_challenges || 0,
+            });
+          }
+
           // Obtener cursos en progreso
           const inProgress = await CourseService.getInProgressCourses(user.id);
           setInProgressCourses(inProgress);

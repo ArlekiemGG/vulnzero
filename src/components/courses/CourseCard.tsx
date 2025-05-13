@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,8 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress }) => {
+  const navigate = useNavigate();
+  
   // Determinar el color de nivel
   const getLevelColor = (level: string) => {
     switch (level.toLowerCase()) {
@@ -38,6 +40,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress }) => {
       return `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
     }
     return `${mins}m`;
+  };
+
+  // Manejar el clic en el botón para asegurar que la navegación funcione correctamente
+  const handleCourseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(`/tutorials/${course.id}`);
   };
 
   return (
@@ -97,12 +105,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress }) => {
       <CardFooter>
         <Button 
           className="w-full bg-cybersec-darkgray border border-cybersec-neongreen text-cybersec-neongreen hover:bg-cybersec-neongreen hover:text-cybersec-black" 
-          asChild
+          onClick={handleCourseClick}
         >
-          <Link to={`/tutorials/${course.id}`} className="flex items-center justify-center gap-2">
+          <span className="flex items-center justify-center gap-2">
             {typeof progress === 'number' && progress > 0 ? 'Continuar curso' : 'Ver curso'} 
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </span>
         </Button>
       </CardFooter>
     </Card>
