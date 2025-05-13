@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -203,10 +202,10 @@ const Labs = () => {
     }
   };
 
-  const formatTimeRemaining = (expiresAt) => {
+  const formatTimeRemaining = (expiresAt: string) => {
     const expires = new Date(expiresAt);
     const now = new Date();
-    const diffMs = expires - now;
+    const diffMs = expires.getTime() - now.getTime();
     if (diffMs <= 0) return 'Expirado';
     
     const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));

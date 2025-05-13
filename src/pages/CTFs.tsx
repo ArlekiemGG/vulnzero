@@ -144,7 +144,7 @@ const currentCTFLeaderboard = [
 ];
 
 const CTFs = () => {
-  const formatDateRange = (startDate, endDate) => {
+  const formatDateRange = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     
@@ -157,7 +157,7 @@ const CTFs = () => {
     return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
   };
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = (difficulty: string) => {
     switch(difficulty) {
       case 'Principiante': return 'bg-green-500/20 text-green-500 border-green-500';
       case 'Intermedio': return 'bg-yellow-500/20 text-yellow-500 border-yellow-500';
@@ -167,10 +167,10 @@ const CTFs = () => {
     }
   };
 
-  const getTimeRemaining = (endDate) => {
+  const getTimeRemaining = (endDate: string) => {
     const end = new Date(endDate);
     const now = new Date();
-    const diffMs = end - now;
+    const diffMs = end.getTime() - now.getTime();
     
     if (diffMs <= 0) return 'Finalizado';
     
@@ -184,7 +184,7 @@ const CTFs = () => {
     return `${diffHrs}h ${diffMins}m restantes`;
   };
 
-  const hasStarted = (startDate) => {
+  const hasStarted = (startDate: string) => {
     return new Date(startDate) <= new Date();
   };
 
