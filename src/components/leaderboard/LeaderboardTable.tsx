@@ -127,6 +127,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     );
   }
 
+  // Debug the users array
+  console.log("LeaderboardTable received users:", users);
+
   return (
     <div className="w-full overflow-hidden rounded-lg border border-cybersec-darkgray">
       <Table>

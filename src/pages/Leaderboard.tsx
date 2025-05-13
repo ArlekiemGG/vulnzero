@@ -20,40 +20,50 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Función para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('points', { ascending: false })
-    .limit(100);
-  
-  if (error) {
-    console.error("Error fetching profiles:", error);
-    throw new Error(`Error al cargar perfiles: ${error.message}`);
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('points', { ascending: false })
+      .limit(100);
+    
+    if (error) {
+      console.error("Error fetching profiles:", error);
+      throw new Error(`Error al cargar perfiles: ${error.message}`);
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error("Exception fetching profiles:", err);
+    throw err;
   }
-  
-  return data || [];
 };
 
 // Función para obtener el profile del usuario actual
 const fetchCurrentUserProfile = async () => {
-  const { data: authData } = await supabase.auth.getUser();
-  
-  if (!authData.user) {
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    
+    if (!authData.user) {
+      return null;
+    }
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+    
+    if (error) {
+      console.error("Error al cargar perfil de usuario:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error("Exception fetching current user profile:", err);
     return null;
   }
-  
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', authData.user.id)
-    .single();
-  
-  if (error) {
-    console.error("Error al cargar perfil de usuario:", error);
-    return null;
-  }
-  
-  return data;
 };
 
 const Leaderboard = () => {
@@ -133,6 +143,9 @@ const Leaderboard = () => {
   
   // Obtenemos los top 3 para el showcase
   const top3Users = leaderboardUsers.slice(0, 3);
+
+  // Para propósitos de depuración
+  console.log("Current profiles data:", profiles);
 
   return (
     <div className="min-h-screen bg-cybersec-black">
