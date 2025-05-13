@@ -1,4 +1,3 @@
-
 // Supabase client configuration
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
@@ -9,6 +8,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Export type definitions for easier use in components
 export type Tables = Database['public']['Tables'];
 export type Profiles = Tables['profiles']['Row'];
+export type UserActivity = Tables['user_activities']['Row'];
 
 // Client configuration
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -86,15 +86,24 @@ export const queries = {
     }
   },
   
-  // Función para registrar actividad del usuario (aún no hay tabla, se implementará más adelante)
-  logUserActivity: async (userId: string, activityType: string, title: string, points: number) => {
+  // Function to log user activity
+  logUserActivity: async (userId: string, activityType: string, title: string, points: number = 0) => {
     try {
-      console.log("Activity logged:", { userId, activityType, title, points });
-      // En el futuro, esto insertará en una tabla de actividades
-      return true;
+      const { data, error } = await supabase.rpc(
+        'log_user_activity',
+        {
+          p_user_id: userId,
+          p_type: activityType,
+          p_title: title,
+          p_points: points
+        }
+      );
+
+      if (error) throw error;
+      return { success: true, id: data };
     } catch (error) {
       console.error("Error logging user activity:", error);
-      return false;
+      return { success: false, id: null };
     }
   }
 };

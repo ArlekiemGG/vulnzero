@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Code, User, Activity } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -16,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { ActivityService, UserActivity } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
+import { seedUserActivities } from '@/utils/seed-activities';
 
 // Mock data para insignias - este es un buen candidato para crear una tabla en Supabase
 const badges = [
@@ -144,7 +144,10 @@ const Dashboard = () => {
         setUserProfile(profileData);
         setIsAdmin(profileData.role === 'admin');
         
-        // Load user activity
+        // Seed initial activities if needed (for testing)
+        await seedUserActivities(user.id);
+        
+        // Load user activity from real data
         const activity = await ActivityService.getRecentActivity(user.id);
         setRecentActivity(activity);
         

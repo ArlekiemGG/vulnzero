@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/client';
 
@@ -21,49 +20,6 @@ export const ActivityService = {
    */
   getRecentActivity: async (userId: string, limit = 5): Promise<UserActivity[]> => {
     try {
-      // In a real implementation, this would fetch data from a table
-      // Since there's no activity table yet, we'll return mock data for now
-      // but structured for easy replacement with real data later
-      
-      // This should be replaced with real database queries when an activity
-      // table is created in Supabase
-      return [
-        {
-          id: "activity1",
-          user_id: userId,
-          type: "machine_completed",
-          title: "WebIntrusion",
-          date: "Hoy, 14:25",
-          points: 25
-        },
-        {
-          id: "activity2",
-          user_id: userId,
-          type: "badge_earned",
-          title: "Explorador de Redes",
-          date: "Ayer, 18:40",
-          points: 50
-        },
-        {
-          id: "activity3",
-          user_id: userId,
-          type: "challenge_completed",
-          title: "Desafío: Semana Forense",
-          date: "15 May, 09:12",
-          points: 100
-        },
-        {
-          id: "activity4",
-          user_id: userId,
-          type: "level_up",
-          title: "Nivel 7",
-          date: "12 May, 22:30",
-          points: 0
-        }
-      ];
-      
-      // When a real activity table is created, the query would look like this:
-      /*
       const { data, error } = await supabase
         .from('user_activities')
         .select('*')
@@ -73,11 +29,69 @@ export const ActivityService = {
       
       if (error) throw error;
       
-      return data || [];
-      */
+      // Transform the data to match our interface
+      return data.map(activity => ({
+        id: activity.id,
+        user_id: activity.user_id,
+        type: activity.type as 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up',
+        title: activity.title,
+        date: formatDate(activity.created_at),
+        points: activity.points
+      }));
     } catch (error) {
       console.error('Error al obtener la actividad reciente:', error);
       return [];
     }
+  },
+
+  /**
+   * Logs a new user activity
+   */
+  logActivity: async (
+    userId: string, 
+    type: 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up',
+    title: string,
+    points: number = 0
+  ): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc(
+        'log_user_activity',
+        {
+          p_user_id: userId,
+          p_type: type,
+          p_title: title,
+          p_points: points
+        }
+      );
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error al registrar actividad:', error);
+      return false;
+    }
   }
+};
+
+// Helper function to format dates in a user-friendly way
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  // If it's today
+  if (date.toDateString() === now.toDateString()) {
+    return `Hoy, ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+  
+  // If it's yesterday
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Ayer, ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+  
+  // Otherwise return the date
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
+  return `${day} ${month}, ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
 };
