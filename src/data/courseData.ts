@@ -1,7 +1,16 @@
 
-import { Course } from '@/services/CourseService';
+// Instead of using Partial<Course>, let's define a type that matches what Supabase expects
+type CourseInsert = {
+  title: string;
+  description: string;
+  category: string;
+  level: string;
+  image_url: string;
+  instructor: string;
+  duration_minutes: number;
+};
 
-export const courseData: Partial<Course>[] = [
+export const courseData: CourseInsert[] = [
   {
     title: "Fundamentos de Ciberseguridad",
     description: "Curso introductorio que cubre los conceptos básicos de seguridad informática, tipos de amenazas, principios de defensa y mejores prácticas para proteger sistemas y datos.",

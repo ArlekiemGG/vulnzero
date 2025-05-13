@@ -7,7 +7,7 @@ export const seedCourses = async () => {
   try {
     console.log('Starting to seed course data...');
     
-    // Insert courses
+    // Insert courses - using courseData which now has all required fields
     const { data: coursesData, error: coursesError } = await supabase
       .from('courses')
       .insert(courseData)
