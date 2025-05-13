@@ -17,7 +17,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     storage: localStorage,
     storageKey: 'sb-auth-token',
-    debug: false
+    debug: true // Habilitamos debug para ver más información de auth
   },
   global: {
     headers: {
@@ -69,8 +69,28 @@ export const queries = {
    */
   getLeaderboard: async (limit = 100, offset = 0) => {
     console.log("Fetching leaderboard with limit:", limit, "offset:", offset);
+    console.log("Current session:", await supabase.auth.getSession());
     
     try {
+      // Verificamos que hay una sesión activa
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.warn("Warning: No active session found when fetching leaderboard");
+      }
+      
+      // Intentamos primero obtener el conteo de filas para debug
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log("Total profiles in database:", count);
+      
+      if (countError) {
+        console.error("Error counting profiles:", countError);
+      }
+      
+      // Ahora hacemos la consulta real
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -79,10 +99,40 @@ export const queries = {
       
       if (error) {
         console.error("Error fetching leaderboard:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
         throw error;
       }
       
-      console.log("Successfully fetched leaderboard profiles:", data);
+      console.log(`Successfully fetched ${data?.length || 0} leaderboard profiles:`, data);
+      
+      // Si no hay datos, insertamos un perfil de prueba para diagnosticar
+      if (!data || data.length === 0) {
+        console.log("No profiles found. Let's check if we can insert a test profile");
+        
+        // Solo intentamos insertar si hay una sesión activa
+        if (sessionData.session) {
+          try {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: sessionData.session.user.id,
+                username: 'Test User',
+                points: 100,
+                level: 1,
+                solved_machines: 5
+              });
+            
+            if (insertError) {
+              console.error("Failed to insert test profile:", insertError);
+            } else {
+              console.log("Successfully inserted test profile");
+            }
+          } catch (insertErr) {
+            console.error("Exception trying to insert test profile:", insertErr);
+          }
+        }
+      }
+      
       return data || [];
     } catch (err) {
       console.error("Exception in getLeaderboard:", err);
@@ -113,6 +163,63 @@ export const queries = {
       return response;
     } catch (err) {
       console.error("Exception in updateProfile:", err);
+      throw err;
+    }
+  },
+  
+  /**
+   * Create a user's profile if it doesn't exist
+   * This es útil para asegurarnos de que todos los usuarios tienen un perfil
+   * @param userId User ID 
+   * @param username Username to set
+   */
+  createProfileIfNotExists: async (userId: string, username: string) => {
+    if (!userId) return { error: { message: 'User ID is required' } };
+    
+    console.log("Creating profile for user if not exists:", userId);
+    
+    try {
+      // First check if profile exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("Error checking if profile exists:", checkError);
+        throw checkError;
+      }
+      
+      // If profile doesn't exist, create it
+      if (!existingProfile) {
+        console.log("Profile doesn't exist, creating...");
+        const { data, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            username: username || 'New User',
+            points: 0,
+            level: 1,
+            solved_machines: 0,
+            completed_challenges: 0
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          throw insertError;
+        }
+        
+        console.log("Successfully created profile:", data);
+        return data;
+      }
+      
+      console.log("Profile already exists:", existingProfile);
+      return existingProfile;
+    } catch (err) {
+      console.error("Exception in createProfileIfNotExists:", err);
       throw err;
     }
   }

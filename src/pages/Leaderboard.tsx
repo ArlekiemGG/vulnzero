@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -52,11 +53,46 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
   }
 };
 
+// Función para crear un perfil si no existe
+const ensureUserProfile = async (userId: string | undefined, username: string | undefined) => {
+  if (!userId) {
+    console.log("No user ID provided, cannot ensure profile exists");
+    return null;
+  }
+  
+  try {
+    console.log("Ensuring profile exists for user:", userId);
+    return await queries.createProfileIfNotExists(userId, username || 'User');
+  } catch (err) {
+    console.error("Failed to ensure user profile exists:", err);
+    return null;
+  }
+};
+
 const Leaderboard = () => {
   const [selectedRegion, setSelectedRegion] = useState("global");
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
+  
+  // Asegurarnos de que el usuario tenga un perfil
+  useEffect(() => {
+    if (!user) return;
+    
+    const setupUserProfile = async () => {
+      try {
+        // Extraemos el username del user metadata si está disponible
+        const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+        
+        await ensureUserProfile(user.id, username);
+        console.log("User profile setup complete");
+      } catch (err) {
+        console.error("Error setting up user profile:", err);
+      }
+    };
+    
+    setupUserProfile();
+  }, [user]);
   
   // Consulta para obtener todos los perfiles
   const { 
@@ -67,7 +103,7 @@ const Leaderboard = () => {
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: fetchProfiles,
-    retry: 2,
+    retry: 3,
     refetchOnWindowFocus: false
   });
   
@@ -95,6 +131,7 @@ const Leaderboard = () => {
   // Error handling
   useEffect(() => {
     if (error) {
+      console.error("Leaderboard error:", error);
       toast({
         title: "Error al cargar el leaderboard",
         description: (error as Error).message,
@@ -128,6 +165,7 @@ const Leaderboard = () => {
       }
     } else {
       setLeaderboardUsers([]);
+      console.log("No leaderboard data available to map");
     }
   }, [profiles, user]);
   
@@ -154,6 +192,30 @@ const Leaderboard = () => {
       });
     }
   };
+  
+  // Función para forzar la recarga de datos
+  const handleRefresh = () => {
+    console.log("Manually refreshing leaderboard data...");
+    refetch();
+    toast({
+      title: "Actualizando leaderboard",
+      description: "Obteniendo los datos más recientes...",
+    });
+  };
+  
+  // Para debugging: Contar usuarios en leaderboard
+  useEffect(() => {
+    console.log(`Current leaderboard has ${leaderboardUsers.length} users`);
+    
+    // Si está vacío, mostramos información sobre la sesión actual
+    if (leaderboardUsers.length === 0) {
+      const checkSession = async () => {
+        const { data } = await supabase.auth.getSession();
+        console.log("Current session when leaderboard is empty:", data.session);
+      };
+      checkSession();
+    }
+  }, [leaderboardUsers]);
   
   // Obtenemos los top 3 para el showcase
   const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
@@ -222,6 +284,13 @@ const Leaderboard = () => {
                 >
                   Mi posición
                 </Button>
+                <Button
+                  variant="outline"
+                  className="border-cybersec-electricblue text-cybersec-electricblue"
+                  onClick={handleRefresh}
+                >
+                  Actualizar datos
+                </Button>
               </div>
             </header>
 
@@ -232,58 +301,64 @@ const Leaderboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {top3Users.map((user, index) => (
-                      <Card key={user.id} className={`bg-cybersec-black ${
-                        index === 0 ? 'border-cybersec-yellow' : 
-                        index === 1 ? 'border-gray-400' : 
-                        'border-cybersec-red'
-                      }`}>
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center text-center">
-                            <div className="mb-4">
-                              <div className={`relative p-1 rounded-full ${
-                                index === 0 ? 'bg-cybersec-yellow/20 border border-cybersec-yellow' : 
-                                index === 1 ? 'bg-gray-500/20 border border-gray-400' : 
-                                'bg-cybersec-red/20 border border-cybersec-red'
-                              }`}>
-                                <div className="w-20 h-20 rounded-full overflow-hidden">
-                                  <img 
-                                    src={user.avatar || "/placeholder.svg"}
-                                    alt={user.username}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center ${
-                                  index === 0 ? 'bg-cybersec-yellow text-black' : 
-                                  index === 1 ? 'bg-gray-400 text-black' : 
-                                  'bg-cybersec-red text-black'
+                    {top3Users.length > 0 ? (
+                      top3Users.map((user, index) => (
+                        <Card key={user.id} className={`bg-cybersec-black ${
+                          index === 0 ? 'border-cybersec-yellow' : 
+                          index === 1 ? 'border-gray-400' : 
+                          'border-cybersec-red'
+                        }`}>
+                          <CardContent className="p-6">
+                            <div className="flex flex-col items-center text-center">
+                              <div className="mb-4">
+                                <div className={`relative p-1 rounded-full ${
+                                  index === 0 ? 'bg-cybersec-yellow/20 border border-cybersec-yellow' : 
+                                  index === 1 ? 'bg-gray-500/20 border border-gray-400' : 
+                                  'bg-cybersec-red/20 border border-cybersec-red'
                                 }`}>
-                                  {index + 1}
+                                  <div className="w-20 h-20 rounded-full overflow-hidden">
+                                    <img 
+                                      src={user.avatar || "/placeholder.svg"}
+                                      alt={user.username}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center ${
+                                    index === 0 ? 'bg-cybersec-yellow text-black' : 
+                                    index === 1 ? 'bg-gray-400 text-black' : 
+                                    'bg-cybersec-red text-black'
+                                  }`}>
+                                    {index + 1}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            
-                            <h3 className="text-lg font-bold text-white mb-1">{user.username}</h3>
-                            
-                            <div className={`mb-2 ${
-                              index === 0 ? 'text-cybersec-yellow' : 
-                              index === 1 ? 'text-gray-400' : 
-                              'text-cybersec-red'
-                            }`}>
-                              <span className="font-mono font-bold">{user.points} pts</span>
-                            </div>
-                            
-                            <div className="flex justify-center gap-3 text-sm text-gray-400">
-                              <div className="flex items-center">
-                                <Trophy className="h-3.5 w-3.5 mr-1.5 text-cybersec-electricblue" />
-                                Nivel {user.level}
+                              
+                              <h3 className="text-lg font-bold text-white mb-1">{user.username}</h3>
+                              
+                              <div className={`mb-2 ${
+                                index === 0 ? 'text-cybersec-yellow' : 
+                                index === 1 ? 'text-gray-400' : 
+                                'text-cybersec-red'
+                              }`}>
+                                <span className="font-mono font-bold">{user.points} pts</span>
                               </div>
-                              <div>{user.solvedMachines} máquinas</div>
+                              
+                              <div className="flex justify-center gap-3 text-sm text-gray-400">
+                                <div className="flex items-center">
+                                  <Trophy className="h-3.5 w-3.5 mr-1.5 text-cybersec-electricblue" />
+                                  Nivel {user.level}
+                                </div>
+                                <div>{user.solvedMachines} máquinas</div>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="col-span-3 text-center py-8 text-gray-400">
+                        No hay datos disponibles en el leaderboard
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
