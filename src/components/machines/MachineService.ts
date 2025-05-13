@@ -18,9 +18,12 @@ export const MachineService = {
 
   // Get a specific machine by ID
   getMachine: (id: string): MachineDetails | null => {
-    // Verificar que el ID no sea nulo o indefinido
+    // Enhanced debugging
+    console.log("getMachine called with ID:", id);
+    
+    // Verify that the ID is not null or undefined
     if (!id) {
-      console.error("ID de máquina no proporcionado");
+      console.error("Machine ID not provided");
       return null;
     }
     
@@ -36,6 +39,8 @@ export const MachineService = {
       console.error(`Machine with ID ${machineId} not found`);
       return null;
     }
+    
+    console.log("Machine found:", machine.name);
     
     // Add additional details that might be needed for the machine detail page
     return {

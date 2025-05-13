@@ -20,6 +20,7 @@ import MachineTerminal from '@/components/machines/MachineTerminal';
 import MachineProgress, { MachineTask } from '@/components/machines/MachineProgress';
 import MachineHints from '@/components/machines/MachineHints';
 import { MachineService, MachineDetails } from '@/components/machines/MachineService';
+import { MachineSessionService } from '@/components/machines/MachineSessionService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const MachineDetail = () => {
@@ -462,10 +463,48 @@ const MachineDetail = () => {
     }
   };
 
-  // Redirect to session page function
-  const handleStartMachine = () => {
-    if (!id) return;
-    navigate(`/machines/${id}/session`);
+  // Implement the "Start Machine" button functionality
+  const handleStartMachine = async () => {
+    if (!id || !user) {
+      toast({
+        title: "Error",
+        description: "Debes iniciar sesión para iniciar una máquina",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Show a loading toast
+      toast({
+        title: "Solicitando máquina",
+        description: "Estamos preparando tu máquina...",
+      });
+      
+      // Call the MachineSessionService to request a new machine
+      const session = await MachineSessionService.requestMachine(user.id, id);
+      
+      if (session) {
+        // Success! Navigate to the session page
+        toast({
+          title: "¡Máquina solicitada!",
+          description: "Redirigiendo a la página de la sesión...",
+          variant: "success"
+        });
+        
+        // Navigate to the session detail page
+        navigate(`/machines/${id}/session`);
+      } else {
+        throw new Error("No se pudo solicitar la máquina");
+      }
+    } catch (error) {
+      console.error("Error starting machine:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo iniciar la máquina. Por favor, inténtalo de nuevo más tarde.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
