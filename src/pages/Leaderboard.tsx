@@ -22,18 +22,13 @@ import { useAuth } from '@/contexts/AuthContext';
 const fetchProfiles = async () => {
   try {
     console.log("Fetching profiles from Supabase...");
-    const { data, error } = await queries.getLeaderboard();
-    
-    if (error) {
-      console.error("Error fetching profiles:", error);
-      throw new Error(`Error al cargar perfiles: ${error.message}`);
-    }
+    const data = await queries.getLeaderboard();
     
     console.log("Successfully fetched profiles:", data);
     return data || [];
   } catch (err) {
     console.error("Exception fetching profiles:", err);
-    throw err;
+    throw new Error(`Error al cargar perfiles: ${(err as Error).message}`);
   }
 };
 
@@ -47,12 +42,7 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
   try {
     console.log("Fetching current user profile with ID:", userId);
     
-    const { data, error } = await queries.getUserProfile(userId);
-    
-    if (error) {
-      console.error("Error al cargar perfil de usuario:", error);
-      throw error;
-    }
+    const data = await queries.getUserProfile(userId);
     
     console.log("Successfully fetched user profile:", data);
     return data;
@@ -65,6 +55,7 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
 const Leaderboard = () => {
   const [selectedRegion, setSelectedRegion] = useState("global");
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
+  const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
   
   // Consulta para obtener todos los perfiles
@@ -112,38 +103,49 @@ const Leaderboard = () => {
     }
   }, [error]);
   
-  // Convertir perfiles de Supabase en formato LeaderboardUser
-  const mapProfilesToLeaderboardUsers = (profilesData: any[]): LeaderboardUser[] => {
-    return profilesData.map((profile, index) => ({
-      id: profile.id,
-      rank: index + 1,
-      username: profile.username || 'Usuario',
-      avatar: profile.avatar_url,
-      points: profile.points || 0,
-      level: profile.level || 1,
-      solvedMachines: profile.solved_machines || 0,
-      rankChange: 'same',
-      isCurrentUser: currentUserProfile ? profile.id === currentUserProfile.id : false
-    }));
-  };
-  
-  // Para propósitos de depuración
-  console.log("Current profiles data:", profiles);
-  console.log("Current user:", user);
-  console.log("Current user profile:", currentUserProfile);
-  
-  // Preparar datos para la tabla
-  const leaderboardUsers = mapProfilesToLeaderboardUsers(profiles);
-  
-  // Preparar datos para pestañas mensuales y semanales basados en los datos reales
-  const monthlyLeaderboardUsers = mapProfilesToLeaderboardUsers(profiles.slice(0, Math.min(profiles.length, 20)));
-  const weeklyLeaderboardUsers = mapProfilesToLeaderboardUsers(profiles.slice(0, Math.min(profiles.length, 15)));
+  // Convertir perfiles de Supabase en formato LeaderboardUser y marcar el usuario actual
+  useEffect(() => {
+    if (profiles && profiles.length > 0) {
+      const mappedUsers: LeaderboardUser[] = profiles.map((profile: any, index: number) => ({
+        id: profile.id,
+        rank: index + 1,
+        username: profile.username || 'Usuario',
+        avatar: profile.avatar_url,
+        points: profile.points || 0,
+        level: profile.level || 1,
+        solvedMachines: profile.solved_machines || 0,
+        rankChange: 'same',
+        isCurrentUser: user ? profile.id === user.id : false
+      }));
+      
+      setLeaderboardUsers(mappedUsers);
+      console.log("Leaderboard users mapped:", mappedUsers);
+      
+      // Log del usuario actual para debugging
+      if (user) {
+        const currentUser = mappedUsers.find(u => u.isCurrentUser);
+        console.log("Current user in leaderboard:", currentUser);
+      }
+    } else {
+      setLeaderboardUsers([]);
+    }
+  }, [profiles, user]);
   
   // Función para scrollear a la posición del usuario
   const scrollToCurrentUser = () => {
-    const userRow = document.getElementById('current-user-row');
-    if (userRow) {
-      userRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!user || !leaderboardUsers.length) {
+      toast({
+        title: "Usuario no encontrado",
+        description: "No pudimos encontrar tu posición en el ranking actual",
+        variant: "default"
+      });
+      return;
+    }
+    
+    // Buscar si el usuario actual está en el leaderboard
+    const currentUserRow = document.getElementById('current-user-row');
+    if (currentUserRow) {
+      currentUserRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       toast({
         title: "Usuario no encontrado",
@@ -154,7 +156,18 @@ const Leaderboard = () => {
   };
   
   // Obtenemos los top 3 para el showcase
-  const top3Users = leaderboardUsers.slice(0, 3);
+  const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
+
+  // Para propósitos de depuración
+  console.log("Current profiles data:", profiles);
+  console.log("Current user:", user);
+  console.log("Current user profile:", currentUserProfile);
+  console.log("Leaderboard users:", leaderboardUsers);
+  console.log("Is there a current user row?", document.getElementById('current-user-row'));
+  
+  // Preparar datos para pestañas mensuales y semanales basados en los datos reales
+  const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20));
+  const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15));
 
   return (
     <div className="min-h-screen bg-cybersec-black">
@@ -177,6 +190,7 @@ const Leaderboard = () => {
           solvedMachines: 0,
           completedChallenges: 0,
         }} />
+        
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <header className="mb-6 flex justify-between items-center">

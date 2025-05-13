@@ -38,11 +38,26 @@ export const queries = {
   getUserProfile: async (userId: string | undefined) => {
     if (!userId) return null;
     
-    return await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    console.log("Fetching user profile with ID:", userId);
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        throw error;
+      }
+      
+      console.log("Successfully fetched user profile:", data);
+      return data;
+    } catch (err) {
+      console.error("Exception in getUserProfile:", err);
+      throw err;
+    }
   },
   
   /**
@@ -51,11 +66,26 @@ export const queries = {
    * @param offset Pagination offset 
    */
   getLeaderboard: async (limit = 100, offset = 0) => {
-    return await supabase
-      .from('profiles')
-      .select('*')
-      .order('points', { ascending: false })
-      .range(offset, offset + limit - 1);
+    console.log("Fetching leaderboard with limit:", limit, "offset:", offset);
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('points', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (error) {
+        console.error("Error fetching leaderboard:", error);
+        throw error;
+      }
+      
+      console.log("Successfully fetched leaderboard profiles:", data);
+      return data || [];
+    } catch (err) {
+      console.error("Exception in getLeaderboard:", err);
+      throw err;
+    }
   },
   
   /**
@@ -66,9 +96,22 @@ export const queries = {
   updateProfile: async (userId: string | undefined, data: any) => {
     if (!userId) return { error: { message: 'User ID is required' } };
     
-    return await supabase
-      .from('profiles')
-      .update(data)
-      .eq('id', userId);
+    console.log("Updating profile for user:", userId, "with data:", data);
+    
+    try {
+      const response = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', userId);
+      
+      if (response.error) {
+        console.error("Error updating profile:", response.error);
+      }
+      
+      return response;
+    } catch (err) {
+      console.error("Exception in updateProfile:", err);
+      throw err;
+    }
   }
 };
