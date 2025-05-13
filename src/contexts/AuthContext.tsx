@@ -95,6 +95,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const handleEmailConfirmation = async () => {
       const hash = window.location.hash;
       const query = window.location.search;
+      const path = window.location.pathname;
+      
+      console.log("Current URL state:", { path, hash, query });
       
       // Check if we have an access_token in the URL (email confirmation)
       if (hash && hash.includes('access_token=')) {
@@ -127,6 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Check for password reset flow
       if (query && query.includes('type=recovery')) {
+        console.log("Detected recovery flow");
         // Redirect to reset password page maintaining the query parameters
         navigate(`/auth${query}`);
       }
@@ -150,6 +154,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               title: "Acceso exitoso",
               description: "Bienvenido de nuevo, hacker.",
             });
+            
+            // Ensure we redirect to dashboard on successful sign in
+            if (window.location.pathname === '/auth') {
+              navigate('/dashboard');
+            }
           }, 0);
         }
 
@@ -213,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
+      console.log("Login successful, redirecting to dashboard");
       // Force page reload for a clean state
       window.location.href = '/dashboard';
     } catch (error: any) {
@@ -307,6 +317,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const currentOrigin = window.location.origin;
       const redirectUrl = `${currentOrigin}/dashboard`;
       
+      console.log("GitHub redirect URL:", redirectUrl);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -331,6 +343,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Obtén la URL completa para la redirección
       const currentOrigin = window.location.origin;
       const redirectUrl = `${currentOrigin}/dashboard`;
+      
+      console.log("Google redirect URL:", redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -375,7 +389,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // Obtén la URL completa para la redirección
       const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/auth?reset=true`;
+      const redirectUrl = `${currentOrigin}/auth?type=recovery`;
+      
+      console.log("Reset password redirect URL:", redirectUrl);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
@@ -419,6 +435,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
+      console.log("Updating password...");
       const { error } = await supabase.auth.updateUser({ 
         password: newPassword 
       });
@@ -432,6 +449,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       navigate('/dashboard');
     } catch (error: any) {
+      console.error("Error updating password:", error);
       toast({
         title: "Error al actualizar contraseña",
         description: error.message,

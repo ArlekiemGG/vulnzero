@@ -18,5 +18,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     storageKey: 'sb-auth-token',
     debug: import.meta.env.DEV // Solo activamos debug en desarrollo
+  },
+  global: {
+    headers: {
+      'x-application-name': 'vulnzero'
+    }
   }
 });
