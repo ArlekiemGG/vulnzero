@@ -27,6 +27,10 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
     legendary: 'bg-amber-900 text-amber-400 border-amber-500',
   };
 
+  const progressPercentage = badge.progress !== undefined && badge.total !== undefined
+    ? Math.round((badge.progress / badge.total) * 100) 
+    : 0;
+
   return (
     <Card className={`border ${badge.earned ? rarityClasses[badge.rarity] : 'border-gray-700 bg-gray-900 opacity-60'} hover:opacity-100 transition-opacity`}>
       <CardContent className="p-4 flex flex-col items-center text-center">
@@ -39,13 +43,22 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
         <p className="text-xs text-gray-400 mb-2">{badge.description}</p>
         
         {badge.progress !== undefined && badge.total !== undefined && (
-          <div className="text-xs text-gray-400 mt-1">
-            Progreso: {badge.progress}/{badge.total}
+          <div className="w-full mt-2">
+            <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${badge.earned ? 'bg-cybersec-neongreen' : 'bg-gray-500'}`}
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <div className="text-xs text-gray-400 mt-1 flex justify-between">
+              <span>{badge.progress}/{badge.total}</span>
+              <span>{progressPercentage}%</span>
+            </div>
           </div>
         )}
         
         <Badge 
-          className={`mt-2 ${badge.earned ? rarityClasses[badge.rarity] : 'bg-gray-800 text-gray-400 border-gray-600'}`}
+          className={`mt-3 ${badge.earned ? rarityClasses[badge.rarity] : 'bg-gray-800 text-gray-400 border-gray-600'}`}
           variant="outline"
         >
           {badge.rarity.charAt(0).toUpperCase() + badge.rarity.slice(1)}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import BadgeCard from '@/components/dashboard/BadgeCard';
+import { AchievementBadge } from '@/components/dashboard/BadgeCard';
 import MachineCard from '@/components/machines/MachineCard';
 import { Link } from 'react-router-dom';
 import { supabase, queries, Profiles } from '@/integrations/supabase/client';
@@ -15,46 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { ActivityService, UserActivity } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
-
-// Mock data para insignias - este es un buen candidato para crear una tabla en Supabase
-const badges = [
-  {
-    id: "badge1",
-    name: "Primer Sangre",
-    description: "Completa tu primera máquina vulnerable",
-    icon: <Trophy className="h-5 w-5 text-green-400" />,
-    earned: true,
-    rarity: "common" as const
-  },
-  {
-    id: "badge2",
-    name: "Explorador de Redes",
-    description: "Completa 5 máquinas con enfoque en redes",
-    icon: <Database className="h-5 w-5 text-blue-400" />,
-    earned: true,
-    progress: 5,
-    total: 5,
-    rarity: "uncommon" as const
-  },
-  {
-    id: "badge3",
-    name: "Maestro Web",
-    description: "Resolver 10 desafíos de seguridad web",
-    icon: <Code className="h-5 w-5 text-purple-400" />,
-    earned: false,
-    progress: 6,
-    total: 10,
-    rarity: "rare" as const
-  },
-  {
-    id: "badge4",
-    name: "Dominador de CTFs",
-    description: "Ganar un CTF semanal",
-    icon: <Flag className="h-5 w-5 text-amber-400" />,
-    earned: false,
-    rarity: "legendary" as const
-  }
-];
+import { BadgeService } from '@/components/dashboard/BadgeService';
 
 // Mock data para máquinas recomendadas
 const recommendedMachines = [
@@ -104,6 +66,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
+  const [badges, setBadges] = useState<AchievementBadge[]>([]);
   const [activeChallenge, setActiveChallenge] = useState<{
     id: string;
     title: string;
@@ -146,6 +109,10 @@ const Dashboard = () => {
         // Load user activity from real data only
         const activity = await ActivityService.getRecentActivity(user.id);
         setRecentActivity(activity);
+        
+        // Load user badges data
+        const badges = await BadgeService.getUserBadges(user.id);
+        setBadges(badges);
         
         // Load active challenge
         const challenges = await ChallengeService.getChallenges();
