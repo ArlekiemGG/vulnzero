@@ -289,13 +289,15 @@ export const CourseService = {
       .from('user_course_progress')
       .select(`
         course_id,
-        courses:course_id (*)
+        courses:course_id(*)
       `)
       .eq('user_id', userId)
       .eq('completed', true);
     
     if (error) throw error;
-    return data ? data.map(item => item.courses) : [];
+    return data && data.length > 0 
+      ? data.map(item => item.courses as Course) 
+      : [];
   },
 
   // Obtener cursos en progreso por el usuario
@@ -304,7 +306,7 @@ export const CourseService = {
       .from('user_course_progress')
       .select(`
         progress_percentage,
-        courses:course_id (*)
+        courses:course_id(*)
       `)
       .eq('user_id', userId)
       .eq('completed', false)
@@ -312,9 +314,11 @@ export const CourseService = {
     
     if (error) throw error;
     
-    return data ? data.map(item => ({
-      ...item.courses,
-      progress: item.progress_percentage
-    })) : [];
+    return data && data.length > 0
+      ? data.map(item => ({
+          ...(item.courses as Course),
+          progress: item.progress_percentage
+        }))
+      : [];
   }
 };

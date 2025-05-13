@@ -92,6 +92,14 @@ const Tutorials = () => {
     setLevelFilter('');
   };
 
+  // Función para navegar a las pestañas
+  const navigateToTab = (tabValue: string) => {
+    const tabElement = document.querySelector(`[data-value="${tabValue}"]`) as HTMLElement;
+    if (tabElement) {
+      tabElement.click();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
@@ -245,7 +253,7 @@ const Tutorials = () => {
                     <Button 
                       variant="link" 
                       className="text-cybersec-electricblue mt-2"
-                      onClick={() => document.querySelector('[data-value="all"]')?.click()}
+                      onClick={() => navigateToTab("all")}
                     >
                       Explorar cursos disponibles
                     </Button>
@@ -272,7 +280,7 @@ const Tutorials = () => {
                     <Button 
                       variant="link" 
                       className="text-cybersec-electricblue mt-2"
-                      onClick={() => document.querySelector('[data-value="all"]')?.click()}
+                      onClick={() => navigateToTab("all")}
                     >
                       Explorar cursos disponibles
                     </Button>
