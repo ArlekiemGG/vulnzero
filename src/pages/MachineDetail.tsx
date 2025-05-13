@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -15,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import MachineTerminal from '@/components/machines/MachineTerminal';
-import MachineProgress from '@/components/machines/MachineProgress';
+import MachineProgress, { MachineTask } from '@/components/machines/MachineProgress';
 import MachineHints from '@/components/machines/MachineHints';
 import { MachineService, MachineDetails } from '@/components/machines/MachineService';
 
@@ -34,7 +35,8 @@ const MachineDetail = () => {
   const [machine, setMachine] = useState<MachineDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProgress, setUserProgress] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState<number[]>([]);
+  const [completedTaskIds, setCompletedTaskIds] = useState<number[]>([]);
+  const [machineTasks, setMachineTasks] = useState<MachineTask[]>([]);
   
   // Fetch machine and user progress data
   useEffect(() => {
@@ -71,16 +73,20 @@ const MachineDetail = () => {
           if (progressData.progress >= 80) derivedCompletedTasks.push(4); // Privilege escalation task
           if (progressData.progress >= 100) derivedCompletedTasks.push(5); // Root flag task
           
-          setCompletedTasks(derivedCompletedTasks);
+          setCompletedTaskIds(derivedCompletedTasks);
           
           // Update the tasks with completed status based on user progress
           if (machineData && machineData.tasks) {
-            const updatedTasks = machineData.tasks.map(task => ({
-              ...task,
+            // Convert machine tasks to MachineTask format for the component
+            const updatedTasks: MachineTask[] = machineData.tasks.map(task => ({
+              id: task.id,
+              title: task.name,
+              description: task.description,
               completed: derivedCompletedTasks.includes(task.id)
             }));
             
-            setMachine(prev => prev ? { ...prev, tasks: updatedTasks, userProgress: progressData.progress } : null);
+            setMachineTasks(updatedTasks);
+            setMachine(prev => prev ? { ...prev, userProgress: progressData.progress } : null);
           }
         }
       } catch (error) {
@@ -168,22 +174,17 @@ const MachineDetail = () => {
           ]);
           
           // Marcar la primera tarea como completada (enumeración de servicios)
-          if (user && machine && !completedTasks.includes(1)) {
+          if (user && machine && !completedTaskIds.includes(1)) {
             // Actualizar el estado local
-            const newCompletedTasks = [...completedTasks, 1];
-            setCompletedTasks(newCompletedTasks);
+            const newCompletedTasks = [...completedTaskIds, 1];
+            setCompletedTaskIds(newCompletedTasks);
             
             // Actualizar las tareas en la máquina
-            setMachine(prev => {
-              if (!prev || !prev.tasks) return prev;
-              
-              const updatedTasks = prev.tasks.map(task => ({
-                ...task,
-                completed: task.id === 1 ? true : task.completed
-              }));
-              
-              return { ...prev, tasks: updatedTasks };
-            });
+            const updatedTasks = machineTasks.map(task => ({
+              ...task,
+              completed: task.id === 1 ? true : task.completed
+            }));
+            setMachineTasks(updatedTasks);
             
             // Actualizar el progreso
             const newProgress = Math.max(userProgress, 20);
@@ -237,22 +238,17 @@ const MachineDetail = () => {
           ]);
           
           // Marcar la segunda tarea como completada (conseguir shell)
-          if (user && machine && !completedTasks.includes(2)) {
+          if (user && machine && !completedTaskIds.includes(2)) {
             // Actualizar el estado local
-            const newCompletedTasks = [...completedTasks, 2];
-            setCompletedTasks(newCompletedTasks);
+            const newCompletedTasks = [...completedTaskIds, 2];
+            setCompletedTaskIds(newCompletedTasks);
             
             // Actualizar las tareas en la máquina
-            setMachine(prev => {
-              if (!prev || !prev.tasks) return prev;
-              
-              const updatedTasks = prev.tasks.map(task => ({
-                ...task,
-                completed: task.id === 2 ? true : task.completed
-              }));
-              
-              return { ...prev, tasks: updatedTasks };
-            });
+            const updatedTasks = machineTasks.map(task => ({
+              ...task,
+              completed: task.id === 2 ? true : task.completed
+            }));
+            setMachineTasks(updatedTasks);
             
             // Actualizar el progreso
             const newProgress = Math.max(userProgress, 40);
@@ -301,20 +297,15 @@ const MachineDetail = () => {
         });
         
         // Actualizar tareas completadas
-        const newCompletedTasks = [...completedTasks, 3]; // Tarea 3 = flag de usuario
-        setCompletedTasks(newCompletedTasks);
+        const newCompletedTasks = [...completedTaskIds, 3]; // Tarea 3 = flag de usuario
+        setCompletedTaskIds(newCompletedTasks);
         
         // Actualizar las tareas en la máquina
-        setMachine(prev => {
-          if (!prev || !prev.tasks) return prev;
-          
-          const updatedTasks = prev.tasks.map(task => ({
-            ...task,
-            completed: task.id === 3 ? true : task.completed
-          }));
-          
-          return { ...prev, tasks: updatedTasks };
-        });
+        const updatedTasks = machineTasks.map(task => ({
+          ...task,
+          completed: task.id === 3 ? true : task.completed
+        }));
+        setMachineTasks(updatedTasks);
         
         // Update user progress
         const newProgress = 50; // Flag de usuario = 50% de progreso
@@ -366,20 +357,15 @@ const MachineDetail = () => {
         });
         
         // Actualizar tareas completadas
-        const newCompletedTasks = [...completedTasks, 4, 5]; // Tareas 4 y 5 = escalada de privilegios y flag de root
-        setCompletedTasks(newCompletedTasks);
+        const newCompletedTasks = [...completedTaskIds, 4, 5]; // Tareas 4 y 5 = escalada de privilegios y flag de root
+        setCompletedTaskIds(newCompletedTasks);
         
         // Actualizar las tareas en la máquina
-        setMachine(prev => {
-          if (!prev || !prev.tasks) return prev;
-          
-          const updatedTasks = prev.tasks.map(task => ({
-            ...task,
-            completed: task.id === 4 || task.id === 5 ? true : task.completed
-          }));
-          
-          return { ...prev, tasks: updatedTasks };
-        });
+        const updatedTasks = machineTasks.map(task => ({
+          ...task,
+          completed: task.id === 4 || task.id === 5 ? true : task.completed
+        }));
+        setMachineTasks(updatedTasks);
         
         // Update user progress to 100%
         setUserProgress(100);
@@ -486,9 +472,6 @@ const MachineDetail = () => {
     );
   }
   
-  // Use machine.tasks directly without additional checks since we know it exists now
-  const tasks = machine.tasks || [];
-  
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
@@ -568,7 +551,7 @@ const MachineDetail = () => {
                     
                     <div className="flex justify-between">
                       <span className="text-gray-400">Lanzamiento</span>
-                      <span>{new Date(machine.releaseDate).toLocaleDateString()}</span>
+                      <span>{new Date(machine.releaseDate || '').toLocaleDateString()}</span>
                     </div>
                     
                     <div className="flex flex-wrap gap-2 pt-2">
@@ -725,7 +708,7 @@ const MachineDetail = () => {
                     <div>
                       <h4 className="font-medium text-cybersec-electricblue mb-2">Requisitos</h4>
                       <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                        {machine.requirements.map((req, idx) => (
+                        {machine.requirements?.map((req, idx) => (
                           <li key={idx}>{req}</li>
                         ))}
                       </ul>
@@ -733,7 +716,7 @@ const MachineDetail = () => {
                     <div>
                       <h4 className="font-medium text-cybersec-electricblue mb-2">Habilidades</h4>
                       <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                        {machine.skills.map((skill, idx) => (
+                        {machine.skills?.map((skill, idx) => (
                           <li key={idx}>{skill}</li>
                         ))}
                       </ul>
@@ -746,12 +729,12 @@ const MachineDetail = () => {
             {/* Columna derecha - Progreso, pistas y recursos */}
             <div className="space-y-6">
               <MachineProgress 
-                tasks={tasks} 
+                tasks={machineTasks} 
                 isLoading={loading} 
               />
               
               <MachineHints 
-                hints={machine.hints} 
+                hints={machine.hints || []} 
                 onUnlockHint={handleUnlockHint}
                 isLoading={loading}
               />

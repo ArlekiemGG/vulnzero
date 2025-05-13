@@ -188,8 +188,7 @@ export const MachineService = {
         // If it's the root flag, increment the user's solved machines count
         if (flagType === 'root') {
           try {
-            // Since increment_solved_machines doesn't exist in the listed RPC functions,
-            // we'll update the profile directly
+            // Update the profile directly to increment solved_machines
             await supabase
               .from('profiles')
               .update({ solved_machines: supabase.rpc('solved_machines') + 1 })
