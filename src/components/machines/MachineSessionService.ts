@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { calculateRemainingTime } from './utils/SessionUtils';
 
 // Interface for machine session information
 export interface MachineSession {
@@ -28,6 +27,27 @@ export interface MachineSession {
 // External API configuration
 // Actualizado para usar la URL del backend de Flask real
 const EXTERNAL_API_URL = "http://localhost:5000"; // Dirección donde se ejecuta Flask
+
+// Helper function to map database session to MachineSession interface
+const mapDbSessionToMachineSession = (session: any): MachineSession => {
+  const remainingTimeMinutes = calculateRemainingTime(session.expires_at);
+  
+  return {
+    id: session.id,
+    machineTypeId: session.machine_type_id,
+    sessionId: session.session_id,
+    status: session.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
+    ipAddress: session.ip_address,
+    username: session.username,
+    password: session.password,
+    connectionInfo: session.connection_info as Record<string, any>,
+    startedAt: session.started_at,
+    expiresAt: session.expires_at,
+    terminatedAt: session.terminated_at,
+    remainingTimeMinutes,
+    machineDetails: session.machine_types
+  };
+};
 
 export const MachineSessionService = {
   // Request a new machine instance
@@ -88,20 +108,7 @@ export const MachineSessionService = {
         throw error;
       }
 
-      return {
-        id: sessionData.id,
-        machineTypeId: sessionData.machine_type_id,
-        sessionId: sessionData.session_id,
-        status: sessionData.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
-        ipAddress: sessionData.ip_address,
-        username: sessionData.username,
-        password: sessionData.password,
-        connectionInfo: sessionData.connection_info as Record<string, any>,
-        startedAt: sessionData.started_at,
-        expiresAt: sessionData.expires_at,
-        terminatedAt: sessionData.terminated_at,
-        remainingTimeMinutes: Math.floor((new Date(sessionData.expires_at).getTime() - Date.now()) / (60 * 1000))
-      };
+      return mapDbSessionToMachineSession(sessionData);
     } catch (error) {
       console.error('Error requesting machine:', error);
       return null;
@@ -122,28 +129,7 @@ export const MachineSessionService = {
         throw error;
       }
 
-      return sessions.map(session => {
-        // Calculate remaining time
-        const now = new Date();
-        const expiresAt = new Date(session.expires_at);
-        const remainingTimeMinutes = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (60 * 1000)));
-        
-        return {
-          id: session.id,
-          machineTypeId: session.machine_type_id,
-          sessionId: session.session_id,
-          status: session.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
-          ipAddress: session.ip_address,
-          username: session.username,
-          password: session.password,
-          connectionInfo: session.connection_info as Record<string, any>,
-          startedAt: session.started_at,
-          expiresAt: session.expires_at,
-          terminatedAt: session.terminated_at,
-          remainingTimeMinutes,
-          machineDetails: session.machine_types
-        };
-      });
+      return sessions.map(mapDbSessionToMachineSession);
     } catch (error) {
       console.error('Error fetching user machine sessions:', error);
       return [];
