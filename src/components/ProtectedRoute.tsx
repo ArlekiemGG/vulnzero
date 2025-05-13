@@ -9,46 +9,53 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+/**
+ * ProtectedRoute component ensures users are authenticated before accessing protected pages
+ * Includes safety mechanisms to prevent infinite loops and handle edge cases
+ */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [redirected, setRedirected] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
   
-  // Use useRef instead of useState for timeout
+  // Use useRef for handling timeouts to avoid memory leaks
   const authCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Anti-infinite loop protection
+  // Detect potential infinite loading loops
   useEffect(() => {
     if (loading) {
-      setLoadingCount(prev => prev + 1);
+      setLoadingCount(prevCount => prevCount + 1);
     }
   }, [loading]);
   
+  // Store current route for redirection after login
   useEffect(() => {
-    // Store current route if no active session
-    // for redirection after login
     if (!loading && !user && !redirected) {
       localStorage.setItem('redirectAfterLogin', location.pathname);
-      setRedirected(true); // Prevent multiple redirects
+      setRedirected(true);
     }
   }, [user, loading, location, redirected]);
   
-  // Clear any existing timeout when component unmounts
+  // Clean up timeouts when component unmounts
   useEffect(() => {
     return () => {
-      if (authCheckTimeoutRef.current !== null) {
+      if (authCheckTimeoutRef.current) {
         clearTimeout(authCheckTimeoutRef.current);
+      }
+      
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
       }
     };
   }, []);
   
-  // Detect potential infinite loops with loading state
+  // Safety mechanism for handling potential infinite loops
   useEffect(() => {
     if (loadingCount > 5) {
       console.error("Potential infinite loading loop detected in ProtectedRoute");
       
-      // Force break the potential loop after 3 seconds
       authCheckTimeoutRef.current = setTimeout(() => {
         if (loading) {
           toast({
@@ -64,24 +71,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   }, [loadingCount, loading]);
   
-  // Prevent multiple loading indicators for better UX
+  // Delayed loading indicator to prevent flashing
   const [showLoading, setShowLoading] = useState(false);
   
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     if (loading) {
       // Only show loading indicator after 300ms to prevent flashing
-      timer = setTimeout(() => setShowLoading(true), 300);
+      loadingTimerRef.current = setTimeout(() => setShowLoading(true), 300);
     } else {
       setShowLoading(false);
     }
     
     return () => {
-      clearTimeout(timer);
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
     };
   }, [loading]);
   
-  // Mientras verificamos el estado de autenticación, mostramos loading
+  // Show loading state
   if (loading && showLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cybersec-black">
@@ -93,9 +101,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // Si no está autenticado, redireccionamos a la página de auth con notificación
+  // Redirect to auth page if not authenticated
   if (!loading && !user) {
-    // Prevent toast spam - only show once
     if (!redirected) {
       toast({
         title: "Acceso restringido",
@@ -107,7 +114,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
   
-  // Si está autenticado, renderizamos los children dentro de un ErrorBoundary
+  // Render children with error boundary protection
   return (
     <ErrorBoundary>
       {children}

@@ -1,10 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import LeaderboardTable, { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
+import { 
+  fetchLeaderboardData, 
+  getCurrentUserLeaderboardPosition 
+} from '@/components/leaderboard/LeaderboardService';
+import { userProfiles } from '@/integrations/supabase/client';
 import { 
   Select, 
   SelectContent, 
@@ -16,86 +21,49 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, RefreshCw, AlertTriangle } from 'lucide-react';
-import { supabase, queries } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-
-// Function to fetch profiles from Supabase
-const fetchProfiles = async () => {
-  try {
-    console.log("Fetching profiles from Supabase...");
-    const data = await queries.getLeaderboard();
-    
-    console.log("Fetched profiles count:", data.length);
-    return data || [];
-  } catch (err) {
-    console.error("Exception fetching profiles:", err);
-    throw new Error(`Error al cargar perfiles: ${(err as Error).message}`);
-  }
-};
-
-// Function to fetch current user profile
-const fetchCurrentUserProfile = async (userId: string | undefined) => {
-  if (!userId) {
-    console.log("No user ID provided, cannot fetch profile");
-    return null;
-  }
-  
-  try {
-    console.log("Fetching current user profile with ID:", userId);
-    
-    const data = await queries.getUserProfile(userId);
-    
-    console.log("Successfully fetched user profile:", data);
-    return data;
-  } catch (err) {
-    console.error("Exception fetching current user profile:", err);
-    throw err;
-  }
-};
-
-// Function to ensure user profile exists
-const ensureUserProfile = async (userId: string | undefined, username: string | undefined) => {
-  if (!userId) {
-    console.log("No user ID provided, cannot ensure profile exists");
-    return null;
-  }
-  
-  try {
-    console.log("Ensuring profile exists for user:", userId);
-    return await queries.createProfileIfNotExists(userId, username || 'User');
-  } catch (err) {
-    console.error("Failed to ensure user profile exists:", err);
-    return null;
-  }
-};
 
 const Leaderboard = () => {
   const [selectedRegion, setSelectedRegion] = useState("global");
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>([]);
   const { user } = useAuth();
-  const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
   const [hasAttemptedProfileCreation, setHasAttemptedProfileCreation] = useState(false);
   
-  // Ensure user has a profile - but only once
+  // Query to fetch leaderboard data
+  const { 
+    data: profiles = [], 
+    isLoading,
+    error,
+    refetch,
+    isError,
+    isRefetching
+  } = useQuery({
+    queryKey: ['leaderboard-profiles', selectedRegion],
+    queryFn: () => fetchLeaderboardData(),
+    retry: 2,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    staleTime: 60000,
+  });
+  
+  // Ensure user profile exists
   useEffect(() => {
     if (!user || hasAttemptedProfileCreation) return;
     
     const setupUserProfile = async () => {
       try {
-        // Extract username from user metadata if available
-        const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
-        
-        const profile = await ensureUserProfile(user.id, username);
-        console.log("User profile setup complete:", profile);
-        
-        if (profile) {
-          setCurrentUserProfile(profile);
+        if (user) {
+          const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+          const profile = await userProfiles.createIfNotExists(user.id, username);
+          
+          if (profile) {
+            setCurrentUserProfile(profile);
+          }
         }
       } catch (err) {
-        console.error("Error setting up user profile:", err);
-        setDiagnosticInfo(`Error al configurar perfil: ${(err as Error).message}`);
+        console.error("Error ensuring user profile exists:", err);
       } finally {
         setHasAttemptedProfileCreation(true);
       }
@@ -104,110 +72,50 @@ const Leaderboard = () => {
     setupUserProfile();
   }, [user, hasAttemptedProfileCreation]);
   
-  // Query to fetch profiles - limited retries
-  const { 
-    data: profiles = [], 
-    isLoading,
-    error,
-    refetch,
-    isError,
-    failureCount,
-    isRefetching
-  } = useQuery({
-    queryKey: ['leaderboard-profiles', selectedRegion],
-    queryFn: fetchProfiles,
-    retry: 2, // Lower the retry count to 2
-    retryDelay: 1000, // Use a consistent retry delay
-    refetchOnWindowFocus: false,
-    staleTime: 60000, // Data stays fresh for 1 minute
-  });
-  
-  // Get current user profile just once when user changes
+  // Load current user profile
   useEffect(() => {
-    if (!user || hasAttemptedProfileCreation) return;
+    if (!user) return;
     
-    const loadCurrentUser = async () => {
+    const loadUserProfile = async () => {
       try {
-        const profile = await fetchCurrentUserProfile(user.id);
+        const profile = await userProfiles.get(user.id);
         if (profile) {
           setCurrentUserProfile(profile);
-          console.log("Current user profile loaded successfully:", profile);
-        } else {
-          console.log("No profile found for current user, attempting to create");
-          const newProfile = await ensureUserProfile(
-            user.id, 
-            user.user_metadata?.username || user.email?.split('@')[0] || 'User'
-          );
-          setCurrentUserProfile(newProfile);
         }
       } catch (err) {
-        console.error("Error fetching current user profile:", err);
-        toast({
-          title: "Error al cargar perfil",
-          description: "No se pudieron cargar tus datos de perfil.",
-          variant: "destructive"
-        });
-      } finally {
-        setHasAttemptedProfileCreation(true);
+        console.error("Error loading user profile:", err);
       }
     };
     
-    loadCurrentUser();
-  }, [user, hasAttemptedProfileCreation]);
+    loadUserProfile();
+  }, [user]);
   
-  // Error handling - show errors only once
-  useEffect(() => {
-    if (error && !diagnosticInfo) {
-      console.error("Leaderboard error:", error);
-      setDiagnosticInfo(`Error: ${(error as Error).message}`);
-      
-      toast({
-        title: "Error al cargar el leaderboard",
-        description: (error as Error).message,
-        variant: "destructive"
-      });
-    } else if (!error) {
-      setDiagnosticInfo(null);
-    }
-  }, [error, diagnosticInfo]);
-  
-  // Map profiles to leaderboard format only if they've changed
+  // Transform profiles to leaderboard format
   useEffect(() => {
     if (!profiles || profiles.length === 0) {
       setLeaderboardUsers([]);
       return;
     }
     
-    console.log("Processing profiles for leaderboard display:", profiles);
-    
-    const mappedUsers: LeaderboardUser[] = profiles.map((profile: any, index: number) => ({
-      id: profile.id,
+    const mappedUsers = profiles.map((profile: LeaderboardUser, index: number) => ({
+      ...profile,
       rank: index + 1,
-      username: profile.username || 'Usuario',
-      avatar: profile.avatar_url,
-      points: profile.points || 0,
-      level: profile.level || 1,
-      solvedMachines: profile.solved_machines || 0,
-      rankChange: 'same',
       isCurrentUser: user ? profile.id === user.id : false
     }));
     
     setLeaderboardUsers(mappedUsers);
-    console.log("Leaderboard users mapped:", mappedUsers);
   }, [profiles, user]);
   
   // Function to scroll to user position
-  const scrollToCurrentUser = () => {
-    if (!user || !leaderboardUsers.length) {
+  const scrollToCurrentUser = useCallback(() => {
+    if (!user) {
       toast({
         title: "Usuario no encontrado",
-        description: "No pudimos encontrar tu posición en el ranking actual",
-        variant: "default"
+        description: "Debes iniciar sesión para ver tu posición",
       });
       return;
     }
     
-    // Find current user row
     const currentUserRow = document.getElementById('current-user-row');
     if (currentUserRow) {
       currentUserRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -215,71 +123,59 @@ const Leaderboard = () => {
       toast({
         title: "Usuario no encontrado",
         description: "No pudimos encontrar tu posición en el ranking actual",
-        variant: "default"
+      });
+    }
+  }, [user]);
+  
+  // Function to manually refresh data
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast({
+        title: "Datos actualizados",
+        description: "Los datos del leaderboard han sido actualizados",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar los datos",
+        variant: "destructive"
       });
     }
   };
   
-  // Function to manually refresh data
-  const handleRefresh = async () => {
-    console.log("Manually refreshing leaderboard data...");
-    
-    // If there's user without profile, try to create one first
-    if (user && !currentUserProfile) {
-      try {
-        await ensureUserProfile(
-          user.id, 
-          user.user_metadata?.username || user.email?.split('@')[0] || 'User'
-        );
-      } catch (err) {
-        console.error("Error ensuring profile exists during refresh:", err);
-      }
-    }
-    
-    // Refresh data
-    refetch();
-    
-    toast({
-      title: "Actualizando leaderboard",
-      description: "Obteniendo los datos más recientes...",
-    });
-  };
-  
-  // Get top 3 users for the showcase
+  // Get top 3 users for showcase
   const top3Users = leaderboardUsers.slice(0, Math.min(3, leaderboardUsers.length));
-
-  // For debugging purposes
-  console.log("Current profiles data:", profiles);
-  console.log("Current user:", user);
-  console.log("Current user profile:", currentUserProfile);
-  console.log("Leaderboard users:", leaderboardUsers);
-  console.log("Is there a current user row?", document.getElementById('current-user-row'));
   
-  // Prepare data for monthly and weekly tabs based on real data
+  // Prepare data for monthly and weekly tabs
+  // For a real implementation, these would be fetched separately from the backend
   const monthlyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 20));
   const weeklyLeaderboardUsers = leaderboardUsers.slice(0, Math.min(leaderboardUsers.length, 15));
+  
+  // Calculate user stats for sidebar
+  const userStats = currentUserProfile ? {
+    level: currentUserProfile.level || 1,
+    points: currentUserProfile.points || 0,
+    pointsToNextLevel: 500, // This should be calculated based on level logic
+    progress: currentUserProfile.points ? (currentUserProfile.points % 500) / 5 : 0,
+    rank: leaderboardUsers.find(u => u.isCurrentUser)?.rank || 0,
+    solvedMachines: currentUserProfile.solved_machines || 0,
+    completedChallenges: currentUserProfile.completed_challenges || 0,
+  } : {
+    level: 1,
+    points: 0,
+    pointsToNextLevel: 500,
+    progress: 0,
+    rank: 0,
+    solvedMachines: 0,
+    completedChallenges: 0,
+  };
 
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
       <div className="flex pt-16">
-        <Sidebar userStats={currentUserProfile ? {
-          level: currentUserProfile.level || 1,
-          points: currentUserProfile.points || 0,
-          pointsToNextLevel: 500, // This value should be calculated based on your level logic
-          progress: 0, // This should also be calculated
-          rank: leaderboardUsers.find(u => u.isCurrentUser)?.rank || 0,
-          solvedMachines: currentUserProfile.solved_machines || 0,
-          completedChallenges: currentUserProfile.completed_challenges || 0,
-        } : {
-          level: 1,
-          points: 0,
-          pointsToNextLevel: 500,
-          progress: 0,
-          rank: 0,
-          solvedMachines: 0,
-          completedChallenges: 0,
-        }} />
+        <Sidebar userStats={userStats} />
         
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
@@ -324,22 +220,12 @@ const Leaderboard = () => {
               </div>
             </header>
 
-            {diagnosticInfo && (
-              <Alert className="mb-4 bg-red-900/20 border-red-900">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Información de diagnóstico</AlertTitle>
-                <AlertDescription className="font-mono text-sm">
-                  {diagnosticInfo}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {isError && failureCount > 2 && (
+            {isError && (
               <Alert className="mb-4 bg-amber-900/20 border-amber-900">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Problemas técnicos</AlertTitle>
                 <AlertDescription>
-                  Estamos experimentando problemas para cargar el leaderboard. Por favor, intenta refrescar la página o vuelve más tarde.
+                  Estamos experimentando problemas para cargar el leaderboard. Por favor, intenta refrescar la página.
                 </AlertDescription>
               </Alert>
             )}

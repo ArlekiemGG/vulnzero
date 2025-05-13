@@ -1,7 +1,10 @@
 
 import { toast } from "@/components/ui/use-toast";
 
-// Function to clean up auth state
+/**
+ * Thoroughly cleans up all Supabase auth state from storage
+ * This helps prevent auth limbo states and session conflicts
+ */
 export const cleanupAuthState = () => {
   console.log("Cleaning up auth state...");
   
@@ -22,29 +25,31 @@ export const cleanupAuthState = () => {
   });
 };
 
-// Password strength checker
+/**
+ * Checks password strength with detailed feedback
+ */
 export const checkPasswordStrength = (password: string): { isStrong: boolean, message: string } => {
   // Check if password is at least 8 characters long
   if (password.length < 8) {
     return { isStrong: false, message: "La contraseña debe tener al menos 8 caracteres" };
   }
 
-  // Check if password has at least one uppercase letter
+  // Check for uppercase letter
   if (!/[A-Z]/.test(password)) {
     return { isStrong: false, message: "La contraseña debe incluir al menos una letra mayúscula" };
   }
 
-  // Check if password has at least one lowercase letter
+  // Check for lowercase letter
   if (!/[a-z]/.test(password)) {
     return { isStrong: false, message: "La contraseña debe incluir al menos una letra minúscula" };
   }
 
-  // Check if password has at least one number
+  // Check for number
   if (!/\d/.test(password)) {
     return { isStrong: false, message: "La contraseña debe incluir al menos un número" };
   }
 
-  // Check if password has at least one special character
+  // Check for special character
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
     return { isStrong: false, message: "La contraseña debe incluir al menos un carácter especial" };
   }
@@ -53,7 +58,9 @@ export const checkPasswordStrength = (password: string): { isStrong: boolean, me
   return { isStrong: true, message: "Contraseña segura" };
 };
 
-// Check for common passwords
+/**
+ * Check if a password is commonly used (insecure)
+ */
 export const isCommonPassword = (password: string): boolean => {
   const commonPasswords = [
     'password', 'password123', '123456', '123456789', 'qwerty', 
@@ -67,7 +74,9 @@ export const isCommonPassword = (password: string): boolean => {
     commonPwd.toLowerCase() === password.toLowerCase());
 };
 
-// Handle email confirmation from URL
+/**
+ * Process authentication fragments from URL (email confirmations, password resets)
+ */
 export const handleEmailConfirmation = async (
   supabase: any,
   path: string, 
@@ -77,20 +86,17 @@ export const handleEmailConfirmation = async (
 ) => {
   console.log("Checking for auth fragments in URL: path=", path, "hash=", hash, "query=", query);
   
-  // Check if we have an access_token in the URL (email confirmation)
+  // Handle email confirmation via access_token
   if (hash && hash.includes('access_token=')) {
     try {
-      console.log("Found access_token in URL, processing email verification");
+      console.log("Processing email verification");
       
-      // The hash contains the access_token which Supabase will handle automatically
       const { data, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error("Error getting session during email verification:", error);
+        console.error("Error during email verification:", error);
         throw error;
       }
-      
-      console.log("Email verification session data:", data);
       
       if (data.session) {
         toast({
@@ -99,7 +105,6 @@ export const handleEmailConfirmation = async (
           variant: "default"
         });
         
-        // Redirect to dashboard if user is confirmed
         navigate('/dashboard');
       }
     } catch (error: any) {
@@ -112,10 +117,42 @@ export const handleEmailConfirmation = async (
     }
   }
   
-  // Check for password reset flow
+  // Handle password reset flow
   if (query && query.includes('type=recovery')) {
-    console.log("Found recovery type in query, redirecting to password reset");
-    // Redirect to reset password page maintaining the query parameters
+    console.log("Password reset flow detected");
     navigate(`/auth${query}`);
   }
+};
+
+/**
+ * Ensures proper auth state before login attempts
+ * Helps prevent auth conflicts from multiple sessions
+ */
+export const prepareForAuth = async (supabase: any) => {
+  try {
+    // Clean up any existing auth state
+    cleanupAuthState();
+    
+    // Try to sign out globally to clear any existing sessions
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      // Continue even if this fails
+      console.warn("Global sign out failed during auth preparation:", err);
+    }
+    
+    return true;
+  } catch (err) {
+    console.error("Error preparing for authentication:", err);
+    return false;
+  }
+};
+
+/**
+ * Safely reloads the application to ensure a clean state
+ */
+export const safeReload = (path: string = '/') => {
+  setTimeout(() => {
+    window.location.href = path;
+  }, 100);
 };
