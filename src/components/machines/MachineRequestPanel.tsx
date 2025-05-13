@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlayCircle, Server, Clock, FileText, CircleAlert } from 'lucide-react';
+import { PlayCircle, Server, Clock, FileText, CircleAlert, Loader2 } from 'lucide-react';
 import { MachineSessionService } from './MachineSessionService';
 
 interface MachineTypeProps {
@@ -30,6 +30,7 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [isRequesting, setIsRequesting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   
   // Format time in hours and minutes
   const hours = Math.floor(maxTimeMinutes / 60);
@@ -78,25 +79,34 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
     }
     
     setIsRequesting(true);
+    setRequestError(null);
     
     try {
+      // Check VPN connection first (simulated)
+      const isVpnConnected = true; // In a real scenario, we would implement a VPN check
+      
+      if (!isVpnConnected) {
+        throw new Error("Para iniciar una máquina, necesita activar la VPN primero");
+      }
+      
+      // Request the machine
       const session = await MachineSessionService.requestMachine(user.id, id);
       
       if (session) {
         toast({
           title: "Máquina solicitada",
           description: "La máquina está siendo aprovisionada y estará lista en breve.",
-          variant: "success",
         });
         onMachineRequested();
       } else {
-        throw new Error("No se pudo solicitar la máquina");
+        throw new Error("No se pudo solicitar la máquina. Verifique su conexión e intente nuevamente.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error requesting machine:', error);
+      setRequestError(error.message || "Error al solicitar la máquina");
       toast({
         title: "Error",
-        description: "No se pudo solicitar la máquina. Intente nuevamente.",
+        description: error.message || "No se pudo solicitar la máquina. Intente nuevamente.",
         variant: "destructive",
       });
     } finally {
@@ -133,6 +143,16 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
           </div>
         </div>
         
+        {/* Error message if present */}
+        {requestError && (
+          <div className="p-3 bg-red-900/20 text-red-400 rounded-md text-sm">
+            <div className="flex gap-2 items-center">
+              <CircleAlert className="h-4 w-4" />
+              <span>{requestError}</span>
+            </div>
+          </div>
+        )}
+        
         {/* Advertencia */}
         <div className="p-3 bg-cybersec-black rounded-md text-sm">
           <div className="flex gap-2 items-start">
@@ -156,8 +176,17 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
           onClick={handleRequestMachine}
           disabled={isRequesting}
         >
-          <PlayCircle className="h-4 w-4 mr-2" />
-          {isRequesting ? 'Solicitando...' : 'Iniciar máquina'}
+          {isRequesting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Solicitando máquina...
+            </>
+          ) : (
+            <>
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Iniciar máquina
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

@@ -51,10 +51,27 @@ const mapDbSessionToMachineSession = (session: any): MachineSession => {
 };
 
 export const MachineSessionService = {
-  // Request a new machine instance
+  // Request a new machine instance with better error handling and status updates
   requestMachine: async (userId: string, machineTypeId: string): Promise<MachineSession | null> => {
     try {
       console.log('Requesting machine:', machineTypeId, 'for user:', userId);
+      
+      // First, create a placeholder session in the database with 'requested' status
+      const { data: initialSession, error: initialError } = await supabase
+        .from('machine_sessions')
+        .insert({
+          user_id: userId,
+          machine_type_id: machineTypeId,
+          status: 'requested',
+          started_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+        
+      if (initialError) {
+        console.error('Error creating initial session:', initialError);
+        throw new Error('Error al iniciar el proceso de solicitud de máquina');
+      }
       
       // Call external API to provision a new machine
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
@@ -69,6 +86,15 @@ export const MachineSessionService = {
       });
 
       if (!response.ok) {
+        // Update session status to 'failed' if API call fails
+        await supabase
+          .from('machine_sessions')
+          .update({
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', initialSession.id);
+          
         const errorText = await response.text();
         console.error('API response not OK:', errorText);
         throw new Error(`Error al solicitar la máquina: ${response.status}`);
@@ -78,18 +104,25 @@ export const MachineSessionService = {
       console.log('Machine requested successfully:', data);
       
       if (!data.exito) {
+        // Update session status to 'failed' if API returns failure
+        await supabase
+          .from('machine_sessions')
+          .update({
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', initialSession.id);
+          
         throw new Error(data.mensaje || 'Error al solicitar la máquina');
       }
       
-      // Store session data in Supabase
+      // Update session with the information received from the API
       const { data: sessionData, error } = await supabase
         .from('machine_sessions')
-        .insert({
-          user_id: userId,
-          machine_type_id: machineTypeId,
+        .update({
           session_id: data.sesionId,
           ip_address: data.ipAcceso,
-          status: 'running',
+          status: 'provisioning', // Set to provisioning first, will be updated to running after machine is ready
           connection_info: {
             puertoSSH: data.puertoSSH,
             username: data.credenciales.usuario,
@@ -100,15 +133,27 @@ export const MachineSessionService = {
           username: data.credenciales.usuario,
           password: data.credenciales.password,
           expires_at: new Date(Date.now() + (data.tiempoLimite * 1000)).toISOString(),
-          started_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
+        .eq('id', initialSession.id)
         .select()
         .single();
 
       if (error) {
-        console.error('Error storing machine session:', error);
+        console.error('Error updating machine session:', error);
         throw error;
       }
+
+      // Set session to 'running' after a small delay to simulate machine provisioning
+      setTimeout(async () => {
+        await supabase
+          .from('machine_sessions')
+          .update({
+            status: 'running',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', initialSession.id);
+      }, 5000); // 5 second delay to simulate provisioning
 
       return mapDbSessionToMachineSession(sessionData);
     } catch (error) {

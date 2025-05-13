@@ -33,13 +33,15 @@ const MachineSessionDetail = () => {
     solvedMachines: 0,
     completedChallenges: 0,
   });
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
   
   // Fetch machine details and user sessions
   const fetchData = async () => {
     if (!user || !machineId) return;
-    setLoading(true);
     
     try {
+      if (!refreshing) setLoading(true);
+      
       // Get machine details
       const machineDetails = MachineService.getMachine(machineId);
       if (!machineDetails) {
@@ -51,6 +53,23 @@ const MachineSessionDetail = () => {
       const sessions = await MachineSessionService.getUserActiveSessions(user.id);
       const machineActiveSessions = sessions.filter(session => session.machineTypeId === machineId);
       setActiveSessions(machineActiveSessions);
+      
+      // Check if we need to auto-refresh based on machine status
+      const needsRefresh = machineActiveSessions.some(
+        session => session.status === 'requested' || session.status === 'provisioning'
+      );
+      
+      if (needsRefresh && !refreshInterval) {
+        // Set up auto-refresh every 5 seconds if machine is provisioning
+        const interval = window.setInterval(() => {
+          fetchData();
+        }, 5000);
+        setRefreshInterval(interval);
+      } else if (!needsRefresh && refreshInterval) {
+        // Clear refresh interval when no longer needed
+        window.clearInterval(refreshInterval);
+        setRefreshInterval(null);
+      }
       
       // Get session history
       const history = await MachineSessionService.getUserSessionHistory(user.id);
@@ -67,14 +86,23 @@ const MachineSessionDetail = () => {
       navigate('/machines');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+  
+  // Clean up interval on component unmount
+  useEffect(() => {
+    return () => {
+      if (refreshInterval) {
+        window.clearInterval(refreshInterval);
+      }
+    };
+  }, [refreshInterval]);
   
   // Refresh data
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchData();
-    setRefreshing(false);
   };
   
   // Handle machine terminated
@@ -85,6 +113,13 @@ const MachineSessionDetail = () => {
   // Handle machine requested
   const handleMachineRequested = () => {
     fetchData();
+    
+    // Show a toast to inform the user
+    toast({
+      title: "Máquina solicitada",
+      description: "La máquina está siendo iniciada. Este proceso puede tardar unos segundos.",
+      duration: 5000,
+    });
   };
   
   // Initial data fetch
