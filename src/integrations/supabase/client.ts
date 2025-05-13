@@ -84,5 +84,17 @@ export const queries = {
       console.error("Error in getLeaderboard:", error);
       return [];
     }
+  },
+  
+  // Función para registrar actividad del usuario (aún no hay tabla, se implementará más adelante)
+  logUserActivity: async (userId: string, activityType: string, title: string, points: number) => {
+    try {
+      console.log("Activity logged:", { userId, activityType, title, points });
+      // En el futuro, esto insertará en una tabla de actividades
+      return true;
+    } catch (error) {
+      console.error("Error logging user activity:", error);
+      return false;
+    }
   }
 };

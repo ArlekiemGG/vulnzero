@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Database, Trophy, Flag, Shield, Activity, Code, User } from 'lucide-react';
+import { Database, Trophy, Flag, Shield, Code, User, Activity } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -11,30 +11,51 @@ import { Progress } from '@/components/ui/progress';
 import BadgeCard from '@/components/dashboard/BadgeCard';
 import MachineCard from '@/components/machines/MachineCard';
 import { Link } from 'react-router-dom';
-import { supabase, queries } from '@/integrations/supabase/client';
+import { supabase, queries, Profiles } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { ActivityService, UserActivity } from '@/components/dashboard/ActivityService';
+import { ChallengeService } from '@/components/challenges/ChallengeService';
 
-// Tipo para el perfil de usuario
-interface UserProfile {
-  level: number;
-  points: number;
-  rank: number;
-  solved_machines: number;
-  completed_challenges: number;
-  username: string;
-  role?: string;
-}
-
-// Default para un nuevo usuario
-const defaultProfile: UserProfile = {
-  level: 1,
-  points: 0,
-  rank: 0,
-  solved_machines: 0,
-  completed_challenges: 0,
-  username: ''
-};
+// Mock data para insignias - este es un buen candidato para crear una tabla en Supabase
+const badges = [
+  {
+    id: "badge1",
+    name: "Primer Sangre",
+    description: "Completa tu primera máquina vulnerable",
+    icon: <Trophy className="h-5 w-5 text-green-400" />,
+    earned: true,
+    rarity: "common" as const
+  },
+  {
+    id: "badge2",
+    name: "Explorador de Redes",
+    description: "Completa 5 máquinas con enfoque en redes",
+    icon: <Database className="h-5 w-5 text-blue-400" />,
+    earned: true,
+    progress: 5,
+    total: 5,
+    rarity: "uncommon" as const
+  },
+  {
+    id: "badge3",
+    name: "Maestro Web",
+    description: "Resolver 10 desafíos de seguridad web",
+    icon: <Code className="h-5 w-5 text-purple-400" />,
+    earned: false,
+    progress: 6,
+    total: 10,
+    rarity: "rare" as const
+  },
+  {
+    id: "badge4",
+    name: "Dominador de CTFs",
+    description: "Ganar un CTF semanal",
+    icon: <Flag className="h-5 w-5 text-amber-400" />,
+    earned: false,
+    rarity: "legendary" as const
+  }
+];
 
 // Mock data para máquinas recomendadas
 const recommendedMachines = [
@@ -77,93 +98,29 @@ const recommendedMachines = [
   }
 ];
 
-// Mock data para insignias
-const badges = [
-  {
-    id: "badge1",
-    name: "Primer Sangre",
-    description: "Completa tu primera máquina vulnerable",
-    icon: <Trophy className="h-5 w-5 text-green-400" />,
-    earned: true,
-    rarity: "common" as const
-  },
-  {
-    id: "badge2",
-    name: "Explorador de Redes",
-    description: "Completa 5 máquinas con enfoque en redes",
-    icon: <Database className="h-5 w-5 text-blue-400" />,
-    earned: true,
-    progress: 5,
-    total: 5,
-    rarity: "uncommon" as const
-  },
-  {
-    id: "badge3",
-    name: "Maestro Web",
-    description: "Resolver 10 desafíos de seguridad web",
-    icon: <Code className="h-5 w-5 text-purple-400" />,
-    earned: false,
-    progress: 6,
-    total: 10,
-    rarity: "rare" as const
-  },
-  {
-    id: "badge4",
-    name: "Dominador de CTFs",
-    description: "Ganar un CTF semanal",
-    icon: <Flag className="h-5 w-5 text-amber-400" />,
-    earned: false,
-    rarity: "legendary" as const
-  }
-];
-
-// Mock data para actividad reciente
-const recentActivity = [
-  {
-    id: "activity1",
-    type: "machine_completed",
-    title: "WebIntrusion",
-    date: "Hoy, 14:25",
-    points: 25
-  },
-  {
-    id: "activity2",
-    type: "badge_earned",
-    title: "Explorador de Redes",
-    date: "Ayer, 18:40",
-    points: 50
-  },
-  {
-    id: "activity3",
-    type: "challenge_completed",
-    title: "Desafío: Semana Forense",
-    date: "15 May, 09:12",
-    points: 100
-  },
-  {
-    id: "activity4",
-    type: "level_up",
-    title: "Nivel 7",
-    date: "12 May, 22:30",
-    points: 0
-  }
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
+  const [userProfile, setUserProfile] = useState<Profiles | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
+  const [activeChallenge, setActiveChallenge] = useState<{
+    id: string;
+    title: string;
+    progress: number;
+    total: number;
+    points: number;
+  } | null>(null);
 
   // Calcular puntos para siguiente nivel (simple: nivel actual * 500)
-  const pointsToNextLevel = userProfile.level * 500 - userProfile.points;
+  const pointsToNextLevel = userProfile ? userProfile.level * 500 - userProfile.points : 0;
   
   // Calcular progreso como porcentaje
-  const levelProgress = Math.min(
+  const levelProgress = userProfile ? Math.min(
     Math.round((userProfile.points / (userProfile.level * 500)) * 100),
     100
-  );
+  ) : 0;
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -186,6 +143,23 @@ const Dashboard = () => {
         console.log("Profile data loaded:", profileData);
         setUserProfile(profileData);
         setIsAdmin(profileData.role === 'admin');
+        
+        // Load user activity
+        const activity = await ActivityService.getRecentActivity(user.id);
+        setRecentActivity(activity);
+        
+        // Load active challenge
+        const challenges = await ChallengeService.getChallenges();
+        const activeChallenge = challenges.find(c => c.isActive && !c.isCompleted);
+        if (activeChallenge) {
+          setActiveChallenge({
+            id: activeChallenge.id,
+            title: activeChallenge.title,
+            progress: 1, // Mock progress for now
+            total: 3,    // Mock total for now
+            points: activeChallenge.points
+          });
+        }
       } catch (error) {
         console.error('Error loading profile:', error);
         toast({
@@ -206,13 +180,13 @@ const Dashboard = () => {
       <Navbar />
       <div className="flex pt-16">
         <Sidebar userStats={{
-          level: userProfile.level,
-          points: userProfile.points,
+          level: userProfile?.level || 1,
+          points: userProfile?.points || 0,
           pointsToNextLevel: pointsToNextLevel,
           progress: levelProgress,
-          rank: userProfile.rank || 0,
-          solvedMachines: userProfile.solved_machines || 0,
-          completedChallenges: userProfile.completed_challenges || 0
+          rank: userProfile?.rank || 0,
+          solvedMachines: userProfile?.solved_machines || 0,
+          completedChallenges: userProfile?.completed_challenges || 0
         }} />
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
@@ -221,7 +195,7 @@ const Dashboard = () => {
                 Dashboard
               </h1>
               <p className="text-gray-400">
-                Bienvenido{userProfile.username ? ` ${userProfile.username}` : ''}, aquí tienes un resumen de tu progreso.
+                Bienvenido{userProfile?.username ? ` ${userProfile.username}` : ''}, aquí tienes un resumen de tu progreso.
               </p>
             </header>
 
@@ -229,31 +203,31 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatsCard 
                 title="Máquinas Resueltas" 
-                value={userProfile.solved_machines || 0} 
+                value={userProfile?.solved_machines || 0} 
                 icon={<Database className="h-4 w-4 text-cybersec-neongreen" />} 
                 colorClass="text-cybersec-neongreen"
-                description={userProfile.solved_machines > 0 ? "¡Sigue así!" : "¡Comienza a resolver máquinas!"}
+                description={(userProfile?.solved_machines || 0) > 0 ? "¡Sigue así!" : "¡Comienza a resolver máquinas!"}
               />
               <StatsCard 
                 title="Puntos Totales" 
-                value={userProfile.points || 0} 
+                value={userProfile?.points || 0} 
                 icon={<Trophy className="h-4 w-4 text-cybersec-yellow" />} 
                 colorClass="text-cybersec-yellow"
-                description={userProfile.rank ? `Rank #${userProfile.rank} global` : "Sin clasificación aún"}
+                description={userProfile?.rank ? `Rank #${userProfile.rank} global` : "Sin clasificación aún"}
               />
               <StatsCard 
                 title="Desafíos Completados" 
-                value={userProfile.completed_challenges || 0} 
+                value={userProfile?.completed_challenges || 0} 
                 icon={<Flag className="h-4 w-4 text-cybersec-red" />} 
                 colorClass="text-cybersec-red"
-                description="2 desafíos activos"
+                description={activeChallenge ? "1 desafío activo" : "Sin desafíos activos"}
               />
               <StatsCard 
                 title="Nivel Actual" 
-                value={userProfile.level || 1} 
+                value={userProfile?.level || 1} 
                 icon={<Shield className="h-4 w-4 text-cybersec-electricblue" />} 
                 colorClass="text-cybersec-electricblue"
-                description={`${pointsToNextLevel} pts para nivel ${userProfile.level + 1}`}
+                description={`${pointsToNextLevel} pts para nivel ${(userProfile?.level || 1) + 1}`}
               />
             </div>
 
@@ -283,7 +257,7 @@ const Dashboard = () => {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-cybersec-neongreen">Progreso de Nivel</CardTitle>
                     <CardDescription>
-                      {userProfile.points} / {userProfile.points + pointsToNextLevel} puntos para Nivel {userProfile.level + 1}
+                      {userProfile?.points || 0} / {(userProfile?.points || 0) + pointsToNextLevel} puntos para Nivel {(userProfile?.level || 1) + 1}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -293,7 +267,7 @@ const Dashboard = () => {
                         <div className="text-sm text-gray-400 mb-1">Nivel actual</div>
                         <div className="flex items-center">
                           <Shield className="h-5 w-5 text-cybersec-electricblue mr-2" />
-                          <span className="text-xl font-bold text-cybersec-electricblue">{userProfile.level}</span>
+                          <span className="text-xl font-bold text-cybersec-electricblue">{userProfile?.level || 1}</span>
                         </div>
                       </div>
                       <div className="bg-cybersec-black p-4 rounded-lg">
@@ -302,7 +276,7 @@ const Dashboard = () => {
                       </div>
                       <div className="bg-cybersec-black p-4 rounded-lg">
                         <div className="text-sm text-gray-400 mb-1">Rank global</div>
-                        <div className="text-xl font-bold text-cybersec-neongreen">#{userProfile.rank || '-'}</div>
+                        <div className="text-xl font-bold text-cybersec-neongreen">#{userProfile?.rank || '-'}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -403,14 +377,22 @@ const Dashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm mb-3">
-                      Resuelve 3 máquinas Linux esta semana y gana puntos extra e insignias exclusivas.
-                    </p>
-                    <Progress value={0} className="h-2 mb-3" />
-                    <div className="flex justify-between text-sm">
-                      <span>0/3 completadas</span>
-                      <span className="text-cybersec-yellow">+500 pts</span>
-                    </div>
+                    {activeChallenge ? (
+                      <>
+                        <p className="text-sm mb-3">
+                          {activeChallenge.title}: Completa {activeChallenge.total} máquinas y gana puntos extra.
+                        </p>
+                        <Progress value={(activeChallenge.progress / activeChallenge.total) * 100} className="h-2 mb-3" />
+                        <div className="flex justify-between text-sm">
+                          <span>{activeChallenge.progress}/{activeChallenge.total} completadas</span>
+                          <span className="text-cybersec-yellow">+{activeChallenge.points} pts</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm mb-3">
+                        Resuelve 3 máquinas Linux esta semana y gana puntos extra e insignias exclusivas.
+                      </p>
+                    )}
                     <Button className="w-full mt-4 bg-cybersec-darkgray border border-cybersec-electricblue text-cybersec-electricblue hover:bg-cybersec-electricblue hover:text-cybersec-black" asChild>
                       <Link to="/challenges">Ver desafío</Link>
                     </Button>

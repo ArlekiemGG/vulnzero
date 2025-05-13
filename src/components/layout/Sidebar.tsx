@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, Database, Book, Calendar, 
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ChallengeService } from '@/components/challenges/ChallengeService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   userStats: {
@@ -23,6 +25,37 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
+  const { user } = useAuth();
+  const [weeklyChallenge, setWeeklyChallenge] = useState<{
+    title: string;
+    progress: number;
+    total: number;
+  } | null>(null);
+  
+  useEffect(() => {
+    const loadWeeklyChallenge = async () => {
+      if (!user) return;
+      
+      try {
+        const challenges = await ChallengeService.getChallenges();
+        const activeChallenge = challenges.find(c => c.isActive && !c.isCompleted);
+        
+        if (activeChallenge) {
+          // En una implementación real, también obtendríamos el progreso del usuario
+          setWeeklyChallenge({
+            title: activeChallenge.title,
+            progress: 1, // Mock progress for now
+            total: 3     // Mock total for now
+          });
+        }
+      } catch (error) {
+        console.error("Error loading weekly challenge:", error);
+      }
+    };
+    
+    loadWeeklyChallenge();
+  }, [user]);
+  
   const menuItems = [
     { icon: <Trophy className="h-4 w-4" />, label: 'Leaderboard', path: '/leaderboard' },
     { icon: <Database className="h-4 w-4" />, label: 'Máquinas', path: '/machines' },
@@ -40,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Nivel {userStats.level}</span>
             <Badge variant="outline" className="border-cybersec-electricblue text-cybersec-electricblue">
-              Rank #{userStats.rank}
+              Rank #{userStats.rank || '-'}
             </Badge>
           </div>
           <Progress value={userStats.progress} className="h-2 bg-cybersec-darkgray" />
@@ -91,9 +124,24 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
               <Activity className="h-4 w-4 text-cybersec-electricblue" />
               <h3 className="text-cybersec-electricblue">Desafío Semanal</h3>
             </div>
-            <p className="text-sm mt-2">¡Resuelve 3 máquinas esta semana para ganar 500 puntos extra!</p>
-            <Progress value={33} className="h-2 mt-3 bg-cybersec-darkgray" />
-            <div className="text-xs text-right mt-1">1/3 completadas</div>
+            {weeklyChallenge ? (
+              <>
+                <p className="text-sm mt-2">{weeklyChallenge.title}</p>
+                <Progress 
+                  value={(weeklyChallenge.progress / weeklyChallenge.total) * 100} 
+                  className="h-2 mt-3 bg-cybersec-darkgray" 
+                />
+                <div className="text-xs text-right mt-1">
+                  {weeklyChallenge.progress}/{weeklyChallenge.total} completadas
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mt-2">¡Resuelve 3 máquinas esta semana para ganar 500 puntos extra!</p>
+                <Progress value={0} className="h-2 mt-3 bg-cybersec-darkgray" />
+                <div className="text-xs text-right mt-1">0/3 completadas</div>
+              </>
+            )}
           </div>
         </div>
       </div>
