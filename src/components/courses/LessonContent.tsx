@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { CourseLesson } from '@/services/CourseService';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 
 interface LessonContentProps {
@@ -68,10 +66,7 @@ const LessonContent: React.FC<LessonContentProps> = ({
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="prose prose-invert max-w-none prose-pre:bg-cybersec-black prose-pre:border prose-pre:border-cybersec-gray prose-headings:text-cybersec-neongreen prose-a:text-cybersec-electricblue">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-          >
+          <ReactMarkdown>
             {lesson.content}
           </ReactMarkdown>
         </div>

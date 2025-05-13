@@ -63,7 +63,7 @@ export const CourseService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return data as Course[] || [];
   },
 
   // Obtener un curso por ID
@@ -75,7 +75,7 @@ export const CourseService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Course;
   },
 
   // Obtener secciones de un curso
@@ -87,7 +87,7 @@ export const CourseService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data || [];
+    return data as CourseSection[] || [];
   },
 
   // Obtener lecciones de una sección
@@ -99,7 +99,7 @@ export const CourseService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data || [];
+    return data as CourseLesson[] || [];
   },
 
   // Obtener una lección por ID
@@ -111,7 +111,7 @@ export const CourseService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as CourseLesson;
   },
   
   // Obtener progreso del curso para un usuario
@@ -124,7 +124,7 @@ export const CourseService = {
       .maybeSingle();
     
     if (error) throw error;
-    return data;
+    return data as CourseProgress | null;
   },
 
   // Iniciar o actualizar progreso del curso
@@ -221,7 +221,7 @@ export const CourseService = {
       .maybeSingle();
     
     if (error) throw error;
-    return data;
+    return data as LessonProgress | null;
   },
 
   // Recalcular el progreso general del curso
@@ -292,7 +292,7 @@ export const CourseService = {
     
     if (error) throw error;
     return data && data.length > 0 
-      ? data.map(item => item.courses as Course) 
+      ? data.map(item => (item.courses as Course))
       : [];
   },
 
