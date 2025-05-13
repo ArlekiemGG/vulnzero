@@ -9,7 +9,7 @@ import {
   fetchLeaderboardData, 
   getCurrentUserLeaderboardPosition 
 } from '@/components/leaderboard/LeaderboardService';
-import { userProfiles } from '@/integrations/supabase/client';
+import { userProfiles, leaderboard } from '@/integrations/supabase/client';
 import { 
   Select, 
   SelectContent, 
@@ -31,7 +31,7 @@ const Leaderboard = () => {
   const { user } = useAuth();
   const [hasAttemptedProfileCreation, setHasAttemptedProfileCreation] = useState(false);
   
-  // Query to fetch leaderboard data
+  // Query to fetch leaderboard data with improved error handling
   const { 
     data: profiles = [], 
     isLoading,
@@ -42,11 +42,24 @@ const Leaderboard = () => {
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: () => fetchLeaderboardData(),
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3, // Increased from 2 to 3
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 10000), // Exponential backoff
     refetchOnWindowFocus: false,
     staleTime: 60000,
+    onError: (error) => {
+      console.error("Error fetching leaderboard data:", error);
+      toast({
+        title: "Error de carga",
+        description: "No se pudieron cargar los datos del leaderboard. Intentaremos de nuevo automáticamente.",
+        variant: "destructive"
+      });
+    }
   });
+  
+  // Clear Supabase cache before mounting to ensure fresh data
+  useEffect(() => {
+    leaderboard.clearCache();
+  }, []);
   
   // Ensure user profile exists
   useEffect(() => {
@@ -72,18 +85,29 @@ const Leaderboard = () => {
     setupUserProfile();
   }, [user, hasAttemptedProfileCreation]);
   
-  // Load current user profile
+  // Load current user profile with retry logic
   useEffect(() => {
     if (!user) return;
     
     const loadUserProfile = async () => {
-      try {
-        const profile = await userProfiles.get(user.id);
-        if (profile) {
-          setCurrentUserProfile(profile);
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const profile = await userProfiles.get(user.id);
+          if (profile) {
+            setCurrentUserProfile(profile);
+            return;
+          }
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        } catch (err) {
+          console.error("Error loading user profile:", err);
+          attempts++;
+          if (attempts >= maxAttempts) break;
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
         }
-      } catch (err) {
-        console.error("Error loading user profile:", err);
       }
     };
     
@@ -92,16 +116,16 @@ const Leaderboard = () => {
   
   // Transform profiles to leaderboard format
   useEffect(() => {
-    if (!profiles || profiles.length === 0) {
+    if (!profiles) {
       setLeaderboardUsers([]);
       return;
     }
     
-    const mappedUsers = profiles.map((profile: LeaderboardUser, index: number) => ({
+    const mappedUsers = Array.isArray(profiles) ? profiles.map((profile: LeaderboardUser, index: number) => ({
       ...profile,
       rank: index + 1,
       isCurrentUser: user ? profile.id === user.id : false
-    }));
+    })) : [];
     
     setLeaderboardUsers(mappedUsers);
   }, [profiles, user]);
@@ -119,6 +143,11 @@ const Leaderboard = () => {
     const currentUserRow = document.getElementById('current-user-row');
     if (currentUserRow) {
       currentUserRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight row for better visibility
+      currentUserRow.classList.add('bg-cybersec-neongreen/20');
+      setTimeout(() => {
+        currentUserRow.classList.remove('bg-cybersec-neongreen/20');
+      }, 2000);
     } else {
       toast({
         title: "Usuario no encontrado",
@@ -127,18 +156,22 @@ const Leaderboard = () => {
     }
   }, [user]);
   
-  // Function to manually refresh data
+  // Function to manually refresh data with force flag
   const handleRefresh = async () => {
     try {
+      // Clear cache first to ensure fresh data
+      leaderboard.clearCache();
       await refetch();
+      
       toast({
         title: "Datos actualizados",
         description: "Los datos del leaderboard han sido actualizados",
       });
     } catch (err) {
+      console.error("Error refreshing leaderboard:", err);
       toast({
         title: "Error",
-        description: "No se pudieron actualizar los datos",
+        description: "No se pudieron actualizar los datos. Intentalo de nuevo.",
         variant: "destructive"
       });
     }
@@ -225,7 +258,14 @@ const Leaderboard = () => {
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Problemas técnicos</AlertTitle>
                 <AlertDescription>
-                  Estamos experimentando problemas para cargar el leaderboard. Por favor, intenta refrescar la página.
+                  Estamos experimentando problemas para cargar el leaderboard. 
+                  <Button 
+                    variant="link" 
+                    className="text-cybersec-electricblue p-0 h-auto font-normal ml-2"
+                    onClick={handleRefresh}
+                  >
+                    Intentar de nuevo
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
@@ -257,6 +297,9 @@ const Leaderboard = () => {
                                       src={user.avatar || "/placeholder.svg"}
                                       alt={user.username}
                                       className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                                      }}
                                     />
                                   </div>
                                   <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center ${
@@ -334,7 +377,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={leaderboardUsers} 
                   currentPeriod="Global" 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
               
@@ -342,7 +385,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={monthlyLeaderboardUsers} 
                   currentPeriod={`${new Date().toLocaleString('es', { month: 'long' })} ${new Date().getFullYear()}`} 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
               
@@ -350,7 +393,7 @@ const Leaderboard = () => {
                 <LeaderboardTable 
                   users={weeklyLeaderboardUsers}
                   currentPeriod={`Semana ${Math.ceil(new Date().getDate() / 7)} - ${new Date().toLocaleString('es', { month: 'long' })}`} 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isRefetching}
                 />
               </TabsContent>
             </Tabs>

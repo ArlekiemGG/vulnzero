@@ -29,41 +29,51 @@ export const mapProfilesToLeaderboardUsers = (
 };
 
 /**
- * Fetch leaderboard data with error handling
+ * Fetch leaderboard data with error handling and delay between attempts
  */
 export const fetchLeaderboardData = async (
   limit = 100, 
   offset = 0
 ): Promise<LeaderboardUser[]> => {
   try {
-    // Added retries for improved resilience
+    // Added retries with exponential backoff for improved resilience
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased max attempts
     let lastError;
     
     while (attempts < maxAttempts) {
       try {
+        // Wait before first attempt to reduce rate limiting issues
+        if (attempts > 0) {
+          // Exponential backoff with some randomization
+          const delay = Math.pow(2, attempts) * 500 + Math.random() * 500;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
         const profiles = await leaderboard.get(limit, offset);
+        // If we got an empty array but no error, try one more time with a delay
+        if (profiles.length === 0 && attempts < maxAttempts - 1) {
+          attempts++;
+          continue;
+        }
         return mapProfilesToLeaderboardUsers(profiles);
       } catch (error) {
         lastError = error;
         attempts++;
+        console.log(`Leaderboard fetch attempt ${attempts} failed:`, error);
         
         // Don't wait on the last attempt
-        if (attempts < maxAttempts) {
-          // Wait with exponential backoff before next attempt
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 500));
+        if (attempts >= maxAttempts) {
+          break;
         }
       }
     }
     
     console.error("All attempts to fetch leaderboard data failed:", lastError);
-    // Return empty array after all attempts fail
-    return [];
+    throw lastError; // Throw the error to be handled by the query error handler
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
-    // Return empty array on error instead of throwing
-    return [];
+    throw error; // Propagate error to React Query for proper handling
   }
 };
 
@@ -97,7 +107,8 @@ export const getCurrentUserLeaderboardPosition = async (
       level: userProfile.level || 1,
       solvedMachines: userProfile.solved_machines || 0,
       rankChange: 'same',
-      isCurrentUser: true
+      isCurrentUser: true,
+      changeAmount: 0
     };
   } catch (error) {
     console.error("Error getting user leaderboard position:", error);

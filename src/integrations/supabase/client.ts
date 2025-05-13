@@ -10,7 +10,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export type Tables = Database['public']['Tables'];
 export type Profiles = Tables['profiles']['Row'];
 
-// Fixed client configuration with explicit schema definition
+// Fixed client configuration - removed explicit schema setting that was causing issues
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -25,22 +25,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'x-application-name': 'vulnzero'
     }
   }
-  // Remove the explicit schema setting that's causing issues
 });
 
 // Cache management with improved error handling
 const responseCache = new Map();
 const pendingRequests = new Map();
 const requestCounts = new Map();
-const REQUEST_LIMIT = 3;
-const PENALTY_TIME = 30000;
+const REQUEST_LIMIT = 5; // Increased from 3 to 5
+const PENALTY_TIME = 15000; // Reduced from 30s to 15s
 const requestTimestamps = new Map();
 
 /**
  * Enhanced cached request function with rate limiting and deduplication
  */
 const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDuration = 30000) => {
-  // Rate limiting logic
+  // Rate limiting logic with improved backoff
   if (requestCounts.has(key)) {
     const count = requestCounts.get(key) || 0;
     const lastAttempt = requestTimestamps.get(key) || 0;
@@ -54,7 +53,9 @@ const cachedRequest = async (key: string, requestFn: () => Promise<any>, cacheDu
         return responseCache.get(key).data;
       }
       
-      return Promise.reject(new Error(`Request rate limited for ${key}. Try again later.`));
+      // Instead of rejecting, wait for the cooldown to expire
+      await new Promise(resolve => setTimeout(resolve, PENALTY_TIME - timeSinceLastAttempt + 100));
+      requestCounts.set(key, 0); // Reset count after waiting
     }
     
     if (timeSinceLastAttempt > PENALTY_TIME) {
@@ -179,7 +180,7 @@ export const userProfiles = {
       console.log("Fetching user profile with ID:", userId);
       
       try {
-        // Direct query approach instead of using query.safe to avoid schema issues
+        // Direct query approach to avoid schema issues
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -209,7 +210,7 @@ export const userProfiles = {
         console.error("Failed to get user profile:", err);
         throw err;
       }
-    });
+    }, 60000); // Cache for 1 minute
   },
   
   /**
@@ -219,7 +220,7 @@ export const userProfiles = {
     if (!userId) return null;
     
     try {
-      // Check if profile exists - direct query approach
+      // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -260,7 +261,21 @@ export const userProfiles = {
       return completeProfile;
     } catch (err) {
       console.error("Failed to create/check profile:", err);
-      throw err;
+      
+      // Return a default profile if creation fails to prevent UI breakage
+      return {
+        id: userId,
+        username: username,
+        points: 0,
+        level: 1,
+        solved_machines: 0,
+        completed_challenges: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        avatar_url: null,
+        rank: null,
+        role: 'user'
+      };
     }
   },
   
@@ -302,25 +317,50 @@ export const leaderboard = {
     return cachedRequest(cacheKey, async () => {
       console.log("Fetching leaderboard data");
       
-      try {
-        // Direct query approach instead of using query.safe
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('points', { ascending: false })
-          .range(offset, offset + limit - 1);
+      // Use multiple retries with backoff for this critical operation
+      let retries = 0;
+      const maxRetries = 3;
       
-        if (error) {
-          console.error("Failed to fetch leaderboard:", error);
-          throw error;
-        }
+      while (retries <= maxRetries) {
+        try {
+          // Direct query approach to avoid schema issues
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('points', { ascending: false })
+            .range(offset, offset + limit - 1);
         
-        return data || [];
-      } catch (error) {
-        console.error("Error in leaderboard.get:", error);
-        throw error;
+          if (error) {
+            console.error("Failed to fetch leaderboard:", error);
+            throw error;
+          }
+          
+          // Return data even if empty array - the component will handle it
+          return data || [];
+        } catch (error) {
+          retries++;
+          if (retries <= maxRetries) {
+            // Exponential backoff
+            const delay = Math.pow(2, retries) * 500;
+            console.log(`Leaderboard retry ${retries}/${maxRetries} after ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            console.error("Error in leaderboard.get after all retries:", error);
+            throw error;
+          }
+        }
       }
-    }, 60000); // Cache for 1 minute
+      
+      // This should never be reached due to the throw in the last retry
+      return [];
+    }, 30000); // Cache for 30 seconds only to ensure more frequent refreshes
+  },
+  
+  /**
+   * Clear leaderboard cache to force refresh
+   */
+  clearCache() {
+    clearCache('leaderboard');
   }
 };
 
@@ -328,11 +368,34 @@ export const leaderboard = {
 export const queries = {
   getUserProfile: async (userId: string) => {
     if (!userId) return null;
-    return await userProfiles.get(userId);
+    try {
+      return await userProfiles.get(userId);
+    } catch (error) {
+      console.error("Error in getUserProfile:", error);
+      // Return default profile to prevent UI breakage
+      return {
+        id: userId,
+        username: "Usuario",
+        points: 0,
+        level: 1,
+        solved_machines: 0,
+        completed_challenges: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        avatar_url: null,
+        rank: null,
+        role: 'user'
+      };
+    }
   },
   
   // Add other query methods here to maintain compatibility
   getLeaderboard: async (limit = 100, offset = 0) => {
-    return await leaderboard.get(limit, offset);
+    try {
+      return await leaderboard.get(limit, offset);
+    } catch (error) {
+      console.error("Error in getLeaderboard:", error);
+      return []; // Return empty array to prevent UI breakage
+    }
   }
 };
