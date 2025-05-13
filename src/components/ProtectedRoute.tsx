@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -14,7 +14,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
   const [redirected, setRedirected] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
-  const [authCheckTimeout, setAuthCheckTimeout] = useState<number | null>(null);
+  
+  // Change: Use useRef instead of useState for timeout
+  const authCheckTimeoutRef = useRef<number | null>(null);
   
   // Anti-infinite loop protection
   useEffect(() => {
@@ -35,11 +37,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Clear any existing timeout when component unmounts
   useEffect(() => {
     return () => {
-      if (authCheckTimeout !== null) {
-        clearTimeout(authCheckTimeout);
+      if (authCheckTimeoutRef.current !== null) {
+        clearTimeout(authCheckTimeoutRef.current);
       }
     };
-  }, [authCheckTimeout]);
+  }, []);
   
   // Detect potential infinite loops with loading state
   useEffect(() => {
@@ -47,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       console.error("Potential infinite loading loop detected in ProtectedRoute");
       
       // Force break the potential loop after 3 seconds
-      const timeout = setTimeout(() => {
+      authCheckTimeoutRef.current = window.setTimeout(() => {
         if (loading) {
           toast({
             title: "Problema detectado",
@@ -59,8 +61,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           window.location.href = '/auth';
         }
       }, 3000);
-      
-      setAuthCheckTimeout(timeout);
     }
   }, [loadingCount, loading]);
   
