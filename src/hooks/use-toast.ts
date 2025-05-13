@@ -1,6 +1,6 @@
 import * as React from "react"
 
-// Define ToastActionElement type here instead of importing it
+// Define ToastActionElement type here
 type ToastActionElement = React.ReactElement<{
   className: string
   altText?: string
