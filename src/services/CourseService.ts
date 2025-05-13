@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Define interfaces for our course system
 export interface Course {
   id: string;
   title: string;
@@ -63,7 +64,7 @@ export const CourseService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data as Course[] || [];
+    return (data as unknown) as Course[] || [];
   },
 
   // Obtener un curso por ID
@@ -75,7 +76,7 @@ export const CourseService = {
       .single();
     
     if (error) throw error;
-    return data as Course;
+    return (data as unknown) as Course;
   },
 
   // Obtener secciones de un curso
@@ -87,7 +88,7 @@ export const CourseService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data as CourseSection[] || [];
+    return (data as unknown) as CourseSection[] || [];
   },
 
   // Obtener lecciones de una sección
@@ -99,7 +100,7 @@ export const CourseService = {
       .order('position', { ascending: true });
     
     if (error) throw error;
-    return data as CourseLesson[] || [];
+    return (data as unknown) as CourseLesson[] || [];
   },
 
   // Obtener una lección por ID
@@ -111,7 +112,7 @@ export const CourseService = {
       .single();
     
     if (error) throw error;
-    return data as CourseLesson;
+    return (data as unknown) as CourseLesson;
   },
   
   // Obtener progreso del curso para un usuario
@@ -124,7 +125,7 @@ export const CourseService = {
       .maybeSingle();
     
     if (error) throw error;
-    return data as CourseProgress | null;
+    return (data as unknown) as CourseProgress | null;
   },
 
   // Iniciar o actualizar progreso del curso
@@ -221,7 +222,7 @@ export const CourseService = {
       .maybeSingle();
     
     if (error) throw error;
-    return data as LessonProgress | null;
+    return (data as unknown) as LessonProgress | null;
   },
 
   // Recalcular el progreso general del curso
@@ -246,35 +247,36 @@ export const CourseService = {
 
     const courseId = sectionData.course_id;
 
-    // Contar total de lecciones en el curso
+    // Obtener total de lecciones en el curso mediante una subconsulta
+    const courseSectionsQuery = supabase
+      .from('course_sections')
+      .select('id')
+      .eq('course_id', courseId);
+
     const { count: totalLessons, error: countError } = await supabase
       .from('course_lessons')
-      .select('id', { count: 'exact', head: true })
-      .in('section_id', supabase
-        .from('course_sections')
-        .select('id')
-        .eq('course_id', courseId))
+      .select('*', { count: 'exact', head: true })
+      .in('section_id', courseSectionsQuery);
     
     if (countError) throw countError;
 
-    // Contar lecciones completadas por el usuario
+    // Obtener lecciones completadas por el usuario mediante una subconsulta
+    const courseLessonsQuery = supabase
+      .from('course_lessons')
+      .select('id')
+      .in('section_id', courseSectionsQuery);
+
     const { count: completedLessons, error: completedError } = await supabase
       .from('user_lesson_progress')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('completed', true)
-      .in('lesson_id', supabase
-        .from('course_lessons')
-        .select('id')
-        .in('section_id', supabase
-          .from('course_sections')
-          .select('id')
-          .eq('course_id', courseId)))
+      .in('lesson_id', courseLessonsQuery);
     
     if (completedError) throw completedError;
 
     // Calcular porcentaje de progreso
-    const percentage = totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const percentage = totalLessons && totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     // Actualizar el progreso del curso
     await this.updateCourseProgress(userId, courseId, lessonId, percentage);
@@ -285,14 +287,15 @@ export const CourseService = {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select(`
-        courses:course_id(*)
+        course_id,
+        courses:course_id (*)
       `)
       .eq('user_id', userId)
       .eq('completed', true);
     
     if (error) throw error;
     return data && data.length > 0 
-      ? data.map(item => (item.courses as Course))
+      ? data.map(item => ((item.courses || {}) as unknown) as Course) 
       : [];
   },
 
@@ -302,7 +305,8 @@ export const CourseService = {
       .from('user_course_progress')
       .select(`
         progress_percentage,
-        courses:course_id(*)
+        course_id,
+        courses:course_id (*)
       `)
       .eq('user_id', userId)
       .eq('completed', false)
@@ -312,7 +316,7 @@ export const CourseService = {
     
     return data && data.length > 0
       ? data.map(item => ({
-          ...(item.courses as Course),
+          ...((item.courses || {}) as unknown as Course),
           progress: item.progress_percentage
         }))
       : [];
