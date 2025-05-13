@@ -3,15 +3,20 @@ import { toast } from "@/components/ui/use-toast";
 
 // Function to clean up auth state
 export const cleanupAuthState = () => {
+  console.log("Cleaning up auth state...");
+  
   // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      console.log(`Removing ${key} from localStorage`);
       localStorage.removeItem(key);
     }
   });
+  
   // Remove from sessionStorage if in use
   Object.keys(sessionStorage || {}).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      console.log(`Removing ${key} from sessionStorage`);
       sessionStorage.removeItem(key);
     }
   });
@@ -70,13 +75,22 @@ export const handleEmailConfirmation = async (
   query: string,
   navigate: (path: string) => void
 ) => {
+  console.log("Checking for auth fragments in URL: path=", path, "hash=", hash, "query=", query);
+  
   // Check if we have an access_token in the URL (email confirmation)
   if (hash && hash.includes('access_token=')) {
     try {
+      console.log("Found access_token in URL, processing email verification");
+      
       // The hash contains the access_token which Supabase will handle automatically
       const { data, error } = await supabase.auth.getSession();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error getting session during email verification:", error);
+        throw error;
+      }
+      
+      console.log("Email verification session data:", data);
       
       if (data.session) {
         toast({
@@ -100,6 +114,7 @@ export const handleEmailConfirmation = async (
   
   // Check for password reset flow
   if (query && query.includes('type=recovery')) {
+    console.log("Found recovery type in query, redirecting to password reset");
     // Redirect to reset password page maintaining the query parameters
     navigate(`/auth${query}`);
   }

@@ -8,19 +8,26 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      setLoading(true);
+      
       // Clean up existing state
       cleanupAuthState();
+      
+      console.log("Starting login process for:", email);
       
       // Attempt global sign out first to avoid conflicting sessions
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Continue even if this fails
+        console.log("Global sign out during login failed, continuing anyway");
       }
       
       // Usar el origen completo para redirección
       const currentOrigin = window.location.origin;
       const redirectUrl = `${currentOrigin}/dashboard`;
+      
+      console.log("Redirect URL:", redirectUrl);
       
       // Modificamos la llamada para usar opciones de redirección conforme a la API de supabase
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -28,7 +35,12 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Login error from Supabase:", error);
+        throw error;
+      }
+      
+      console.log("Sign in response:", data);
       
       // Verificación de correo electrónico
       if (data.user && !data.user.email_confirmed_at) {
@@ -40,20 +52,29 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         return;
       }
       
-      // Usamos la URL completa para la redirección
-      window.location.href = `${currentOrigin}/dashboard`;
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Redirigiendo al dashboard..."
+      });
+      
+      // Redirigimos al usuario al dashboard después de iniciar sesión
+      navigate('/dashboard');
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Complete login error:", error);
       toast({
         title: "Error de inicio de sesión",
         description: error.message || "Credenciales incorrectas o cuenta no verificada",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      setLoading(true);
+      
       // Check password strength
       const passwordCheck = checkPasswordStrength(password);
       if (!passwordCheck.isStrong) {
@@ -119,6 +140,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         description: error.message || "Ha ocurrido un error durante el registro",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -276,10 +299,10 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
     loading,
     signIn,
     signUp,
-    signInWithGithub,
-    signInWithGoogle,
-    signOut,
-    resetPassword,
-    updatePassword
+    signInWithGithub: authOperations.signInWithGithub,
+    signInWithGoogle: authOperations.signInWithGoogle,
+    signOut: authOperations.signOut,
+    resetPassword: authOperations.resetPassword,
+    updatePassword: authOperations.updatePassword
   };
 };

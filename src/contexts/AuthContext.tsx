@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
 import { handleEmailConfirmation } from '@/utils/auth-utils';
+import { toast } from "@/components/ui/use-toast";
 
 type AuthContextType = {
   user: User | null;
@@ -30,49 +31,81 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const authOperations = useAuthOperations(navigate);
 
   useEffect(() => {
-    // Check for URL fragments and handle them
-    handleEmailConfirmation(
-      supabase,
-      window.location.pathname,
-      window.location.hash,
-      window.location.search,
-      navigate
-    );
+    const initAuth = async () => {
+      setLoading(true);
+      
+      try {
+        // Check for URL fragments and handle them
+        handleEmailConfirmation(
+          supabase,
+          window.location.pathname,
+          window.location.hash,
+          window.location.search,
+          navigate
+        );
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
-        
-        // Handle specific events
-        if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Ensure we redirect to dashboard on successful sign in
-          if (window.location.pathname === '/auth') {
-            navigate('/dashboard');
+        // Set up auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, currentSession) => {
+            console.log("Auth state changed:", event);
+            
+            // Update session state
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+            
+            // Handle specific events
+            if (event === 'SIGNED_IN' && currentSession?.user) {
+              // Show success message
+              toast({
+                title: "Inicio de sesión exitoso",
+                description: "Has iniciado sesión correctamente."
+              });
+              
+              // Defer fetching user profile to avoid state conflicts
+              setTimeout(() => {
+                // Ensure we redirect to dashboard on successful sign in
+                if (window.location.pathname === '/auth') {
+                  navigate('/dashboard');
+                }
+              }, 0);
+            }
+
+            // Handle sign out event
+            if (event === 'SIGNED_OUT') {
+              // Clean up any remaining state
+              setUser(null);
+              setSession(null);
+              toast({
+                title: "Sesión cerrada",
+                description: "Has cerrado sesión correctamente."
+              });
+            }
           }
-        }
+        );
 
-        // Handle sign out event
-        if (event === 'SIGNED_OUT') {
-          // Clean up any remaining state
-          setUser(null);
-          setSession(null);
+        // Then check for existing session
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          throw error;
         }
+        
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      } catch (error: any) {
+        console.error("Auth initialization error:", error);
+        toast({
+          title: "Error de autenticación",
+          description: "Ha ocurrido un error al inicializar la autenticación.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
+
+    initAuth();
+
+    // No need to return a cleanup function here since we want the auth subscription to persist
   }, [navigate]);
 
   const value = {

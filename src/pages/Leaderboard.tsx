@@ -21,7 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Función para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
   try {
-    // Especificar explícitamente el esquema 'public'
+    console.log("Fetching profiles from Supabase...");
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -87,6 +87,8 @@ const Leaderboard = () => {
   } = useQuery({
     queryKey: ['leaderboard-profiles', selectedRegion],
     queryFn: fetchProfiles,
+    retry: 2,
+    refetchOnWindowFocus: false
   });
   
   // Obtener el perfil del usuario actual
@@ -129,6 +131,9 @@ const Leaderboard = () => {
     }
   }, [error]);
   
+  // Para propósitos de depuración
+  console.log("Current profiles data:", profiles);
+  
   // Preparar datos para la tabla
   const leaderboardUsers = mapProfilesToLeaderboardUsers(profiles);
   
@@ -152,9 +157,6 @@ const Leaderboard = () => {
   
   // Obtenemos los top 3 para el showcase
   const top3Users = leaderboardUsers.slice(0, 3);
-
-  // Para propósitos de depuración
-  console.log("Current profiles data:", profiles);
 
   return (
     <div className="min-h-screen bg-cybersec-black">

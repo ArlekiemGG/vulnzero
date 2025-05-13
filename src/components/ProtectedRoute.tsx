@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,8 +20,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If not authenticated, redirect to auth page
+  // If not authenticated, redirect to auth page with notification
   if (!user) {
+    toast({
+      title: "Acceso restringido",
+      description: "Debes iniciar sesión para acceder a esta página",
+      variant: "destructive"
+    });
+    
     return <Navigate to="/auth" replace />;
   }
   
