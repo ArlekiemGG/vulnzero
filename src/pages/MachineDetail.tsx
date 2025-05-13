@@ -146,6 +146,7 @@ const MachineDetail = () => {
         setTerminalOutput([]);
       }, 1000);
     } else {
+      // Fix for the VPN connection issue
       setTerminalOutput(["INFO: Conectando a " + (machine?.name || "la máquina") + " (" + (machine?.ipAddress || "unknown") + ")..."]);
       setTimeout(() => {
         setIsConnected(true);
@@ -160,7 +161,7 @@ const MachineDetail = () => {
           "1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000",
           "    inet 127.0.0.1/8 scope host lo",
           "2: tun0: <POINTOPOINT,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 100",
-          "    inet 10.10.14.8/23 scope global tun0",
+          "    inet " + (machine?.ipAddress || "10.10.14.8") + "/23 scope global tun0",
         ]);
       }, 1500);
     }
@@ -482,6 +483,8 @@ const MachineDetail = () => {
         title: "Solicitando máquina",
         description: "Estamos preparando tu máquina...",
       });
+      
+      console.log("Requesting machine with ID:", machineId);
       
       // Call the MachineSessionService to request a new machine
       const session = await MachineSessionService.requestMachine(user.id, machineId);

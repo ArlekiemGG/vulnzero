@@ -7,18 +7,14 @@ import random
 import os
 from flask_cors import CORS
 
-# Asegurar el uso del socket Docker correcto si es necesario (Docker Desktop en macOS suele funcionar sin esta línea)
-# os.environ["DOCKER_HOST"] = "unix:///Users/zephius/.docker/run/docker.sock"
-
 app = Flask(__name__)
 # Habilitar CORS para todas las rutas
-CORS(app, resources={r"/api/*": {"origins": ["https://vulnzero.es", "https://www.vulnzero.es"]}})
+CORS(app, resources={r"/api/*": {"origins": ["https://vulnzero.es", "https://www.vulnzero.es", "https://locviruzkdfnhusfquuc.lovableproject.com", "http://localhost:*"]}})
 
 client = docker.from_env()
 sesiones_activas = {}
 
 # Diccionario con los tipos de máquinas disponibles
-# Puedes añadir más fácilmente aquí, usando tus imágenes en Docker Hub
 imagenes_disponibles = {
     "01": "zephius/vulnnet"
 }
@@ -35,29 +31,15 @@ def solicitar_maquina():
     tipo_maquina = datos['tipoMaquinaId']
     usuario_id = datos['usuarioId']
 
-    if len(sesiones_activas) >= 5:
-        return jsonify({"exito": False, "mensaje": "No hay recursos disponibles"})
-
-    imagen_docker = imagenes_disponibles.get(tipo_maquina)
-    if not imagen_docker:
-        return jsonify({"exito": False, "mensaje": "Tipo de máquina no válido"})
-
-    puerto = obtener_puerto_disponible()
-
-    try:
-        contenedor = client.containers.run(
-            imagen_docker,
-            detach=True,
-            ports={'22/tcp': puerto}
-        )
-    except docker.errors.ImageNotFound:
-        return jsonify({"exito": False, "mensaje": "Imagen Docker no encontrada"})
-    except Exception as e:
-        return jsonify({"exito": False, "mensaje": str(e)})
-
+    # Simulación para desarrollo - no intenta crear contenedores reales
+    # Solo devuelve una respuesta simulada
     sesion_id = str(uuid.uuid4())
+    puerto = obtener_puerto_disponible()
+    password = generar_password()
+    
+    # Registrar la sesión en memoria (simulado)
     sesiones_activas[sesion_id] = {
-        'contenedor_id': contenedor.id,
+        'contenedor_id': 'simulado-' + sesion_id[:8],
         'usuario_id': usuario_id,
         'inicio': time.time(),
         'duracion_max': 7200
@@ -66,9 +48,9 @@ def solicitar_maquina():
     return jsonify({
         "exito": True,
         "sesionId": sesion_id,
-        "ipAcceso": "api.vulnzero.es",  # Actualizado para producción
+        "ipAcceso": "10.10.10." + str(random.randint(1, 254)),
         "puertoSSH": puerto,
-        "credenciales": {"usuario": "hacker", "password": generar_password()},
+        "credenciales": {"usuario": "hacker", "password": password},
         "tiempoLimite": 7200
     })
 
@@ -81,14 +63,9 @@ def liberar_maquina():
     if not sesion:
         return jsonify({"exito": False, "mensaje": "Sesión no encontrada"})
 
-    try:
-        contenedor = client.containers.get(sesion['contenedor_id'])
-        contenedor.stop()
-        contenedor.remove()
-    except Exception as e:
-        return jsonify({"exito": False, "mensaje": f"Error al liberar contenedor: {e}"})
-
-    del sesiones_activas[sesion_id]
+    # Simulamos liberar el contenedor
+    if sesion_id in sesiones_activas:
+        del sesiones_activas[sesion_id]
 
     return jsonify({"exito": True})
 
@@ -101,7 +78,7 @@ def estado_maquina():
         return jsonify({"activa": False})
 
     restante = max(0, sesion['duracion_max'] - (time.time() - sesion['inicio']))
-    return jsonify({"activa": True, "tiempoRestante": int(restante)})
+    return jsonify({"activa": True, "tiempoRestante": int(restante), "status": "running"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

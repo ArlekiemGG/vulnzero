@@ -24,9 +24,10 @@ export interface MachineSession {
   };
 }
 
-// External API configuration
-// Actualizado para usar la URL del backend en producción
-const EXTERNAL_API_URL = "https://api.vulnzero.es"; // URL de producción
+// External API configuration for development and production
+const EXTERNAL_API_URL = window.location.hostname.includes("localhost") 
+  ? "http://localhost:5000"  // Local development
+  : "https://api.vulnzero.es"; // Production
 
 // Helper function to map database session to MachineSession interface
 const mapDbSessionToMachineSession = (session: any): MachineSession => {
@@ -68,8 +69,9 @@ export const MachineSessionService = {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.mensaje || 'Error al solicitar la máquina');
+        const errorText = await response.text();
+        console.error('API response not OK:', errorText);
+        throw new Error(`Error al solicitar la máquina: ${response.status}`);
       }
 
       const data = await response.json();
