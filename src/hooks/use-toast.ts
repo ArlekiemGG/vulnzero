@@ -1,6 +1,7 @@
+
 import * as React from "react"
 
-// Define ToastActionElement type here
+// Define ToastActionElement type
 type ToastActionElement = React.ReactElement<{
   className: string
   altText?: string
@@ -10,7 +11,7 @@ type ToastActionElement = React.ReactElement<{
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-// Define the Toast and ToasterToast types
+// Define Toast and ToasterToast types
 export interface ToasterToast {
   id: string
   title?: React.ReactNode
@@ -98,8 +99,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -193,5 +192,3 @@ export function useToast() {
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
-
-export type { Toast, ToasterToast }
