@@ -114,6 +114,16 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
+// Define ToasterToast type here instead of importing it
+type ToasterToast = {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: React.ReactElement
+  variant?: "default" | "destructive" | "success"
+  open?: boolean
+}
+
 export function Toaster() {
   const { toasts } = useToast()
 
@@ -138,9 +148,11 @@ export function Toaster() {
   )
 }
 
+// Fix: Export ToasterToast type instead of trying to export Toast type twice
+export type { ToasterToast }
+
+// Export components
 export {
-  type Toast,
-  type ToastProps,
   ToastProvider,
   ToastViewport,
   Toast,

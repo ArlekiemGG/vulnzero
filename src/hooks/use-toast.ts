@@ -1,28 +1,26 @@
 import * as React from "react"
 
-// Import the toast types directly from the toast.tsx file
-import type {
-  Toast as ToastPrimitive,
-  ToastProps,
-} from "@/components/ui/toast"
-
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
-
-// Define ToastActionElement type directly here since it's not exported from toast.tsx
+// Define ToastActionElement type here instead of importing it
 type ToastActionElement = React.ReactElement<{
   className: string
   altText?: string
   onClick: () => void
 }>
 
-type ToasterToast = ToastProps & {
+const TOAST_LIMIT = 1
+const TOAST_REMOVE_DELAY = 1000000
+
+// Define the Toast type here directly
+type Toast = Omit<ToasterToast, "id">
+
+type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
   variant?: "default" | "destructive" | "success"
-  open?: boolean // Add the open property to fix the type error
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const actionTypes = {
@@ -147,8 +145,6 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
-
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -199,3 +195,4 @@ function useToast() {
 }
 
 export { useToast, toast }
+export type { Toast, ToasterToast }
