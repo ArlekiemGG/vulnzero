@@ -4,7 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuthOperations } from '@/hooks/use-auth-operations';
-import { handleEmailConfirmation } from '@/utils/auth-utils';
+import { handleEmailConfirmation, cleanupAuthState } from '@/utils/auth-utils';
 import { toast } from "@/components/ui/use-toast";
 
 type AuthContextType = {
@@ -18,6 +18,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   
   const { 
@@ -38,6 +40,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword, 
     updatePassword 
   } = useAuthOperations(navigate);
+
+  // Verificar si el usuario actual es administrador
+  const checkAdminStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+      
+      setIsAdmin(data?.role === 'admin');
+      return data?.role === 'admin';
+    } catch (error) {
+      console.error('Exception checking admin status:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -72,9 +96,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               
               // Defer fetching user profile to avoid state conflicts
               setTimeout(() => {
+                // Verificar rol de admin
+                checkAdminStatus(currentSession.user.id);
+                
                 // Ensure we redirect to dashboard on successful sign in
+                const redirectPath = localStorage.getItem('redirectAfterLogin') || '/dashboard';
+                localStorage.removeItem('redirectAfterLogin');
+                
                 if (window.location.pathname === '/auth') {
-                  navigate('/dashboard');
+                  navigate(redirectPath);
                 }
               }, 0);
             }
@@ -84,10 +114,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               // Clean up any remaining state
               setUser(null);
               setSession(null);
+              setIsAdmin(false);
               toast({
                 title: "Sesión cerrada",
                 description: "Has cerrado sesión correctamente."
               });
+              
+              // Limpiar estado de autenticación
+              cleanupAuthState();
             }
           }
         );
@@ -100,6 +134,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setSession(data.session);
         setUser(data.session?.user ?? null);
+        
+        // Verificar rol de admin si hay usuario
+        if (data.session?.user) {
+          await checkAdminStatus(data.session.user.id);
+        }
       } catch (error: any) {
         console.error("Auth initialization error:", error);
         toast({
@@ -125,7 +164,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signInWithGoogle,
     signOut,
     resetPassword,
-    updatePassword
+    updatePassword,
+    isAdmin
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

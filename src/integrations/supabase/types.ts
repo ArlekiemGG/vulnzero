@@ -18,6 +18,7 @@ export type Database = {
           level: number | null
           points: number | null
           rank: number | null
+          role: string | null
           solved_machines: number | null
           updated_at: string | null
           username: string | null
@@ -30,6 +31,7 @@ export type Database = {
           level?: number | null
           points?: number | null
           rank?: number | null
+          role?: string | null
           solved_machines?: number | null
           updated_at?: string | null
           username?: string | null
@@ -42,6 +44,7 @@ export type Database = {
           level?: number | null
           points?: number | null
           rank?: number | null
+          role?: string | null
           solved_machines?: number | null
           updated_at?: string | null
           username?: string | null
@@ -53,7 +56,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

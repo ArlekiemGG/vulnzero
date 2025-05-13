@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -10,8 +10,17 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
-  // While checking authentication status, show loading or nothing
+  useEffect(() => {
+    // Almacenar la ruta actual si no hay sesión activa
+    // para redireccionar después de login
+    if (!loading && !user) {
+      localStorage.setItem('redirectAfterLogin', location.pathname);
+    }
+  }, [user, loading, location]);
+  
+  // Mientras verificamos el estado de autenticación, mostramos loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cybersec-black">
@@ -20,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If not authenticated, redirect to auth page with notification
+  // Si no está autenticado, redireccionamos a la página de auth con notificación
   if (!user) {
     toast({
       title: "Acceso restringido",
@@ -31,7 +40,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
   
-  // If authenticated, render children
+  // Si está autenticado, renderizamos los children
   return <>{children}</>;
 };
 

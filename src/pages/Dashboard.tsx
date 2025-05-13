@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Activity, Code, User } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -11,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import BadgeCard from '@/components/dashboard/BadgeCard';
 import MachineCard from '@/components/machines/MachineCard';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, queries } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -23,6 +22,7 @@ interface UserProfile {
   solved_machines: number;
   completed_challenges: number;
   username: string;
+  role?: string;
 }
 
 // Default para un nuevo usuario
@@ -153,6 +153,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Calcular puntos para siguiente nivel (simple: nivel actual * 500)
   const pointsToNextLevel = userProfile.level * 500 - userProfile.points;
@@ -169,11 +170,7 @@ const Dashboard = () => {
       
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('level, points, rank, solved_machines, completed_challenges, username')
-          .eq('id', user.id)
-          .single();
+        const { data, error } = await queries.getUserProfile(user.id);
           
         if (error) {
           console.error('Error fetching user profile:', error);
@@ -187,6 +184,7 @@ const Dashboard = () => {
         
         if (data) {
           setUserProfile(data);
+          setIsAdmin(data.role === 'admin');
         }
       } catch (error) {
         console.error('Error loading profile:', error);

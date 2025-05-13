@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
@@ -16,18 +15,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, queries } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Función para obtener el ranking desde Supabase
+// Función optimizada para obtener el ranking desde Supabase
 const fetchProfiles = async () => {
   try {
     console.log("Fetching profiles from Supabase...");
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('points', { ascending: false })
-      .limit(100);
+    const { data, error } = await queries.getLeaderboard();
     
     if (error) {
       console.error("Error fetching profiles:", error);
@@ -42,7 +37,7 @@ const fetchProfiles = async () => {
   }
 };
 
-// Función para obtener el profile del usuario actual
+// Función optimizada para obtener el perfil del usuario actual
 const fetchCurrentUserProfile = async (userId: string | undefined) => {
   if (!userId) {
     console.log("No user ID provided, cannot fetch profile");
@@ -52,11 +47,7 @@ const fetchCurrentUserProfile = async (userId: string | undefined) => {
   try {
     console.log("Fetching current user profile with ID:", userId);
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await queries.getUserProfile(userId);
     
     if (error) {
       console.error("Error al cargar perfil de usuario:", error);

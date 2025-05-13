@@ -17,7 +17,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     storage: localStorage,
     storageKey: 'sb-auth-token',
-    debug: true
+    debug: false
   },
   global: {
     headers: {
@@ -28,3 +28,47 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     schema: 'public'
   }
 });
+
+// Helpers to simplify queries
+export const queries = {
+  /**
+   * Fetch a user's complete profile
+   * @param userId The user ID to fetch
+   */
+  getUserProfile: async (userId: string | undefined) => {
+    if (!userId) return null;
+    
+    return await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+  },
+  
+  /**
+   * Fetch leaderboard data with optional pagination
+   * @param limit Number of profiles to fetch
+   * @param offset Pagination offset 
+   */
+  getLeaderboard: async (limit = 100, offset = 0) => {
+    return await supabase
+      .from('profiles')
+      .select('*')
+      .order('points', { ascending: false })
+      .range(offset, offset + limit - 1);
+  },
+  
+  /**
+   * Update a user's profile
+   * @param userId User ID to update
+   * @param data Updated profile data
+   */
+  updateProfile: async (userId: string | undefined, data: any) => {
+    if (!userId) return { error: { message: 'User ID is required' } };
+    
+    return await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', userId);
+  }
+};
