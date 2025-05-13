@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,17 +10,20 @@ import Sidebar from '@/components/layout/Sidebar';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
 
-// Mock data para estadísticas de usuario
-const userStats = {
-  level: 7,
-  points: 3450,
-  pointsToNextLevel: 550,
-  progress: 70,
-  rank: 42,
-  solvedMachines: 15,
-  completedChallenges: 8,
-};
+// Type for user stats
+interface UserStats {
+  level: number;
+  points: number;
+  pointsToNextLevel: number;
+  progress: number;
+  rank?: number;
+  solvedMachines: number;
+  completedChallenges: number;
+}
 
 // Mock data para CTFs activos
 const activeCTFs = [
@@ -143,6 +147,66 @@ const currentCTFLeaderboard = [
 ];
 
 const CTFs = () => {
+  const { user } = useAuth();
+  const [userStats, setUserStats] = useState<UserStats>({
+    level: 1,
+    points: 0,
+    pointsToNextLevel: 100,
+    progress: 0,
+    solvedMachines: 0,
+    completedChallenges: 0,
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (profile) {
+          // Calculate progress to next level (simple formula: need 500 points per level)
+          const pointsPerLevel = 500;
+          const currentLevelPoints = (profile.level - 1) * pointsPerLevel;
+          const nextLevelPoints = profile.level * pointsPerLevel;
+          const pointsInCurrentLevel = profile.points - currentLevelPoints;
+          const progressToNextLevel = Math.min(100, Math.round((pointsInCurrentLevel / pointsPerLevel) * 100));
+          
+          setUserStats({
+            level: profile.level || 1,
+            points: profile.points || 0,
+            pointsToNextLevel: nextLevelPoints - profile.points,
+            progress: progressToNextLevel,
+            rank: profile.rank,
+            solvedMachines: profile.solved_machines || 0,
+            completedChallenges: profile.completed_challenges || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar tus datos de perfil.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
