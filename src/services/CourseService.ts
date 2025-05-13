@@ -57,7 +57,7 @@ export interface LessonProgress {
 
 export const CourseService = {
   // Obtener todos los cursos
-  async getCourses(): Promise<Course[]> {
+  async getCourses() {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
@@ -68,7 +68,7 @@ export const CourseService = {
   },
 
   // Obtener un curso por ID
-  async getCourseById(courseId: string): Promise<Course | null> {
+  async getCourseById(courseId: string) {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
@@ -80,7 +80,7 @@ export const CourseService = {
   },
 
   // Obtener secciones de un curso
-  async getCourseSections(courseId: string): Promise<CourseSection[]> {
+  async getCourseSections(courseId: string) {
     const { data, error } = await supabase
       .from('course_sections')
       .select('*')
@@ -92,7 +92,7 @@ export const CourseService = {
   },
 
   // Obtener lecciones de una sección
-  async getSectionLessons(sectionId: string): Promise<CourseLesson[]> {
+  async getSectionLessons(sectionId: string) {
     const { data, error } = await supabase
       .from('course_lessons')
       .select('*')
@@ -104,7 +104,7 @@ export const CourseService = {
   },
 
   // Obtener una lección por ID
-  async getLessonById(lessonId: string): Promise<CourseLesson | null> {
+  async getLessonById(lessonId: string) {
     const { data, error } = await supabase
       .from('course_lessons')
       .select('*')
@@ -116,7 +116,7 @@ export const CourseService = {
   },
   
   // Obtener progreso del curso para un usuario
-  async getCourseProgress(userId: string, courseId: string): Promise<CourseProgress | null> {
+  async getCourseProgress(userId: string, courseId: string) {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select('*')
@@ -134,7 +134,7 @@ export const CourseService = {
     courseId: string, 
     lessonId: string | null = null, 
     percentage: number = 0
-  ): Promise<void> {
+  ) {
     // Verificar si ya existe un registro de progreso
     const { data: existingProgress } = await supabase
       .from('user_course_progress')
@@ -174,7 +174,7 @@ export const CourseService = {
   },
 
   // Marcar una lección como completada
-  async markLessonCompleted(userId: string, lessonId: string): Promise<void> {
+  async markLessonCompleted(userId: string, lessonId: string) {
     // Verificar si ya existe un registro de progreso para esta lección
     const { data: existingProgress } = await supabase
       .from('user_lesson_progress')
@@ -213,7 +213,7 @@ export const CourseService = {
   },
 
   // Obtener el estado de una lección para un usuario
-  async getLessonProgress(userId: string, lessonId: string): Promise<LessonProgress | null> {
+  async getLessonProgress(userId: string, lessonId: string) {
     const { data, error } = await supabase
       .from('user_lesson_progress')
       .select('*')
@@ -226,7 +226,7 @@ export const CourseService = {
   },
 
   // Recalcular el progreso general del curso
-  async recalculateCourseProgress(userId: string, lessonId: string): Promise<void> {
+  async recalculateCourseProgress(userId: string, lessonId: string) {
     // Primero, obtener la lección para encontrar la sección y el curso
     const { data: lessonData, error: lessonError } = await supabase
       .from('course_lessons')
@@ -295,7 +295,7 @@ export const CourseService = {
   },
 
   // Obtener cursos completados por el usuario
-  async getCompletedCourses(userId: string): Promise<Course[]> {
+  async getCompletedCourses(userId: string) {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select(`
@@ -314,7 +314,7 @@ export const CourseService = {
   },
 
   // Obtener cursos en progreso por el usuario
-  async getInProgressCourses(userId: string): Promise<(Course & { progress: number })[]> {
+  async getInProgressCourses(userId: string) {
     const { data, error } = await supabase
       .from('user_course_progress')
       .select(`
