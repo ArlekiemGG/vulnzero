@@ -156,6 +156,39 @@ const MachineDetail = () => {
             "80/tcp open  http",
             "Nmap done: 1 IP address (1 host up) scanned in 2.05 seconds"
           ]);
+          
+          // Marcar la primera tarea como completada (enumeración de servicios)
+          if (user && machine && !completedTasks.includes(1)) {
+            // Actualizar el estado local
+            const newCompletedTasks = [...completedTasks, 1];
+            setCompletedTasks(newCompletedTasks);
+            
+            // Actualizar las tareas en la máquina
+            setMachine(prev => {
+              if (!prev) return null;
+              
+              const updatedTasks = prev.tasks.map(task => ({
+                ...task,
+                completed: task.id === 1 ? true : task.completed
+              }));
+              
+              return { ...prev, tasks: updatedTasks };
+            });
+            
+            // Actualizar el progreso
+            const newProgress = Math.max(userProgress, 20);
+            setUserProgress(newProgress);
+            
+            // En una implementación real, esto actualizaría la base de datos
+            MachineService.completeTask(user.id, machine.id, 1);
+            
+            // Mostrar notificación
+            toast({
+              title: "¡Progreso actualizado!",
+              description: "Has completado la tarea: Enumerar servicios",
+              variant: "success"
+            });
+          }
           break;
         case 'gobuster':
           setTerminalOutput(prev => [...prev, 
@@ -183,6 +216,48 @@ const MachineDetail = () => {
           break;
         case 'clear':
           setTerminalOutput([]);
+          break;
+        case 'getshell':
+        case 'shell':
+          setTerminalOutput(prev => [...prev, 
+            "Connecting to remote host...",
+            "Spawning shell...",
+            "Connection established!",
+            "cyberhacker@vulnnet:~$ "
+          ]);
+          
+          // Marcar la segunda tarea como completada (conseguir shell)
+          if (user && machine && !completedTasks.includes(2)) {
+            // Actualizar el estado local
+            const newCompletedTasks = [...completedTasks, 2];
+            setCompletedTasks(newCompletedTasks);
+            
+            // Actualizar las tareas en la máquina
+            setMachine(prev => {
+              if (!prev) return null;
+              
+              const updatedTasks = prev.tasks.map(task => ({
+                ...task,
+                completed: task.id === 2 ? true : task.completed
+              }));
+              
+              return { ...prev, tasks: updatedTasks };
+            });
+            
+            // Actualizar el progreso
+            const newProgress = Math.max(userProgress, 40);
+            setUserProgress(newProgress);
+            
+            // En una implementación real, esto actualizaría la base de datos
+            MachineService.completeTask(user.id, machine.id, 2);
+            
+            // Mostrar notificación
+            toast({
+              title: "¡Progreso actualizado!",
+              description: "Has completado la tarea: Conseguir shell",
+              variant: "success"
+            });
+          }
           break;
         default:
           setTerminalOutput(prev => [...prev, `ERROR: Comando '${command}' no reconocido. Escribe 'help' para ver los comandos disponibles.`]);
@@ -215,8 +290,25 @@ const MachineDetail = () => {
           variant: "success"
         });
         
+        // Actualizar tareas completadas
+        const newCompletedTasks = [...completedTasks, 3]; // Tarea 3 = flag de usuario
+        setCompletedTasks(newCompletedTasks);
+        
+        // Actualizar las tareas en la máquina
+        setMachine(prev => {
+          if (!prev) return null;
+          
+          const updatedTasks = prev.tasks.map(task => ({
+            ...task,
+            completed: task.id === 3 ? true : task.completed
+          }));
+          
+          return { ...prev, tasks: updatedTasks };
+        });
+        
         // Update user progress
-        setUserProgress(prev => Math.min(prev + 25, 100));
+        const newProgress = 50; // Flag de usuario = 50% de progreso
+        setUserProgress(newProgress);
         
         // Log the activity
         if (user) {
@@ -261,6 +353,22 @@ const MachineDetail = () => {
           title: "¡Flag de root capturada!",
           description: `¡Felicidades! Has comprometido completamente la máquina y obtenido ${result.points || 0} puntos.`,
           variant: "success"
+        });
+        
+        // Actualizar tareas completadas
+        const newCompletedTasks = [...completedTasks, 4, 5]; // Tareas 4 y 5 = escalada de privilegios y flag de root
+        setCompletedTasks(newCompletedTasks);
+        
+        // Actualizar las tareas en la máquina
+        setMachine(prev => {
+          if (!prev) return null;
+          
+          const updatedTasks = prev.tasks.map(task => ({
+            ...task,
+            completed: task.id === 4 || task.id === 5 ? true : task.completed
+          }));
+          
+          return { ...prev, tasks: updatedTasks };
         });
         
         // Update user progress to 100%

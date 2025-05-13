@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,7 +34,7 @@ const mockMachines: MachineDetails[] = [
     categories: ["Web", "Privilege Escalation", "Linux"],
     points: 20,
     solvedBy: 1250,
-    userProgress: 45,
+    userProgress: 0, // Inicializar en 0
     ipAddress: "10.10.10.15",
     creator: "VulnZero Team",
     releaseDate: "2023-08-15",
@@ -50,8 +49,8 @@ const mockMachines: MachineDetails[] = [
       { id: 4, title: "Escalada de privilegios", content: "Busca tareas programadas inusuales", locked: true },
     ],
     tasks: [
-      { id: 1, title: "Enumerar servicios", description: "Identifica todos los servicios ejecutándose en la máquina", completed: true },
-      { id: 2, title: "Conseguir shell", description: "Obtén una shell en el sistema", completed: true },
+      { id: 1, title: "Enumerar servicios", description: "Identifica todos los servicios ejecutándose en la máquina", completed: false },
+      { id: 2, title: "Conseguir shell", description: "Obtén una shell en el sistema", completed: false },
       { id: 3, title: "Obtener flag de usuario", description: "Encuentra la flag en el directorio del usuario", completed: false },
       { id: 4, title: "Escalar privilegios", description: "Escala privilegios a root", completed: false },
       { id: 5, title: "Obtener flag de root", description: "Encuentra la flag de root", completed: false },
@@ -67,24 +66,41 @@ export const MachineService = {
 
   getUserMachineProgress: async (userId: string, machineId: string) => {
     try {
-      // In a real implementation, you would fetch the user's progress for this machine from the database
+      // En una implementación real, obtendrías el progreso del usuario para esta máquina desde la base de datos
       console.log('Fetching user progress for machine:', machineId, 'user:', userId);
       
-      // Simulating an API call delay
+      // Simulando un retraso de llamada a API
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // For now, we'll return mock data
-      const machine = mockMachines.find(m => m.id === machineId);
-      if (!machine) return { progress: 0, completedTasks: [] };
+      // En una implementación real, aquí consultarías una tabla en la base de datos
+      // que lleve el registro de las tareas completadas por cada usuario en cada máquina
       
-      // In a real implementation, you would use the user's actual progress data
+      // Por ahora, para simular que el usuario no ha comenzado ninguna máquina,
+      // devolvemos un progreso vacío (sin tareas completadas)
       return {
-        progress: machine.userProgress,
-        completedTasks: machine.tasks.filter(task => task.completed).map(task => task.id)
+        progress: 0,  // 0% de progreso inicial
+        completedTasks: []  // Sin tareas completadas inicialmente
       };
     } catch (error) {
       console.error('Error fetching user machine progress:', error);
       return { progress: 0, completedTasks: [] };
+    }
+  },
+
+  completeTask: async (userId: string, machineId: string, taskId: number) => {
+    try {
+      // En una implementación real, actualizarías la base de datos
+      console.log('Completing task:', taskId, 'for machine:', machineId, 'user:', userId);
+      
+      // Simulando un retraso de llamada a API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // En una implementación real, esto actualizaría una tabla en la base de datos
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error completing task:', error);
+      return { success: false, error: 'Error al completar la tarea' };
     }
   },
 
