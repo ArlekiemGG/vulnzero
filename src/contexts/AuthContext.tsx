@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [initialSessionChecked, setInitialSessionChecked] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [isUserLogin, setIsUserLogin] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const navigate = useNavigate();
   
   const { 
@@ -84,11 +85,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, currentSession) => {
             console.log("Auth state changed:", event);
-            
-            if (!authInitialized) {
-              // Skip toast notifications during initial auth setup
-              return;
-            }
             
             // Update session state
             setSession(currentSession);
@@ -154,6 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Mark auth as initialized - after this, auth state changes will trigger toasts
         setAuthInitialized(true);
+        setIsFirstLoad(false);
       } catch (error: any) {
         console.error("Auth initialization error:", error);
         toast({

@@ -18,15 +18,16 @@ export const MachineService = {
 
   // Get a specific machine by ID
   getMachine: (id: string): MachineDetails | null => {
-    // Manejar correctamente los IDs numéricos desde la URL
-    const machineId = id.toString();
+    // Asegurarnos de que el ID sea una cadena y esté en el formato correcto
+    const machineId = String(id).trim();
     console.log("Looking for machine with ID:", machineId);
     console.log("Available machine IDs:", machines.map(m => m.id));
     
-    const machine = machines.find(machine => machine.id === machineId);
+    // Buscar la máquina usando comparación estricta
+    const machine = machines.find(machine => String(machine.id) === machineId);
     
     if (!machine) {
-      console.error(`Machine with ID ${id} not found`);
+      console.error(`Machine with ID ${machineId} not found`);
       return null;
     }
     

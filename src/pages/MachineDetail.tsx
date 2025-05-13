@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -41,52 +40,71 @@ const MachineDetail = () => {
   // Fetch machine and user progress data
   useEffect(() => {
     const fetchData = async () => {
-      if (!id) return;
+      if (!id) {
+        console.error("No machine ID provided");
+        toast({
+          title: "Error",
+          description: "No se pudo cargar la máquina: ID no proporcionado",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
+        console.log("Fetching machine with ID:", id);
         
         // Get machine details
         const machineData = MachineService.getMachine(id);
+        
         if (!machineData) {
+          console.error("Machine not found with ID:", id);
           toast({
             title: "Error",
             description: "No se pudo encontrar la máquina solicitada.",
             variant: "destructive"
           });
+          setLoading(false);
           return;
         }
         
+        console.log("Machine data loaded:", machineData);
         setMachine(machineData);
         
         // Get user progress if user is logged in
         if (user) {
-          const progressData = await MachineService.getUserMachineProgress(user.id, id);
-          setUserProgress(progressData.progress);
-          
-          // Since completedTasks doesn't exist in MachineProgress, we need to derive it
-          // Let's assume tasks 1-5 are completed if progress is high enough
-          const derivedCompletedTasks: number[] = [];
-          if (progressData.progress >= 20) derivedCompletedTasks.push(1); // First task
-          if (progressData.progress >= 40) derivedCompletedTasks.push(2); // Second task
-          if (progressData.progress >= 50) derivedCompletedTasks.push(3); // User flag task
-          if (progressData.progress >= 80) derivedCompletedTasks.push(4); // Privilege escalation task
-          if (progressData.progress >= 100) derivedCompletedTasks.push(5); // Root flag task
-          
-          setCompletedTaskIds(derivedCompletedTasks);
-          
-          // Update the tasks with completed status based on user progress
-          if (machineData && machineData.tasks) {
-            // Convert machine tasks to MachineTask format for the component
-            const updatedTasks = machineData.tasks.map(task => ({
-              id: task.id,
-              title: task.name, // Map 'name' to 'title' for MachineTask interface
-              description: task.description,
-              completed: derivedCompletedTasks.includes(task.id)
-            }));
+          try {
+            const progressData = await MachineService.getUserMachineProgress(user.id, id);
+            setUserProgress(progressData.progress);
             
-            setMachineTasks(updatedTasks);
-            setMachine(prev => prev ? { ...prev, userProgress: progressData.progress } : null);
+            // Since completedTasks doesn't exist in MachineProgress, we need to derive it
+            // Let's assume tasks 1-5 are completed if progress is high enough
+            const derivedCompletedTasks: number[] = [];
+            if (progressData.progress >= 20) derivedCompletedTasks.push(1); // First task
+            if (progressData.progress >= 40) derivedCompletedTasks.push(2); // Second task
+            if (progressData.progress >= 50) derivedCompletedTasks.push(3); // User flag task
+            if (progressData.progress >= 80) derivedCompletedTasks.push(4); // Privilege escalation task
+            if (progressData.progress >= 100) derivedCompletedTasks.push(5); // Root flag task
+            
+            setCompletedTaskIds(derivedCompletedTasks);
+            
+            // Update the tasks with completed status based on user progress
+            if (machineData && machineData.tasks) {
+              // Convert machine tasks to MachineTask format for the component
+              const updatedTasks = machineData.tasks.map(task => ({
+                id: task.id,
+                title: task.name, // Map 'name' to 'title' for MachineTask interface
+                description: task.description,
+                completed: derivedCompletedTasks.includes(task.id)
+              }));
+              
+              setMachineTasks(updatedTasks);
+              setMachine(prev => prev ? { ...prev, userProgress: progressData.progress } : null);
+            }
+          } catch (progressError) {
+            console.error("Error loading user progress:", progressError);
+            // Continue showing the machine even if progress can't be loaded
           }
         }
       } catch (error) {
