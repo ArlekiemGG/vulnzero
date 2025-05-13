@@ -22,8 +22,18 @@ import MachineHints from '@/components/machines/MachineHints';
 import { MachineService, MachineDetails } from '@/components/machines/MachineService';
 import { MachineSessionService } from '@/components/machines/MachineSessionService';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/lib/supabase';
-import { TaskHintService } from '@/components/machines/TaskHintService';
+import { supabase } from '@/integrations/supabase/client'; // Fixed import path
+import { TaskHintService } from '@/components/machines/services/TaskHintService'; // Fixed import path
+
+// Define the MachineHint interface
+export interface MachineHint {
+  id: number;
+  title: string;
+  content: string;
+  level: number;
+  pointCost: number;
+  locked: boolean;
+}
 
 const MachineDetail = () => {
   const { machineId } = useParams<{ machineId: string }>();
