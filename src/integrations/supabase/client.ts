@@ -24,7 +24,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'x-application-name': 'vulnzero'
     }
   },
-  // Fix schema configuration - This was missing/incorrect
+  // Fix schema configuration
   db: {
     schema: 'public'
   }
