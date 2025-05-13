@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,19 +19,77 @@ import {
 } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-
-// Mock data para estadísticas de usuario
-const userStats = {
-  level: 7,
-  points: 3450,
-  pointsToNextLevel: 550,
-  progress: 70,
-  rank: 42,
-  solvedMachines: 15,
-  completedChallenges: 8,
-};
+import { useAuth } from '@/contexts/AuthContext';
+import { queries } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 const Challenges = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({
+    level: 1,
+    points: 0,
+    pointsToNextLevel: 500,
+    progress: 0,
+    rank: 0,
+    solvedMachines: 0,
+    completedChallenges: 0,
+  });
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const profileData = await queries.getUserProfile(user.id);
+          
+        if (profileData) {
+          console.log("Profile data loaded in Challenges:", profileData);
+          
+          // Calculate points to next level (simple: nivel actual * 500)
+          const pointsToNextLevel = profileData.level * 500 - profileData.points;
+          
+          // Calculate progress as percentage
+          const levelProgress = Math.min(
+            Math.round((profileData.points / (profileData.level * 500)) * 100),
+            100
+          );
+          
+          setUserStats({
+            level: profileData.level || 1,
+            points: profileData.points || 0,
+            pointsToNextLevel: pointsToNextLevel,
+            progress: levelProgress,
+            rank: profileData.rank || 0,
+            solvedMachines: profileData.solved_machines || 0,
+            completedChallenges: profileData.completed_challenges || 0,
+          });
+        } else {
+          console.error('No profile data returned');
+          toast({
+            title: "Error al cargar perfil",
+            description: "No se pudieron cargar tus datos de perfil.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error loading profile in Challenges:', error);
+        toast({
+          title: "Error al cargar perfil",
+          description: "No se pudieron cargar tus datos de perfil.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, toast]);
+
   const [challenges, setChallenges] = useState([
     { 
       id: 1, 
@@ -207,7 +265,7 @@ const Challenges = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Completados</span>
-                        <span className="text-2xl font-bold text-cybersec-yellow">{challenges.filter(c => c.solved).length}</span>
+                        <span className="text-2xl font-bold text-cybersec-yellow">{userStats.completedChallenges}</span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
                         <Check className="h-5 w-5 text-cybersec-yellow" />
@@ -221,7 +279,7 @@ const Challenges = () => {
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Puntos ganados</span>
                         <span className="text-2xl font-bold text-cybersec-electricblue">
-                          {challenges.filter(c => c.solved).reduce((acc, curr) => acc + curr.points, 0)}
+                          {userStats.points}
                         </span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
@@ -236,7 +294,7 @@ const Challenges = () => {
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-400">Progreso general</span>
                         <span className="text-2xl font-bold text-cybersec-neongreen">
-                          {Math.round((challenges.filter(c => c.solved).length / challenges.length) * 100)}%
+                          {Math.round((userStats.completedChallenges / challenges.length) * 100) || 0}%
                         </span>
                       </div>
                       <div className="p-3 bg-cybersec-black rounded-full">
