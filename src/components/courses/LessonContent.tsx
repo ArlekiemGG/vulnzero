@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { CourseLesson } from '@/services/CourseService';
 import ReactMarkdown from 'react-markdown';
-// Import highlight.js directly
-import 'highlight.js/styles/github-dark.min.css';
+import 'highlight.js/styles/github-dark.css';
 
 interface LessonContentProps {
   lesson: CourseLesson;

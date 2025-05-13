@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronDown, Shield, LogOut } from 'lucide-react';
@@ -26,7 +25,7 @@ const Navbar = () => {
   };
 
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return location.pathname === path;
   };
 
   const getInitials = (email: string) => {
@@ -38,13 +37,11 @@ const Navbar = () => {
     ? [
         { name: 'Dashboard', path: '/dashboard' },
         { name: 'Máquinas', path: '/machines' },
-        { name: 'Cursos', path: '/tutorials' },
         { name: 'Leaderboard', path: '/leaderboard' },
         { name: 'Desafíos', path: '/challenges' },
       ]
     : [
         { name: 'Inicio', path: '/' },
-        { name: 'Cursos', path: '/tutorials' },
       ];
 
   return (

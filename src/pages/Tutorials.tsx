@@ -11,8 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, BookOpen, ListFilter } from 'lucide-react';
-import { queries } from '@/integrations/supabase/client';
-import CourseSeeder from '@/components/courses/CourseSeeder';
 
 const Tutorials = () => {
   const { user } = useAuth();
@@ -22,8 +20,8 @@ const Tutorials = () => {
   const [inProgressCourses, setInProgressCourses] = useState<(Course & { progress: number })[]>([]);
   const [completedCourses, setCompletedCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [levelFilter, setLevelFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
   const [userStats, setUserStats] = useState({
     level: 1,
     points: 0,
@@ -43,65 +41,28 @@ const Tutorials = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        console.log("Fetching courses data...");
-        // Asegurar que existan cursos en la base de datos
-        const coursesCreated = await CourseService.ensureCoursesExist();
-        console.log("Courses creation attempt result:", coursesCreated);
-        
         // Obtener todos los cursos
         const allCourses = await CourseService.getCourses();
         setCourses(allCourses);
-        console.log("Courses loaded:", allCourses.length, allCourses);
-
-        // Si no hay cursos después de intentar sembrarlos, mostrar un mensaje
-        if (allCourses.length === 0) {
-          toast({
-            title: "Información",
-            description: "No se encontraron cursos disponibles. Intenta crear cursos con el botón 'Crear cursos de prueba'.",
-            variant: "default",
-          });
-        }
 
         // Extraer categorías y niveles únicos
-        const uniqueCategories = [...new Set(allCourses.map(course => course.category))];
-        const uniqueLevels = [...new Set(allCourses.map(course => course.level))];
-        
-        setCategories(uniqueCategories);
-        setLevels(uniqueLevels);
-        
-        console.log("Unique categories:", uniqueCategories);
-        console.log("Unique levels:", uniqueLevels);
+        setCategories([...new Set(allCourses.map(course => course.category))]);
+        setLevels([...new Set(allCourses.map(course => course.level))]);
 
         if (user) {
-          // Obtener el perfil del usuario para mostrar sus estadísticas reales
-          const userProfile = await queries.getUserProfile(user.id);
-          if (userProfile) {
-            setUserStats({
-              level: userProfile.level || 1,
-              points: userProfile.points || 0,
-              pointsToNextLevel: 100 - (userProfile.points % 100) || 0,
-              progress: (userProfile.points % 100) || 0,
-              rank: userProfile.rank || 0,
-              solvedMachines: userProfile.solved_machines || 0,
-              completedChallenges: userProfile.completed_challenges || 0,
-            });
-          }
-
           // Obtener cursos en progreso
           const inProgress = await CourseService.getInProgressCourses(user.id);
           setInProgressCourses(inProgress);
-          console.log("Cursos en progreso:", inProgress.length);
 
           // Obtener cursos completados
           const completed = await CourseService.getCompletedCourses(user.id);
           setCompletedCourses(completed);
-          console.log("Cursos completados:", completed.length);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
         toast({
           title: "Error",
-          description: "No se pudieron cargar los cursos. Inténtalo de nuevo.",
+          description: "No se pudieron cargar los cursos",
           variant: "destructive",
         });
       } finally {
@@ -118,8 +79,8 @@ const Tutorials = () => {
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       course.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
-    const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
+    const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
+    const matchesLevel = levelFilter === '' || course.level === levelFilter;
 
     return matchesSearch && matchesCategory && matchesLevel;
   });
@@ -127,8 +88,8 @@ const Tutorials = () => {
   // Resetear filtros
   const handleResetFilters = () => {
     setSearchQuery('');
-    setCategoryFilter('all');
-    setLevelFilter('all');
+    setCategoryFilter('');
+    setLevelFilter('');
   };
 
   // Función para navegar a las pestañas
@@ -147,11 +108,9 @@ const Tutorials = () => {
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-cybersec-neongreen mb-2">Cursos y Tutoriales</h1>
+              <h1 className="text-3xl font-bold text-cybersec-neongreen mb-2">Tutoriales y Cursos</h1>
               <p className="text-gray-400">Aprende ciberseguridad con nuestros cursos estructurados y detallados</p>
             </div>
-
-            <CourseSeeder />
 
             <Tabs defaultValue="all" className="mb-8">
               <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
@@ -201,7 +160,7 @@ const Tutorials = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas las categorías</SelectItem>
+                      <SelectItem value="">Todas las categorías</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
@@ -219,7 +178,7 @@ const Tutorials = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos los niveles</SelectItem>
+                      <SelectItem value="">Todos los niveles</SelectItem>
                       {levels.map(level => (
                         <SelectItem key={level} value={level}>{level}</SelectItem>
                       ))}
@@ -259,7 +218,7 @@ const Tutorials = () => {
                   </div>
                 ) : (
                   <div className="bg-cybersec-darkgray rounded-md p-8 text-center">
-                    <p className="text-gray-400">No se encontraron cursos. Pulsa el botón "Crear cursos de prueba" para añadir contenido.</p>
+                    <p className="text-gray-400">No se encontraron cursos que coincidan con los filtros aplicados.</p>
                     <Button 
                       variant="link" 
                       className="text-cybersec-electricblue mt-2"
