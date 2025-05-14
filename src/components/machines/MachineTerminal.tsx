@@ -56,6 +56,18 @@ const MachineTerminal: React.FC<TerminalProps> = ({
         setHistoryIndex(-1);
         setCommand('');
       }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Simple tab completion - could be enhanced further
+      const commands = ['help', 'ping', 'nmap', 'gobuster', 'ssh', 'clear', 'getshell', 'shell'];
+      const currentInput = command.toLowerCase();
+      
+      for (const cmd of commands) {
+        if (cmd.startsWith(currentInput) && cmd !== currentInput) {
+          setCommand(cmd);
+          break;
+        }
+      }
     }
   };
 

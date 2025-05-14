@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [initialSessionChecked, setInitialSessionChecked] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [isUserLogin, setIsUserLogin] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const navigate = useNavigate();
   
   const { 
@@ -88,11 +92,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             // Handle specific events
             if (event === 'SIGNED_IN' && currentSession?.user) {
-              // Show success message
-              toast({
-                title: "Inicio de sesión exitoso",
-                description: "Has iniciado sesión correctamente."
-              });
+              // Only show toast for user-initiated logins
+              if (isUserLogin) {
+                toast({
+                  title: "Inicio de sesión exitoso",
+                  description: "Has iniciado sesión correctamente."
+                });
+                setIsUserLogin(false);
+              }
               
               // Defer fetching user profile to avoid state conflicts
               setTimeout(() => {
@@ -134,11 +141,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setSession(data.session);
         setUser(data.session?.user ?? null);
+        setInitialSessionChecked(true);
         
         // Verificar rol de admin si hay usuario
         if (data.session?.user) {
           await checkAdminStatus(data.session.user.id);
         }
+        
+        // Mark auth as initialized - after this, auth state changes will trigger toasts
+        setAuthInitialized(true);
+        setIsFirstLoad(false);
       } catch (error: any) {
         console.error("Auth initialization error:", error);
         toast({
@@ -154,14 +166,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initAuth();
   }, [navigate]);
 
+  // Modify the signIn function to set a flag that indicates a user-initiated login
+  const wrappedSignIn = async (email: string, password: string) => {
+    setIsUserLogin(true);
+    await signIn(email, password);
+  };
+
+  const wrappedSignUp = async (email: string, password: string, username: string) => {
+    setIsUserLogin(true);
+    await signUp(email, password, username);
+  };
+
+  const wrappedSignInWithGithub = async () => {
+    setIsUserLogin(true);
+    await signInWithGithub();
+  };
+
+  const wrappedSignInWithGoogle = async () => {
+    setIsUserLogin(true);
+    await signInWithGoogle();
+  };
+
   const value = {
     user,
     session,
     loading: loading || authLoading,
-    signIn,
-    signUp,
-    signInWithGithub,
-    signInWithGoogle,
+    signIn: wrappedSignIn,
+    signUp: wrappedSignUp,
+    signInWithGithub: wrappedSignInWithGithub,
+    signInWithGoogle: wrappedSignInWithGoogle,
     signOut,
     resetPassword,
     updatePassword,

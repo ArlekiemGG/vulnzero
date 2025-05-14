@@ -1,1 +1,4 @@
+
 project_id = "locviruzkdfnhusfquuc"
+api_url = "https://locviruzkdfnhusfquuc.supabase.co"
+allowed_domains = ["vulnzero.es", "www.vulnzero.es", "api.vulnzero.es", "locviruzkdfnhusfquuc.lovableproject.com", "*.lovableproject.com", "localhost", "localhost:*"]

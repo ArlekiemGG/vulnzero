@@ -1,3 +1,4 @@
+
 // Supabase client configuration
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
@@ -39,9 +40,20 @@ export const queries = {
         const { data: userData } = await supabase.auth.getUser();
         
         if (userData?.user) {
-          const username = userData.user.user_metadata?.username || 
-                        userData.user.email?.split('@')[0] || 
-                        'User';
+          // Generate a better username that's not an email address
+          let username = '';
+          
+          if (userData.user.user_metadata?.username) {
+            username = userData.user.user_metadata.username;
+          } else if (userData.user.email) {
+            // Get the part before @ in email
+            username = userData.user.email.split('@')[0];
+            
+            // Add a random number to make it more unique
+            username = `${username}${Math.floor(Math.random() * 1000)}`;
+          } else {
+            username = `Usuario${Math.floor(Math.random() * 10000)}`;
+          }
           
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')

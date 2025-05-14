@@ -1,13 +1,12 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Check, Activity } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 export interface MachineTask {
   id: number;
-  title: string;
+  title: string;  // Note: in MachineService.ts this is referred to as 'name'
   description: string;
   completed: boolean;
 }

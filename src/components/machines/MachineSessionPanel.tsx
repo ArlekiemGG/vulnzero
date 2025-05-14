@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Server, Terminal, ExternalLink, Power, Info, Copy } from 'lucide-react';
+import { Clock, Server, Terminal, ExternalLink, Power, Info, Copy, Loader2 } from 'lucide-react';
 import { MachineSession, MachineSessionService } from './MachineSessionService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MachineSessionPanelProps {
   machineSession: MachineSession;
@@ -26,6 +27,9 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
   );
   const [isTerminating, setIsTerminating] = useState(false);
   const [countdown, setCountdown] = useState<number>(0);
+  const [isProvisioning, setIsProvisioning] = useState(
+    machineSession.status === 'requested' || machineSession.status === 'provisioning'
+  );
   
   // Calculate total time from session data
   const totalTime = machineSession.connectionInfo?.maxTimeMinutes || 120; // Default 2 hours
@@ -42,6 +46,13 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     
     return () => clearInterval(timer);
   }, []);
+
+  // Update provisioning state if status changes
+  useEffect(() => {
+    setIsProvisioning(
+      machineSession.status === 'requested' || machineSession.status === 'provisioning'
+    );
+  }, [machineSession.status]);
 
   // Calculate remaining time in hours and minutes
   const hours = Math.floor(remainingTime / 60);
@@ -140,6 +151,26 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
           <Progress value={timeProgress} className="h-1.5" />
         </div>
         
+        {/* Provisioning state information */}
+        {isProvisioning && (
+          <div className="p-4 bg-yellow-900/20 rounded-md">
+            <div className="flex items-center gap-2 mb-3">
+              <Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />
+              <h4 className="font-medium text-yellow-500">
+                Aprovisionando máquina
+              </h4>
+            </div>
+            
+            <p className="text-sm text-gray-300 mb-3">
+              La máquina está siendo creada y configurada. Este proceso puede tardar hasta 2 minutos.
+            </p>
+            
+            <div className="w-full bg-cybersec-black h-2 rounded overflow-hidden">
+              <div className="h-full bg-yellow-500/70 animate-pulse"></div>
+            </div>
+          </div>
+        )}
+        
         {/* Información de conexión */}
         <div className="p-4 bg-cybersec-black rounded-md">
           <h4 className="text-cybersec-electricblue mb-2 flex items-center gap-2">
@@ -147,58 +178,80 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
           </h4>
           
           <div className="space-y-3 text-sm">
+            {/* IP Address with loading state */}
             <div className="flex justify-between items-center">
               <span className="text-gray-400">IP Address:</span>
               <div className="flex items-center gap-1">
-                <span className="font-mono">{machineSession.ipAddress || 'Pendiente'}</span>
-                {machineSession.ipAddress && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => copyToClipboard(machineSession.ipAddress || '', 'IP')}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                {isProvisioning ? (
+                  <Skeleton className="h-5 w-24" />
+                ) : (
+                  <>
+                    <span className="font-mono">{machineSession.ipAddress || 'Pendiente'}</span>
+                    {machineSession.ipAddress && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => copyToClipboard(machineSession.ipAddress || '', 'IP')}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
             
+            {/* Username with loading state */}
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Usuario:</span>
               <div className="flex items-center gap-1">
-                <span className="font-mono">{machineSession.username || 'Pendiente'}</span>
-                {machineSession.username && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => copyToClipboard(machineSession.username || '', 'Usuario')}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                {isProvisioning ? (
+                  <Skeleton className="h-5 w-24" />
+                ) : (
+                  <>
+                    <span className="font-mono">{machineSession.username || 'Pendiente'}</span>
+                    {machineSession.username && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => copyToClipboard(machineSession.username || '', 'Usuario')}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
             
+            {/* Password with loading state */}
             <div className="flex justify-between items-center">
               <span className="text-gray-400">Contraseña:</span>
               <div className="flex items-center gap-1">
-                <span className="font-mono">{machineSession.password || 'Pendiente'}</span>
-                {machineSession.password && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => copyToClipboard(machineSession.password || '', 'Contraseña')}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                {isProvisioning ? (
+                  <Skeleton className="h-5 w-24" />
+                ) : (
+                  <>
+                    <span className="font-mono">{machineSession.password || 'Pendiente'}</span>
+                    {machineSession.password && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => copyToClipboard(machineSession.password || '', 'Contraseña')}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
             
-            {machineSession.connectionInfo?.sshCommand && (
+            {/* SSH Command with loading state */}
+            {machineSession.connectionInfo?.sshCommand && !isProvisioning && (
               <div className="mt-3 p-2 bg-cybersec-darkgray rounded border border-cybersec-darkgray">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-400">Comando SSH:</span>
