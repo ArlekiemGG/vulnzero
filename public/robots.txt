@@ -1,21 +1,21 @@
 
-# Allow crawling of all content
+# robots.txt para VulnZero.es
 User-agent: *
 Allow: /
 
-# Block access to admin pages if any
-# Disallow: /admin/
+# No indexar zonas de autenticación y rutas privadas
+Disallow: /auth/reset
+Disallow: /profile/settings
 
-# Block sensitive directories if needed
-# Disallow: /api/
-# Disallow: /private/
-
-# Allow access to static resources
+# Permitir acceso a recursos estáticos
 Allow: /static/
 Allow: /assets/
 Allow: /images/
 Allow: /css/
 Allow: /js/
 
-# Specify sitemap
+# Tiempo de espera entre solicitudes (opcional)
+Crawl-delay: 10
+
+# Sitemap
 Sitemap: https://vulnzero.es/sitemap.xml
