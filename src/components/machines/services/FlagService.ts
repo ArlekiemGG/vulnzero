@@ -1,33 +1,44 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+const FLAG_API_URL = window.location.hostname.includes("localhost") 
+  ? "http://localhost:5000/api"  // Local development
+  : "https://api.vulnzero.es/api"; // Production
+
 export const FlagService = {
   // Submit a flag for a machine
   submitFlag: async (userId: string, machineId: string, flag: string, flagType: 'user' | 'root'): Promise<{ success: boolean; message: string; points?: number }> => {
     try {
-      // Use hardcoded flag values as fallback since the database doesn't have the columns
-      const expectedFlags: Record<string, Record<string, string>> = {
-        '01': {
-          user: 'flag{th1s_1s_us3r_fl4g}',
-          root: 'flag{r00t_pwn3d_m4ch1n3}'
+      // Call real backend API to validate flag
+      const response = await fetch(`${FLAG_API_URL}/flags/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        '02': {
-          user: 'flag{b4s1c_us3r_4cc3ss}',
-          root: 'flag{r00t_sh3ll_g41n3d}'
-        }
-      };
-      
-      // Get expected flag from our hardcoded values
-      const expectedFlag = expectedFlags[machineId]?.[flagType];
-      
-      if (!expectedFlag) {
-        return { success: false, message: 'Flag not available for this machine.' };
+        body: JSON.stringify({
+          machine: machineId,
+          flag: flag,
+          level: flagType,
+          userId: userId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Flag validation API error:', errorText);
+        return { 
+          success: false, 
+          message: 'Error al validar la flag. Por favor, inténtalo de nuevo.' 
+        };
       }
+
+      const data = await response.json();
       
-      // Check if flag is correct
-      const isCorrect = flag.trim() === expectedFlag;
-      if (!isCorrect) {
-        return { success: false, message: 'Flag incorrecta. Inténtalo de nuevo.' };
+      if (!data.success) {
+        return { 
+          success: false, 
+          message: data.error || 'Flag incorrecta. Inténtalo de nuevo.' 
+        };
       }
       
       // Check if user has already submitted this flag
@@ -38,8 +49,7 @@ export const FlagService = {
         .eq('machine_id', machineId)
         .single();
       
-      // Points for flags
-      const pointsForFlag = flagType === 'user' ? 50 : 100;
+      // Flag message for display
       const flagMessage = flagType === 'user' ? 'user.txt' : 'root.txt';
       
       if (progressData && !error) {
@@ -95,13 +105,13 @@ export const FlagService = {
         p_user_id: userId,
         p_type: 'flag_captured',
         p_title: `Flag ${flagType} capturada en máquina ${machineId}`,
-        p_points: pointsForFlag
+        p_points: data.points || (flagType === 'user' ? 20 : 50)
       });
       
       return { 
         success: true, 
         message: `¡Flag correcta! Has capturado ${flagMessage}`, 
-        points: pointsForFlag 
+        points: data.points || (flagType === 'user' ? 20 : 50)
       };
     } catch (error) {
       console.error('Error submitting flag:', error);
