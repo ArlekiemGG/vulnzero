@@ -124,10 +124,19 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error en registro:", error);
+        toast({
+          title: "Error de registro",
+          description: error.message || "Ha ocurrido un error durante el registro",
+          variant: "destructive"
+        });
+        return { success: false, error: error.message };
+      }
       
       console.log("Sign up response:", data);
       
+      // Verifica si el usuario ya existe por el tamaño del array identities
       if (data?.user?.identities && data.user.identities.length === 0) {
         toast({
           title: "Usuario ya registrado",

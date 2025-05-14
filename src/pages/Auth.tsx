@@ -321,14 +321,21 @@ const RegisterForm = ({
       const passwordCheck = checkPasswordStrength(data.password);
       if (!passwordCheck.isStrong) {
         form.setError('password', { message: passwordCheck.message });
+        setIsLoading(false);
         return;
       }
       
       const result = await onRegister(data.email, data.password, data.username);
       
       if (result.success) {
+        // Solo mostrar la pantalla de confirmación si el registro fue exitoso
         setSubmittedEmail(data.email);
         setIsSubmitted(true);
+      } else {
+        // Si hay un error específico de contraseña, mostrarlo en el campo correspondiente
+        if (result.error?.includes('password')) {
+          form.setError('password', { message: result.error });
+        }
       }
     } finally {
       setIsLoading(false);
