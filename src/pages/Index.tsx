@@ -4,12 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield, Database, Trophy, Flag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Helmet } from 'react-helmet';
 
 const Index = () => {
   const { user } = useAuth();
 
   return (
     <div className="flex flex-col min-h-screen">
+      <Helmet>
+        <title>VulnZero | Plataforma Avanzada de Ciberseguridad</title>
+        <meta name="description" content="Aprende y practica ciberseguridad con máquinas vulnerables, desafíos CTF y laboratorios prácticos. Mejora tus habilidades como profesional en seguridad informática." />
+        <link rel="canonical" href="https://vulnzero.es" />
+      </Helmet>
+
       {/* Hero Section */}
       <div className="relative bg-cybersec-black pt-40 pb-20 px-4 sm:px-6 lg:pt-48 lg:pb-28 lg:px-8 border-b border-cybersec-darkgray">
         <div className="max-w-7xl mx-auto">
@@ -17,9 +24,9 @@ const Index = () => {
             <h1 className="text-4xl font-bold tracking-tight text-cybersec-neongreen sm:text-5xl md:text-6xl">
               <span className="glitch-text">VulnZero</span>
             </h1>
-            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-300 sm:mt-5">
+            <h2 className="mt-3 max-w-2xl mx-auto text-xl text-gray-300 sm:mt-5">
               Aprende ciberseguridad resolviendo máquinas vulnerables en un entorno gamificado
-            </p>
+            </h2>
             
             <div className="mt-8 flex justify-center gap-4">
               {user ? (
@@ -108,6 +115,32 @@ const Index = () => {
                 <Link to="/auth">Empezar ahora</Link>
               </Button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Añadimos una nueva sección para mejorar SEO */}
+      <div className="py-12 px-4 sm:px-6 lg:py-20 lg:px-8 bg-cybersec-black border-t border-cybersec-darkgray">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold tracking-tight text-cybersec-neongreen sm:text-4xl">
+              Aprende Ciberseguridad con VulnZero
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-300">
+              La plataforma definitiva para desarrollar tus habilidades en seguridad informática
+            </p>
+          </div>
+          
+          <div className="mt-10 prose prose-lg max-w-4xl mx-auto text-gray-300">
+            <p>
+              VulnZero es una plataforma innovadora diseñada para profesionales de la ciberseguridad, estudiantes y entusiastas que desean mejorar sus habilidades prácticas en un entorno seguro y controlado.
+            </p>
+            <p>
+              A través de nuestra colección de máquinas vulnerables, desafíos CTF y laboratorios prácticos, los usuarios pueden poner a prueba sus conocimientos en un entorno que simula escenarios reales de ciberataques y vulnerabilidades.
+            </p>
+            <p>
+              Nuestro enfoque gamificado hace que el aprendizaje sea divertido y motivador, permitiéndote ganar puntos, insignias y subir en el ranking mientras aumentas tus habilidades técnicas.
+            </p>
           </div>
         </div>
       </div>

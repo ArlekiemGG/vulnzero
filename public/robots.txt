@@ -3,6 +3,19 @@
 User-agent: *
 Allow: /
 
+# Block access to admin pages if any
+# Disallow: /admin/
+
+# Block sensitive directories if needed
+# Disallow: /api/
+# Disallow: /private/
+
+# Allow access to static resources
+Allow: /static/
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+
 # Specify sitemap
 Sitemap: https://vulnzero.es/sitemap.xml
-
