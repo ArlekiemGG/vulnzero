@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { calculateRemainingTime } from './utils/SessionUtils';
 
@@ -87,7 +88,8 @@ export const MachineSessionService = {
           usuario: 'cyberhacker',
           password: 'vulnzero' + Math.floor(Math.random() * 1000)
         },
-        tiempoLimite: 120 * 60 // 2 hours in seconds
+        tiempoLimite: 120 * 60, // 2 hours in seconds
+        mensaje: 'Máquina solicitada con éxito' // Adding the mensaje property to fix the error
       };
 
       /* Código para API real - descomentarlo cuando esté disponible
