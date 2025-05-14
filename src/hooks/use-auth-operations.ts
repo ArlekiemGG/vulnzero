@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
@@ -48,14 +47,17 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         toast({
           title: "Correo no verificado",
           description: "Por favor, verifica tu correo electrónico antes de iniciar sesión.",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 5000
         });
         return;
       }
       
       toast({
         title: "Inicio de sesión exitoso",
-        description: "Redirigiendo al dashboard..."
+        description: "Redirigiendo al dashboard...",
+        variant: "success",
+        duration: 5000
       });
       
       // Redirigimos al usuario al dashboard después de iniciar sesión
@@ -65,7 +67,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       toast({
         title: "Error de inicio de sesión",
         description: error.message || "Credenciales incorrectas o cuenta no verificada",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setLoading(false);
@@ -212,13 +215,21 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         // Ignore errors
       }
       
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+        duration: 5000,
+        variant: "default"
+      });
+      
       // Force page reload for a clean state
       window.location.href = '/';
     } catch (error: any) {
       toast({
         title: "Error al cerrar sesión",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     }
   };
@@ -240,12 +251,14 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       toast({
         title: "Correo enviado",
         description: "Si existe una cuenta con este correo, recibirás instrucciones para restablecer tu contraseña.",
+        duration: 5000
       });
     } catch (error: any) {
       toast({
         title: "Error al restablecer contraseña",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     }
   };
@@ -258,7 +271,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         toast({
           title: "Contraseña débil",
           description: passwordCheck.message,
-          variant: "destructive"
+          variant: "destructive",
+          duration: 5000
         });
         return;
       }
@@ -268,7 +282,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         toast({
           title: "Contraseña vulnerable",
           description: "Esta contraseña es demasiado común y puede ser fácilmente adivinada. Por favor, elija una contraseña más segura.",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 5000
         });
         return;
       }
@@ -283,6 +298,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       toast({
         title: "Contraseña actualizada",
         description: "Tu contraseña ha sido actualizada correctamente.",
+        duration: 5000,
+        variant: "success"
       });
       
       navigate('/dashboard');
@@ -291,7 +308,8 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       toast({
         title: "Error al actualizar contraseña",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     }
   };

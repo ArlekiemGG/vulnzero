@@ -96,7 +96,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               if (isUserLogin) {
                 toast({
                   title: "Inicio de sesión exitoso",
-                  description: "Has iniciado sesión correctamente."
+                  description: "Has iniciado sesión correctamente.",
+                  variant: "success", // Usar la variante success
+                  duration: 5000 // Establecer duración de 5 segundos
                 });
                 setIsUserLogin(false);
               }
@@ -124,7 +126,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setIsAdmin(false);
               toast({
                 title: "Sesión cerrada",
-                description: "Has cerrado sesión correctamente."
+                description: "Has cerrado sesión correctamente.",
+                duration: 5000, // Establecer duración de 5 segundos
+                variant: "default"
               });
               
               // Limpiar estado de autenticación
@@ -156,7 +160,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast({
           title: "Error de autenticación",
           description: "Ha ocurrido un error al inicializar la autenticación.",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 5000 // Establecer duración de 5 segundos
         });
       } finally {
         setLoading(false);

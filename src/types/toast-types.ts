@@ -13,6 +13,7 @@ export interface ToasterToast {
   description?: React.ReactNode
   action?: ToastActionElement
   variant?: "default" | "destructive" | "success"
+  duration?: number // Añadir propiedad para duración  
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }

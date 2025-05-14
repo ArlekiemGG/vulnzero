@@ -3,7 +3,7 @@ import * as React from "react"
 import { type Toast, type ToasterToast, type ToastActionElement } from "@/types/toast-types"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000 // Cambiar de 1000000 a 5000 (5 segundos)
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -45,18 +45,19 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, duration?: number) => {
   if (toastTimeouts.has(toastId)) {
     return
   }
 
+  // Use the provided duration or default to TOAST_REMOVE_DELAY
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId)
     dispatch({
-      type: "REMOVE_TOAST",
+      type: "DISMISS_TOAST",
       toastId: toastId,
     })
-  }, TOAST_REMOVE_DELAY)
+  }, duration || TOAST_REMOVE_DELAY)
 
   toastTimeouts.set(toastId, timeout)
 }
@@ -135,17 +136,26 @@ export function toast(props: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
+  const newToast = {
+    ...props,
+    id,
+    open: true,
+    onOpenChange: (open) => {
+      if (!open) dismiss()
+    },
+  }
+
   dispatch({
     type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
-      },
-    },
+    toast: newToast,
   })
+
+  // Auto-dismiss based on duration if provided
+  if (newToast.duration) {
+    addToRemoveQueue(id, newToast.duration)
+  } else {
+    addToRemoveQueue(id)
+  }
 
   return {
     id: id,
