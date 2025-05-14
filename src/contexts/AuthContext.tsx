@@ -23,6 +23,12 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Para evitar múltiples notificaciones
+const notificationShown = {
+  signIn: false,
+  signOut: false
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -31,7 +37,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [initialSessionChecked, setInitialSessionChecked] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [isUserLogin, setIsUserLogin] = useState(false);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const navigate = useNavigate();
   
   const { 
@@ -72,6 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       
       try {
+        console.log("Initializing authentication...");
+        
         // Check for URL fragments and handle them
         handleEmailConfirmation(
           supabase,
@@ -92,13 +99,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             // Handle specific events
             if (event === 'SIGNED_IN' && currentSession?.user) {
-              // Only show toast for user-initiated logins
-              if (isUserLogin) {
+              // Only show toast for user-initiated logins and if not already shown
+              if (isUserLogin && !notificationShown.signIn) {
+                notificationShown.signIn = true;
+                // Reset the notification flag after some time
+                setTimeout(() => {
+                  notificationShown.signIn = false;
+                }, 10000);
+                
                 toast({
                   title: "Inicio de sesión exitoso",
                   description: "Has iniciado sesión correctamente.",
-                  variant: "success", // Usar la variante success
-                  duration: 5000 // Establecer duración de 5 segundos
+                  variant: "success",
+                  duration: 5000
                 });
                 setIsUserLogin(false);
               }
@@ -124,12 +137,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setUser(null);
               setSession(null);
               setIsAdmin(false);
-              toast({
-                title: "Sesión cerrada",
-                description: "Has cerrado sesión correctamente.",
-                duration: 5000, // Establecer duración de 5 segundos
-                variant: "default"
-              });
+              
+              if (!notificationShown.signOut) {
+                notificationShown.signOut = true;
+                // Reset the notification flag after some time
+                setTimeout(() => {
+                  notificationShown.signOut = false;
+                }, 10000);
+                
+                toast({
+                  title: "Sesión cerrada",
+                  description: "Has cerrado sesión correctamente.",
+                  duration: 5000,
+                  variant: "default"
+                });
+              }
               
               // Limpiar estado de autenticación
               cleanupAuthState();
@@ -154,14 +176,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Mark auth as initialized - after this, auth state changes will trigger toasts
         setAuthInitialized(true);
-        setIsFirstLoad(false);
       } catch (error: any) {
         console.error("Auth initialization error:", error);
         toast({
           title: "Error de autenticación",
           description: "Ha ocurrido un error al inicializar la autenticación.",
           variant: "destructive",
-          duration: 5000 // Establecer duración de 5 segundos
+          duration: 5000
         });
       } finally {
         setLoading(false);
@@ -173,23 +194,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Modify the signIn function to set a flag that indicates a user-initiated login
   const wrappedSignIn = async (email: string, password: string) => {
+    notificationShown.signIn = false;
     setIsUserLogin(true);
     await signIn(email, password);
   };
 
   const wrappedSignUp = async (email: string, password: string, username: string) => {
+    notificationShown.signIn = false;
     setIsUserLogin(true);
     await signUp(email, password, username);
   };
 
   const wrappedSignInWithGithub = async () => {
+    notificationShown.signIn = false;
     setIsUserLogin(true);
     await signInWithGithub();
   };
 
   const wrappedSignInWithGoogle = async () => {
+    notificationShown.signIn = false;
     setIsUserLogin(true);
     await signInWithGoogle();
+  };
+
+  const wrappedSignOut = async () => {
+    notificationShown.signOut = false;
+    await signOut();
   };
 
   const value = {
@@ -200,7 +230,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp: wrappedSignUp,
     signInWithGithub: wrappedSignInWithGithub,
     signInWithGoogle: wrappedSignInWithGoogle,
-    signOut,
+    signOut: wrappedSignOut,
     resetPassword,
     updatePassword,
     isAdmin

@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
-import { cleanupAuthState, checkPasswordStrength, isCommonPassword } from '@/utils/auth-utils';
+import { cleanupAuthState, checkPasswordStrength, isCommonPassword, getSiteURL } from '@/utils/auth-utils';
 
 export const useAuthOperations = (navigate: (path: string) => void) => {
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,11 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       }
       
       // Usar el origen completo para redirección
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/dashboard`;
+      const redirectUrl = `${getSiteURL()}/dashboard`;
       
       console.log("Redirect URL:", redirectUrl);
       
-      // Modificamos la llamada para usar opciones de redirección conforme a la API de supabase
+      // Inicio de sesión con email/password
       const { data, error } = await supabase.auth.signInWithPassword({
         email, 
         password,
@@ -53,12 +53,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         return;
       }
       
-      toast({
-        title: "Inicio de sesión exitoso",
-        description: "Redirigiendo al dashboard...",
-        variant: "success",
-        duration: 5000
-      });
+      // No mostramos toast aquí ya que se mostrará en el AuthContext cuando detecte el cambio de estado
       
       // Redirigimos al usuario al dashboard después de iniciar sesión
       navigate('/dashboard');
@@ -103,13 +98,13 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       // Clean up existing state
       cleanupAuthState();
       
-      // Obtén la URL completa actual para usar como base para la redirección
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/auth?verification=true`;
+      // Obtén la URL completa para la redirección
+      const siteUrl = getSiteURL();
+      const redirectUrl = `${siteUrl}/auth?verification=true`;
       
       console.log("Redirect URL for email verification:", redirectUrl);
       
-      // Utilizando la función signUp sin requerir confirmación de correo electrónico
+      // Utilizando la función signUp con confirmación de correo electrónico
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -117,12 +112,13 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
           data: {
             username
           },
-          // Usamos la URL completa para la redirección
           emailRedirectTo: redirectUrl
         }
       });
       
       if (error) throw error;
+      
+      console.log("Sign up response:", data);
       
       if (data?.user?.identities && data.user.identities.length === 0) {
         toast({
@@ -155,8 +151,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       cleanupAuthState();
       
       // Obtén la URL completa para la redirección
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/dashboard`;
+      const redirectUrl = `${getSiteURL()}/dashboard`;
       
       console.log("GitHub redirect URL:", redirectUrl);
       
@@ -182,8 +177,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       cleanupAuthState();
       
       // Obtén la URL completa para la redirección
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/dashboard`;
+      const redirectUrl = `${getSiteURL()}/dashboard`;
       
       console.log("Google redirect URL:", redirectUrl);
       
@@ -213,14 +207,10 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Ignore errors
+        console.log("Error during sign out:", err);
       }
       
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente.",
-        duration: 5000,
-        variant: "default"
-      });
+      // No mostramos toast aquí ya que se mostrará en el AuthContext cuando detecte el cambio de estado
       
       // Force page reload for a clean state
       window.location.href = '/';
@@ -237,8 +227,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
   const resetPassword = async (email: string) => {
     try {
       // Obtén la URL completa para la redirección
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/auth?type=recovery`;
+      const redirectUrl = `${getSiteURL()}/auth?type=recovery`;
       
       console.log("Reset password redirect URL:", redirectUrl);
       

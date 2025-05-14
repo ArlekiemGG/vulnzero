@@ -16,6 +16,9 @@ export const cleanupAuthState = () => {
       sessionStorage.removeItem(key);
     }
   });
+
+  // Clear any refresh timers or callbacks that might be pending
+  window.clearTimeout(window.refreshTimer);
 };
 
 /**
@@ -74,14 +77,18 @@ export const handleEmailConfirmation = async (
   query: string,
   navigate: (path: string) => void
 ) => {
+  console.log("Processing auth fragments - Path:", path, "Hash:", hash, "Query:", query);
+  
   // Handle email confirmation via access_token
   if (hash && hash.includes('access_token=')) {
     try {
+      console.log("Found access token in URL");
       const { data, error } = await supabase.auth.getSession();
       
       if (error) throw error;
       
       if (data.session) {
+        console.log("Valid session found after confirmation");
         navigate('/dashboard');
       }
     } catch (error) {
@@ -91,8 +98,16 @@ export const handleEmailConfirmation = async (
   
   // Handle password reset flow
   if (query && query.includes('type=recovery')) {
+    console.log("Password reset flow detected");
     navigate(`/auth${query}`);
   }
+};
+
+/**
+ * Get the current site URL (works in development and production)
+ */
+export const getSiteURL = (): string => {
+  return window.location.origin;
 };
 
 /**
@@ -108,6 +123,7 @@ export const prepareForAuth = async (supabase: any) => {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
       // Continue even if this fails
+      console.log("Global signout during preparation failed:", err);
     }
     
     return true;

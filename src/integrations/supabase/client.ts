@@ -11,15 +11,24 @@ export type Tables = Database['public']['Tables'];
 export type Profiles = Tables['profiles']['Row'];
 export type UserActivity = Tables['user_activities']['Row'];
 
-// Client configuration
+// Client configuration with explicit auth settings
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+    storage: localStorage,
     flowType: 'pkce',
   }
 });
+
+// Declare global timer for auth refresh
+declare global {
+  interface Window {
+    refreshTimer?: number;
+  }
+}
 
 // User profile operations
 export const queries = {
