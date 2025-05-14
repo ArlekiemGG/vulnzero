@@ -18,6 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
   const [redirected, setRedirected] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
+  const redirectAttempted = useRef(false);
   
   // Use useRef for handling timeouts to avoid memory leaks
   const authCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -32,7 +33,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Store current route for redirection after login
   useEffect(() => {
-    if (!loading && !user && !redirected) {
+    if (!loading && !user && !redirected && !redirectAttempted.current) {
+      redirectAttempted.current = true; // Prevent multiple redirect attempts
       localStorage.setItem('redirectAfterLogin', location.pathname);
       setRedirected(true);
     }
@@ -103,7 +105,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Redirect to auth page if not authenticated
   if (!loading && !user) {
-    if (!redirected) {
+    if (!redirected && !redirectAttempted.current) {
+      redirectAttempted.current = true; // Prevent displaying the toast multiple times
       toast({
         title: "Acceso restringido",
         description: "Debes iniciar sesión para acceder a esta página",

@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [initialSessionChecked, setInitialSessionChecked] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [isUserLogin, setIsUserLogin] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const navigate = useNavigate();
   
   const { 
@@ -126,8 +127,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const redirectPath = localStorage.getItem('redirectAfterLogin') || '/dashboard';
                 localStorage.removeItem('redirectAfterLogin');
                 
-                if (window.location.pathname === '/auth') {
-                  navigate(redirectPath);
+                if (window.location.pathname === '/auth' && !redirecting) {
+                  setRedirecting(true);
+                  // Add a slight delay to prevent rapid redirects
+                  setTimeout(() => {
+                    navigate(redirectPath);
+                    setRedirecting(false);
+                  }, 100);
                 }
               }, 0);
             }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate, Link, useSearchParams } from 'react-router-dom';
+import { Navigate, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,8 @@ const Auth = () => {
   const { user, signIn, signUp, signInWithGithub, signInWithGoogle } = useAuth();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('login');
+  const navigate = useNavigate();
+  const redirectAttempted = useRef(false);
   
   useEffect(() => {
     // Handle password reset from query params
@@ -57,9 +59,17 @@ const Auth = () => {
     }
   }, [searchParams]);
   
-  // Redirect if user is already authenticated
+  // Redirect if user is already authenticated, but prevent multiple redirect attempts
+  useEffect(() => {
+    if (user && !redirectAttempted.current) {
+      redirectAttempted.current = true;
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+  
+  // If user is already authenticated, return null to prevent rendering while redirect happens
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return null;
   }
 
   // Manejador para prevenir cambio de pestaña con la tecla Enter
