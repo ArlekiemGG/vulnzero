@@ -13,6 +13,7 @@ export type { MachineProgress } from './types/MachineTypes';
 export const MachineService = {
   // Get all available machines
   getAllMachines: () => {
+    console.log("Getting all machines:", machines.map(m => `${m.id}: ${m.name}`).join(', '));
     return machines;
   },
 

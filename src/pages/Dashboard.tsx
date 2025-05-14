@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Code, User, Activity } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -17,11 +18,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { ActivityService } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
 import { BadgeService } from '@/components/dashboard/BadgeService';
+import { MachineService } from '@/components/machines/MachineService';
 
-// Mock data para máquinas recomendadas - now with consistent hasActiveSession property like on machines page
+// Updated recommended machines with correct IDs matching MachineData.ts
 const recommendedMachines = [
   {
-    id: "machine1",
+    id: "01", // Updated to match ID in MachineData.ts
     name: "VulnNet",
     description: "Una máquina vulnerable que contiene varias debilidades en su infraestructura web. Ideal para principiantes.",
     difficulty: "easy" as const,
@@ -35,7 +37,7 @@ const recommendedMachines = [
     hasActiveSession: false
   },
   {
-    id: "machine2",
+    id: "02", // Updated to match ID in MachineData.ts
     name: "CryptoLocker",
     description: "Máquina enfocada en técnicas de criptografía y explotación de servicios mal configurados.",
     difficulty: "medium" as const,
@@ -48,7 +50,7 @@ const recommendedMachines = [
     hasActiveSession: false
   },
   {
-    id: "machine3",
+    id: "03", // Updated to match ID in MachineData.ts
     name: "SecureServer 2023",
     description: "Un servidor Windows con múltiples vulnerabilidades. Enfocado en técnicas de post-explotación.",
     difficulty: "hard" as const,

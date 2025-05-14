@@ -66,6 +66,8 @@ const MachineCard: React.FC<MachineProps> = ({
     ? 'neon-border-green' 
     : 'border-cybersec-darkgray hover:neon-border';
 
+  console.log(`Rendering MachineCard for machine: ${name} with ID: ${id}`);
+
   return (
     <Card className={`bg-cybersec-darkgray ${borderClass} transition-all duration-300`}>
       <CardHeader className="pb-2">
