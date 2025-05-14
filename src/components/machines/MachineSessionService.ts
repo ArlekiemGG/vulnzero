@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { calculateRemainingTime } from './utils/SessionUtils';
 
@@ -78,6 +77,20 @@ export const MachineSessionService = {
         throw new Error('Error al iniciar el proceso de solicitud de máquina');
       }
       
+      // For development, let's simulate a successful API response instead of calling the real API
+      const simulatedMachineData = {
+        exito: true,
+        sesionId: `simulated-${Date.now()}`,
+        ipAcceso: '10.10.14.' + Math.floor(Math.random() * 255),
+        puertoSSH: 22,
+        credenciales: {
+          usuario: 'cyberhacker',
+          password: 'vulnzero' + Math.floor(Math.random() * 1000)
+        },
+        tiempoLimite: 120 * 60 // 2 hours in seconds
+      };
+
+      /* Código para API real - descomentarlo cuando esté disponible
       // Call external API to provision a new machine
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
         method: 'POST',
@@ -106,6 +119,10 @@ export const MachineSessionService = {
       }
 
       const data = await response.json();
+      */
+      
+      // Usar datos simulados
+      const data = simulatedMachineData;
       console.log('Machine requested successfully:', data);
       
       if (!data.exito) {
@@ -152,43 +169,15 @@ export const MachineSessionService = {
       // Set session to 'running' after a small delay to simulate machine provisioning
       setTimeout(async () => {
         try {
-          // Check real status from API before setting to running
-          const statusResponse = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${data.sesionId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
-            
-            await supabase
-              .from('machine_sessions')
-              .update({
-                status: statusData.activa ? 'running' : 'failed',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', initialSession.id);
-          } else {
-            await supabase
-              .from('machine_sessions')
-              .update({
-                status: 'running', // Default to running if can't check status
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', initialSession.id);
-          }
-        } catch (err) {
-          console.error('Error checking real machine status:', err);
-          // Set to running anyway as fallback
           await supabase
             .from('machine_sessions')
             .update({
-              status: 'running',
+              status: 'running', // Set to running
               updated_at: new Date().toISOString()
             })
             .eq('id', initialSession.id);
+        } catch (err) {
+          console.error('Error updating session status to running:', err);
         }
       }, 5000); // 5 second delay to simulate provisioning
 
