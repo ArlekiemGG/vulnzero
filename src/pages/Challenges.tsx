@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -138,8 +137,8 @@ const Challenges = () => {
                     <NavigationMenuItem>
                       <NavigationMenuTrigger className="bg-cybersec-darkgray hover:bg-cybersec-darkgray/80">Ayuda</NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid gap-3 p-6 w-[400px] bg-cybersec-darkgray">
-                          <li className="row-span-3">
+                        <div className="grid w-[400px] max-w-[calc(100vw-2rem)] gap-3 p-6 bg-cybersec-darkgray">
+                          <div className="row-span-3">
                             <NavigationMenuLink asChild>
                               <a
                                 className="flex h-full w-full flex-col justify-end rounded-md bg-gradient-to-b from-cybersec-darkgray/50 to-cybersec-black p-6 no-underline outline-none focus:shadow-md"
@@ -154,28 +153,24 @@ const Challenges = () => {
                                 </p>
                               </a>
                             </NavigationMenuLink>
-                          </li>
-                          <li>
-                            <Link to="/tutorials">
-                              <div className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-cybersec-black hover:text-cybersec-neongreen">
-                                <div className="text-sm font-medium leading-none">Tutoriales</div>
-                                <p className="line-clamp-2 text-sm leading-snug text-gray-400">
-                                  Tutoriales guiados para aprender ciberseguridad.
-                                </p>
-                              </div>
-                            </Link>
-                          </li>
-                          <li>
-                            <Link to="/security">
-                              <div className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-cybersec-black hover:text-cybersec-neongreen">
-                                <div className="text-sm font-medium leading-none">Centro de recursos</div>
-                                <p className="line-clamp-2 text-sm leading-snug text-gray-400">
-                                  Documentación, guías y recursos adicionales.
-                                </p>
-                              </div>
-                            </Link>
-                          </li>
-                        </ul>
+                          </div>
+                          <Link to="/tutorials">
+                            <div className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-cybersec-black hover:text-cybersec-neongreen">
+                              <div className="text-sm font-medium leading-none">Tutoriales</div>
+                              <p className="line-clamp-2 text-sm leading-snug text-gray-400">
+                                Tutoriales guiados para aprender ciberseguridad.
+                              </p>
+                            </div>
+                          </Link>
+                          <Link to="/security">
+                            <div className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-cybersec-black hover:text-cybersec-neongreen">
+                              <div className="text-sm font-medium leading-none">Centro de recursos</div>
+                              <p className="line-clamp-2 text-sm leading-snug text-gray-400">
+                                Documentación, guías y recursos adicionales.
+                              </p>
+                            </div>
+                          </Link>
+                        </div>
                       </NavigationMenuContent>
                     </NavigationMenuItem>
                   </NavigationMenuList>
