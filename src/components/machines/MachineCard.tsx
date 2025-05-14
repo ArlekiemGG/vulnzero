@@ -149,9 +149,8 @@ const MachineCard: React.FC<MachineProps> = ({
           }`} 
           asChild
         >
-          {/* Changed to redirect to machine details page instead of session */}
           <Link to={`/machines/${id}`} className="flex items-center justify-center gap-2">
-            {hasActiveSession ? 'Ver detalles' : 'Ver máquina'} <ArrowRight className="h-4 w-4" />
+            Ver detalles <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>
