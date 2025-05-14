@@ -15,7 +15,6 @@ import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Helmet } from 'react-helmet';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -31,10 +30,6 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Helmet>
-        <title>VulnZero | Plataforma de Ciberseguridad</title>
-        <meta name="description" content="Aprende, practica y mejora tus habilidades de ciberseguridad resolviendo máquinas vulnerables" />
-      </Helmet>
       <Router>
         <AuthProvider>
           <ErrorBoundary>

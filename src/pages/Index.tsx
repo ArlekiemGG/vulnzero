@@ -4,19 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield, Database, Trophy, Flag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Helmet } from 'react-helmet';
 
 const Index = () => {
   const { user } = useAuth();
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Helmet>
-        <title>VulnZero | Plataforma Avanzada de Ciberseguridad</title>
-        <meta name="description" content="Aprende y practica ciberseguridad con máquinas vulnerables, desafíos CTF y laboratorios prácticos. Mejora tus habilidades como profesional en seguridad informática." />
-        <link rel="canonical" href="https://vulnzero.es" />
-      </Helmet>
-
       {/* Hero Section */}
       <div className="relative bg-cybersec-black pt-40 pb-20 px-4 sm:px-6 lg:pt-48 lg:pb-28 lg:px-8 border-b border-cybersec-darkgray">
         <div className="max-w-7xl mx-auto">
