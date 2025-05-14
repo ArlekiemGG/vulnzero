@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Code, User, Activity } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';

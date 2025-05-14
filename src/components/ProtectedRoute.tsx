@@ -42,9 +42,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Store current route for redirection after login - only once
   useEffect(() => {
+    // Only redirect if no user, not loading, and we haven't already redirected
     if (!loading && !user && !redirectedToAuth && !redirectAttemptedRef.current) {
+      // Prevent machine session pages from causing redirect loops
+      if (location.pathname.includes('/machines/') && location.pathname.includes('/session')) {
+        console.log('Redirecting from machine session page, storing parent machine page');
+        // Store the machines list page instead of the session page
+        localStorage.setItem('redirectAfterLogin', '/machines');
+      } else {
+        // For other pages, store the current path
+        localStorage.setItem('redirectAfterLogin', location.pathname);
+      }
+      
       redirectAttemptedRef.current = true; // Prevent multiple redirect attempts
-      localStorage.setItem('redirectAfterLogin', location.pathname);
       setRedirectedToAuth(true);
     }
   }, [user, loading, location, redirectedToAuth]);
@@ -114,7 +124,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Redirect to auth page if not authenticated (but only show toast once)
   if (!loading && !user) {
-    if (!redirectedToAuth && !toastShownRef.current) {
+    // Only show the toast once and only for intentional navigation
+    // Don't show toast for url with ?forceHideBadge=true (which is used for auth redirects)
+    const shouldShowToast = !toastShownRef.current && !location.search.includes('forceHideBadge=true');
+    
+    if (shouldShowToast) {
       toastShownRef.current = true;
       toast({
         title: "Acceso restringido",
@@ -123,7 +137,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       });
     }
     
-    return <Navigate to="/auth" replace />;
+    // Always add ?forceHideBadge=true to avoid showing multiple toasts
+    return <Navigate to="/auth?forceHideBadge=true" replace />;
   }
   
   // Render children with error boundary protection

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -148,7 +149,8 @@ const MachineCard: React.FC<MachineProps> = ({
           }`} 
           asChild
         >
-          <Link to={`/machines/${id}/session`} className="flex items-center justify-center gap-2">
+          {/* Critical fix: Ensure we're using the exact machine ID from the card, not a dynamic one */}
+          <Link to={`/machines/${id}/session`} state={{ fromDashboard: true }} className="flex items-center justify-center gap-2">
             {hasActiveSession ? 'Conectar a sesión activa' : 'Iniciar máquina'} <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>

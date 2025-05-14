@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import Navbar from '@/components/layout/Navbar';
@@ -17,6 +17,7 @@ import { MachineTask } from '@/components/machines/MachineProgress';
 const MachineSessionDetail = () => {
   const { machineId } = useParams<{ machineId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -41,9 +42,14 @@ const MachineSessionDetail = () => {
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
   const [tasks, setTasks] = useState<MachineTask[]>([]);
   
+  const fromDashboard = location.state?.fromDashboard === true;
+  
   // Fetch machine details and user sessions
   const fetchData = async () => {
-    if (!user || !machineId) return;
+    if (!user || !machineId) {
+      console.error("Missing user or machineId", { user, machineId });
+      return;
+    }
     
     try {
       if (!refreshing) setLoading(true);
@@ -51,8 +57,11 @@ const MachineSessionDetail = () => {
       // Get machine details
       const machineDetails = MachineService.getMachine(machineId);
       if (!machineDetails) {
+        console.error("Machine not found:", machineId);
         throw new Error("Máquina no encontrada");
       }
+      
+      console.log("Machine details loaded:", machineDetails);
       setMachine(machineDetails);
       
       // Transform tasks to match MachineTask interface
@@ -68,11 +77,15 @@ const MachineSessionDetail = () => {
       
       // Get user active sessions for this machine
       const sessions = await MachineSessionService.getUserActiveSessions(user.id);
+      console.log("Active sessions:", sessions);
+      
       const machineActiveSessions = sessions.filter(session => session.machineTypeId === machineId);
+      console.log("Machine active sessions:", machineActiveSessions);
       setActiveSessions(machineActiveSessions);
       
       // Get user progress for this machine
       const progress = await MachineService.getUserMachineProgress(user.id, machineId);
+      console.log("User progress:", progress);
       setUserProgress(progress);
       
       // Check if we need to auto-refresh based on machine status
@@ -95,6 +108,7 @@ const MachineSessionDetail = () => {
       // Get session history
       const history = await MachineSessionService.getUserSessionHistory(user.id);
       const machineHistory = history.filter(session => session.machine_type_id === machineId);
+      console.log("Session history:", machineHistory);
       setSessionHistory(machineHistory);
       
     } catch (error) {
@@ -181,13 +195,20 @@ const MachineSessionDetail = () => {
   
   // Initial data fetch
   useEffect(() => {
-    fetchData();
+    console.log("MachineSessionDetail mounted with machineId:", machineId);
+    console.log("User authenticated:", !!user);
+    console.log("From dashboard:", fromDashboard);
+    
+    // Only fetch if we have a user and machineId
+    if (user && machineId) {
+      fetchData();
+    }
   }, [machineId, user]);
   
-  // Protect route
-  if (!user) {
-    return null; // Protector de ruta se encargará de redireccionar
-  }
+  // Generate the correct back button URL based on where we came from
+  const getBackButtonUrl = () => {
+    return fromDashboard ? '/dashboard' : '/machines';
+  };
   
   return (
     <div className="min-h-screen bg-cybersec-black">
@@ -201,9 +222,10 @@ const MachineSessionDetail = () => {
               <Button 
                 variant="outline" 
                 className="border-cybersec-electricblue text-cybersec-electricblue"
-                onClick={() => navigate('/machines')}
+                onClick={() => navigate(getBackButtonUrl())}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Volver a Máquinas
+                <ChevronLeft className="h-4 w-4 mr-1" /> 
+                {fromDashboard ? 'Volver al Dashboard' : 'Volver a Máquinas'}
               </Button>
               
               <Button 
