@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,12 +11,12 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGithub: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  updatePassword: (newPassword: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean }>;
   isAdmin: boolean;
 };
 
@@ -202,7 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const wrappedSignUp = async (email: string, password: string, username: string) => {
     notificationShown.signIn = false;
     setIsUserLogin(true);
-    await signUp(email, password, username);
+    return await signUp(email, password, username);
   };
 
   const wrappedSignInWithGithub = async () => {

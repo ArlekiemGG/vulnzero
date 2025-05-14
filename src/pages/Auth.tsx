@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useSearchParams } from 'react-router-dom';
@@ -272,7 +271,7 @@ const RegisterForm = ({
   onGithubLogin,
   onGoogleLogin
 }: { 
-  onRegister: (email: string, password: string, username: string) => Promise<{success: boolean, error?: string}>;
+  onRegister: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
   onGithubLogin: () => Promise<void>;
   onGoogleLogin: () => Promise<void>;
 }) => {
@@ -665,7 +664,10 @@ const PasswordResetForm = () => {
         return;
       }
       
-      await updatePassword(data.password);
+      const result = await updatePassword(data.password);
+      if (!result.success) {
+        form.setError('password', { message: "Error al actualizar la contraseña" });
+      }
     } finally {
       setIsLoading(false);
     }
