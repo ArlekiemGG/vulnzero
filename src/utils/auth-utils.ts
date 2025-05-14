@@ -89,7 +89,10 @@ export const handleEmailConfirmation = async (
       
       if (data.session) {
         console.log("Valid session found after confirmation");
-        navigate('/dashboard');
+        // Use setTimeout to prevent immediate navigation which can cause race conditions
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 100);
       }
     } catch (error) {
       console.error("Email verification error:", error);
@@ -101,6 +104,21 @@ export const handleEmailConfirmation = async (
     console.log("Password reset flow detected");
     navigate(`/auth${query}`);
   }
+};
+
+/**
+ * Safe navigation that prevents redirect loops
+ */
+export const safeNavigate = (navigate: (path: string) => void, path: string) => {
+  // Prevent redundant navigation to the same path
+  if (path === window.location.pathname) {
+    return;
+  }
+  
+  // Use timeout to ensure state updates complete first
+  setTimeout(() => {
+    navigate(path);
+  }, 50);
 };
 
 /**

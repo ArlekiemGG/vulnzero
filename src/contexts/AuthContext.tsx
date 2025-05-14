@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -34,10 +34,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [initialSessionChecked, setInitialSessionChecked] = useState(false);
-  const [authInitialized, setAuthInitialized] = useState(false);
   const [isUserLogin, setIsUserLogin] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
+  const redirectInProgressRef = useRef(false);
+  const authStateCheckedRef = useRef(false);
   const navigate = useNavigate();
   
   const { 
@@ -73,8 +72,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Perform a safe navigation that prevents redirect loops
+  const safeNavigate = (path: string) => {
+    if (redirectInProgressRef.current || path === window.location.pathname) {
+      return;
+    }
+    
+    redirectInProgressRef.current = true;
+    
+    // Use setTimeout to ensure state updates complete before navigation
+    setTimeout(() => {
+      navigate(path);
+      
+      // Reset redirect flag after a delay to prevent rapid redirects
+      setTimeout(() => {
+        redirectInProgressRef.current = false;
+      }, 500);
+    }, 50);
+  };
+
   useEffect(() => {
     const initAuth = async () => {
+      if (authStateCheckedRef.current) {
+        // Skip initialization if already done
+        return;
+      }
+      
       setLoading(true);
       
       try {
@@ -127,13 +150,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const redirectPath = localStorage.getItem('redirectAfterLogin') || '/dashboard';
                 localStorage.removeItem('redirectAfterLogin');
                 
-                if (window.location.pathname === '/auth' && !redirecting) {
-                  setRedirecting(true);
-                  // Add a slight delay to prevent rapid redirects
-                  setTimeout(() => {
-                    navigate(redirectPath);
-                    setRedirecting(false);
-                  }, 100);
+                if (window.location.pathname === '/auth') {
+                  safeNavigate(redirectPath);
                 }
               }, 0);
             }
@@ -174,15 +192,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setSession(data.session);
         setUser(data.session?.user ?? null);
-        setInitialSessionChecked(true);
+        authStateCheckedRef.current = true;
         
         // Verificar rol de admin si hay usuario
         if (data.session?.user) {
           await checkAdminStatus(data.session.user.id);
         }
         
-        // Mark auth as initialized - after this, auth state changes will trigger toasts
-        setAuthInitialized(true);
       } catch (error: any) {
         console.error("Auth initialization error:", error);
         toast({

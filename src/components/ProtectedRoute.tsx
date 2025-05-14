@@ -16,13 +16,22 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [redirected, setRedirected] = useState(false);
+  const [redirectedToAuth, setRedirectedToAuth] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
-  const redirectAttempted = useRef(false);
+  const redirectAttemptedRef = useRef(false);
+  const toastShownRef = useRef(false);
   
   // Use useRef for handling timeouts to avoid memory leaks
   const authCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Reset redirect flags when component unmounts
+  useEffect(() => {
+    return () => {
+      redirectAttemptedRef.current = false;
+      toastShownRef.current = false;
+    };
+  }, []);
   
   // Detect potential infinite loading loops
   useEffect(() => {
@@ -31,14 +40,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   }, [loading]);
   
-  // Store current route for redirection after login
+  // Store current route for redirection after login - only once
   useEffect(() => {
-    if (!loading && !user && !redirected && !redirectAttempted.current) {
-      redirectAttempted.current = true; // Prevent multiple redirect attempts
+    if (!loading && !user && !redirectedToAuth && !redirectAttemptedRef.current) {
+      redirectAttemptedRef.current = true; // Prevent multiple redirect attempts
       localStorage.setItem('redirectAfterLogin', location.pathname);
-      setRedirected(true);
+      setRedirectedToAuth(true);
     }
-  }, [user, loading, location, redirected]);
+  }, [user, loading, location, redirectedToAuth]);
   
   // Clean up timeouts when component unmounts
   useEffect(() => {
@@ -103,10 +112,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // Redirect to auth page if not authenticated
+  // Redirect to auth page if not authenticated (but only show toast once)
   if (!loading && !user) {
-    if (!redirected && !redirectAttempted.current) {
-      redirectAttempted.current = true; // Prevent displaying the toast multiple times
+    if (!redirectedToAuth && !toastShownRef.current) {
+      toastShownRef.current = true;
       toast({
         title: "Acceso restringido",
         description: "Debes iniciar sesión para acceder a esta página",

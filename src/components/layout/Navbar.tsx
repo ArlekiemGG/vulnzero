@@ -33,6 +33,15 @@ const Navbar = () => {
     return email.substring(0, 2).toUpperCase();
   };
 
+  // Handle sign out without causing redirect loops
+  const handleSignOut = async () => {
+    closeMenu();
+    // Use setTimeout to ensure menu close animation completes
+    setTimeout(() => {
+      signOut();
+    }, 100);
+  };
+
   // Navbar links depend on authentication status
   const navLinks = user 
     ? [
@@ -94,7 +103,7 @@ const Navbar = () => {
                   </div>
                   <DropdownMenuItem 
                     className="cursor-pointer text-cybersec-red focus:text-cybersec-red focus:bg-cybersec-black"
-                    onClick={signOut}
+                    onClick={handleSignOut}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar sesión</span>
@@ -143,10 +152,7 @@ const Navbar = () => {
           ))}
           {user ? (
             <button
-              onClick={() => {
-                signOut();
-                closeMenu();
-              }}
+              onClick={handleSignOut}
               className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-cybersec-red hover:bg-gray-900"
             >
               Cerrar sesión
