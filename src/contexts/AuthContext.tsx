@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,10 +97,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(currentSession);
             setUser(currentSession?.user ?? null);
             
-            // Handle specific events
+            // Handle specific events - only show notifications on explicit auth events, not page navigations
             if (event === 'SIGNED_IN' && currentSession?.user) {
               // Only show toast for user-initiated logins and if not already shown
-              if (isUserLogin && !notificationShown.signIn) {
+              // AND if we're actually on the auth page (explicit login)
+              if (isUserLogin && !notificationShown.signIn && window.location.pathname === '/auth') {
                 notificationShown.signIn = true;
                 // Reset the notification flag after some time
                 setTimeout(() => {
