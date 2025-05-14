@@ -123,7 +123,7 @@ export const MachineService = {
   submitFlag: FlagService.submitFlag,
 
   // Complete a specific task in a machine
-  completeTask: TaskHintService.completeTask,
+  completeTask: ProgressService.completeTask,
   
   // Log activity related to machine usage
   logMachineActivity: ActivityLogService.logMachineActivity,

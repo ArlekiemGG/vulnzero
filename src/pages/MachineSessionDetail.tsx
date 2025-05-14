@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,10 +8,11 @@ import Sidebar from '@/components/layout/Sidebar';
 import MachineSessionPanel from '@/components/machines/MachineSessionPanel';
 import MachineRequestPanel from '@/components/machines/MachineRequestPanel';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, History, RefreshCw } from 'lucide-react';
 import { MachineSessionService } from '@/components/machines/MachineSessionService';
 import { MachineService } from '@/components/machines/MachineService';
+import MachineProgress from '@/components/machines/MachineProgress';
+import { MachineTask } from '@/components/machines/MachineProgress';
 
 const MachineSessionDetail = () => {
   const { machineId } = useParams<{ machineId: string }>();
@@ -23,6 +25,10 @@ const MachineSessionDetail = () => {
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [userProgress, setUserProgress] = useState<any>({
+    progress: 0,
+    completedTasks: []
+  });
   const [userStats, setUserStats] = useState<any>({
     level: 1,
     points: 0,
@@ -33,6 +39,7 @@ const MachineSessionDetail = () => {
     completedChallenges: 0,
   });
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [tasks, setTasks] = useState<MachineTask[]>([]);
   
   // Fetch machine details and user sessions
   const fetchData = async () => {
@@ -48,10 +55,25 @@ const MachineSessionDetail = () => {
       }
       setMachine(machineDetails);
       
+      // Transform tasks to match MachineTask interface
+      if (machineDetails.tasks) {
+        const formattedTasks = machineDetails.tasks.map(task => ({
+          id: task.id,
+          title: task.name,
+          description: task.description,
+          completed: false
+        }));
+        setTasks(formattedTasks);
+      }
+      
       // Get user active sessions for this machine
       const sessions = await MachineSessionService.getUserActiveSessions(user.id);
       const machineActiveSessions = sessions.filter(session => session.machineTypeId === machineId);
       setActiveSessions(machineActiveSessions);
+      
+      // Get user progress for this machine
+      const progress = await MachineService.getUserMachineProgress(user.id, machineId);
+      setUserProgress(progress);
       
       // Check if we need to auto-refresh based on machine status
       const needsRefresh = machineActiveSessions.some(
@@ -113,11 +135,48 @@ const MachineSessionDetail = () => {
   const handleMachineRequested = () => {
     fetchData();
     
-    // Fix: Remove 'duration' and use proper Toast type without duration property
     toast({
       title: "Máquina solicitada",
-      description: "La máquina está siendo iniciada. Este proceso puede tardar unos segundos."
+      description: "La máquina está siendo iniciada. Este proceso puede tardar unos segundos.",
+      duration: 5000
     });
+  };
+  
+  // Handle task completion
+  const handleTaskUpdate = async (taskId: number, completed: boolean) => {
+    if (!user || !machineId) return;
+    
+    try {
+      setRefreshing(true);
+      
+      const success = await MachineService.completeTask(user.id, machineId, taskId, completed);
+      
+      if (success) {
+        toast({
+          title: completed ? "Tarea completada" : "Tarea desmarcada",
+          description: `La tarea ha sido ${completed ? 'marcada como completada' : 'desmarcada'} correctamente.`,
+          duration: 3000
+        });
+        await fetchData();
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar la tarea",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la tarea",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
   
   // Initial data fetch
@@ -192,6 +251,16 @@ const MachineSessionDetail = () => {
                     onMachineRequested={handleMachineRequested}
                   />
                 )}
+                
+                {/* Machine Progress */}
+                <div className="mt-8">
+                  <MachineProgress 
+                    tasks={tasks}
+                    isLoading={loading || refreshing}
+                    completedTasksIds={userProgress?.completedTasks || []}
+                    onTaskUpdate={handleTaskUpdate}
+                  />
+                </div>
                 
                 {/* Session History */}
                 <div className="mt-8">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, HardDrive, Network, AlertTriangle } from 'lucide-react';
@@ -12,14 +13,17 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { MachineService } from '@/components/machines/MachineService';
 import { MachineType } from '@/components/machines/MachineData';
+import { useToast } from '@/components/ui/use-toast';
 
 const Machines = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [osFilter, setOsFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
-  const [userProgress, setUserProgress] = useState({});
+  const [userProgress, setUserProgress] = useState<Record<string, number>>({});
   const [machines, setMachines] = useState<MachineType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Obtener todas las máquinas disponibles
@@ -32,19 +36,44 @@ const Machines = () => {
   }, []);
 
   useEffect(() => {
-    // Simula la obtención del progreso del usuario para cada máquina
+    // Obtener el progreso real del usuario para cada máquina
     const fetchUserProgress = async () => {
-      const progressData = {};
-      machines.forEach(machine => {
-        progressData[machine.id] = machine.userProgress || Math.floor(Math.random() * 101); // Usa el progreso existente o simula uno
-      });
-      setUserProgress(progressData);
+      if (!user) return;
+      
+      setIsLoading(true);
+      try {
+        const progressData: Record<string, number> = {};
+        
+        // Obtener el progreso para cada máquina de forma secuencial
+        for (const machine of machines) {
+          try {
+            const machineProgress = await MachineService.getUserMachineProgress(user.id, machine.id);
+            progressData[machine.id] = machineProgress.progress || 0;
+          } catch (err) {
+            console.error(`Error al obtener progreso para máquina ${machine.id}:`, err);
+            progressData[machine.id] = 0;
+          }
+        }
+        
+        setUserProgress(progressData);
+      } catch (error) {
+        console.error('Error obteniendo el progreso del usuario:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el progreso de las máquinas.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    if (machines.length > 0) {
+    if (user && machines.length > 0) {
       fetchUserProgress();
+    } else {
+      setIsLoading(false);
     }
-  }, [machines]);
+  }, [machines, user, toast]);
 
   const filteredMachines = useMemo(() => {
     return machines
@@ -175,8 +204,14 @@ const Machines = () => {
                   
                   {user && (
                     <>
-                      <div className="text-xs text-gray-400 mb-1">Progreso: {userProgress[machine.id]}%</div>
-                      <Progress value={userProgress[machine.id]} className="mb-4" />
+                      <div className="text-xs text-gray-400 mb-1">
+                        Progreso: {isLoading ? '...' : `${userProgress[machine.id] || 0}%`}
+                      </div>
+                      <Progress 
+                        value={isLoading ? 0 : userProgress[machine.id] || 0} 
+                        className="mb-4"
+                        aria-label={`Progreso: ${isLoading ? '...' : userProgress[machine.id] || 0}%`}
+                      />
                     </>
                   )}
                   
