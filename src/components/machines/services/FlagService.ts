@@ -5,6 +5,13 @@ const FLAG_API_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:5000/api"  // Local development
   : "https://api.vulnzero.es/api"; // Production
 
+interface FlagValidationResponse {
+  success: boolean;
+  points?: number;
+  message?: string;
+  error?: string;
+}
+
 export const FlagService = {
   // Submit a flag for a machine
   submitFlag: async (userId: string, machineId: string, flag: string, flagType: 'user' | 'root'): Promise<{ success: boolean; message: string; points?: number }> => {
@@ -32,7 +39,7 @@ export const FlagService = {
         };
       }
 
-      const data = await response.json();
+      const data: FlagValidationResponse = await response.json();
       
       if (!data.success) {
         return { 

@@ -1,54 +1,9 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { calculateRemainingTime } from './utils/SessionUtils';
+import { MachineApi } from './services/session/api';
+import { MachineSessionDbService, mapDbSessionToMachineSession } from './services/session/dbService';
+import { MachineSession } from './services/session/types';
 
-// Interface for machine session information
-export interface MachineSession {
-  id: string;
-  machineTypeId: string;
-  sessionId: string;
-  status: 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed';
-  ipAddress?: string;
-  username?: string;
-  password?: string;
-  connectionInfo: Record<string, any>;
-  startedAt: string;
-  expiresAt: string;
-  terminatedAt?: string;
-  remainingTimeMinutes?: number;
-  machineDetails?: {
-    name: string;
-    description: string;
-    difficulty: string;
-    os_type: string;
-  };
-}
-
-// External API configuration for development and production
-const EXTERNAL_API_URL = window.location.hostname.includes("localhost") 
-  ? "http://localhost:5000"  // Local development
-  : "https://api.vulnzero.es"; // Production
-
-// Helper function to map database session to MachineSession interface
-const mapDbSessionToMachineSession = (session: any): MachineSession => {
-  const remainingTimeMinutes = calculateRemainingTime(session.expires_at);
-  
-  return {
-    id: session.id,
-    machineTypeId: session.machine_type_id,
-    sessionId: session.session_id,
-    status: session.status as 'requested' | 'provisioning' | 'running' | 'terminated' | 'failed',
-    ipAddress: session.ip_address,
-    username: session.username,
-    password: session.password,
-    connectionInfo: session.connection_info as Record<string, any>,
-    startedAt: session.started_at,
-    expiresAt: session.expires_at,
-    terminatedAt: session.terminated_at,
-    remainingTimeMinutes,
-    machineDetails: session.machine_types
-  };
-};
+export type { MachineSession } from './services/session/types';
 
 export const MachineSessionService = {
   // Request a new machine instance with better error handling and status updates
@@ -57,103 +12,39 @@ export const MachineSessionService = {
       console.log('Requesting machine:', machineTypeId, 'for user:', userId);
       
       // First, create a placeholder session in the database with 'requested' status
-      const placeholderExpireDate = new Date(Date.now() + (120 * 60 * 1000)).toISOString(); // Default 2 hours
-      const tempSessionId = 'pending-' + Date.now(); // Temporary session ID until we get the real one
+      const initialSession = await MachineSessionDbService.createInitialSession(userId, machineTypeId);
       
-      const { data: initialSession, error: initialError } = await supabase
-        .from('machine_sessions')
-        .insert({
-          user_id: userId,
-          machine_type_id: machineTypeId,
-          status: 'requested',
-          started_at: new Date().toISOString(),
-          expires_at: placeholderExpireDate,
-          session_id: tempSessionId
-        })
-        .select()
-        .single();
-        
-      if (initialError) {
-        console.error('Error creating initial session:', initialError);
-        throw new Error('Error al iniciar el proceso de solicitud de máquina');
-      }
-      
-      // Call external API to provision a new machine - using the REAL API now
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          usuarioId: userId,
-          tipoMaquinaId: machineTypeId
-        }),
-      });
+      // Call external API to provision a new machine
+      const apiResponse = await MachineApi.requestMachine(userId, machineTypeId);
 
-      if (!response.ok) {
+      if (!apiResponse.exito) {
         // Update session status to 'failed' if API call fails
-        await supabase
-          .from('machine_sessions')
-          .update({
-            status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', initialSession.id);
-          
-        const errorText = await response.text();
-        console.error('API response not OK:', errorText);
-        throw new Error(`Error al solicitar la máquina: ${response.status}`);
+        await MachineSessionDbService.markSessionAsFailed(initialSession.id);
+        throw new Error(apiResponse.mensaje || 'Error al solicitar la máquina');
       }
-
-      const data = await response.json();
       
-      console.log('Machine requested successfully:', data);
-      
-      if (!data.exito) {
-        // Update session status to 'failed' if API returns failure
-        await supabase
-          .from('machine_sessions')
-          .update({
-            status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', initialSession.id);
-          
-        throw new Error(data.mensaje || 'Error al solicitar la máquina');
+      // Verificar que todos los campos necesarios estén presentes
+      if (!apiResponse.sesionId || !apiResponse.ipAcceso || !apiResponse.puertoSSH || 
+          !apiResponse.credenciales || !apiResponse.tiempoLimite) {
+        throw new Error('Respuesta de API incompleta');
       }
       
       // Update session with the information received from the API
-      const { data: sessionData, error } = await supabase
-        .from('machine_sessions')
-        .update({
-          session_id: data.sesionId,
-          ip_address: data.ipAcceso,
-          status: 'provisioning', // Set to provisioning first, will be updated to running after machine is ready
-          connection_info: {
-            puertoSSH: data.puertoSSH,
-            username: data.credenciales.usuario,
-            password: data.credenciales.password,
-            sshCommand: `ssh ${data.credenciales.usuario}@${data.ipAcceso} -p ${data.puertoSSH}`,
-            maxTimeMinutes: data.tiempoLimite / 60
-          },
-          username: data.credenciales.usuario,
-          password: data.credenciales.password,
-          expires_at: new Date(Date.now() + (data.tiempoLimite * 1000)).toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', initialSession.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating machine session:', error);
-        throw error;
-      }
+      const updatedSession = await MachineSessionDbService.updateSessionWithMachineInfo(
+        initialSession.id,
+        apiResponse.sesionId,
+        apiResponse.ipAcceso,
+        apiResponse.puertoSSH,
+        apiResponse.credenciales.usuario,
+        apiResponse.credenciales.password,
+        apiResponse.tiempoLimite,
+        'provisioning' // Set to provisioning first, will be updated to running after machine is ready
+      );
 
       // Set session to 'running' after checking machine status
-      checkAndUpdateMachineStatus(data.sesionId, initialSession.id);
+      checkAndUpdateMachineStatus(apiResponse.sesionId, initialSession.id);
 
-      return mapDbSessionToMachineSession(sessionData);
+      return mapDbSessionToMachineSession(updatedSession);
     } catch (error) {
       console.error('Error requesting machine:', error);
       return null;
@@ -163,33 +54,17 @@ export const MachineSessionService = {
   // Get active machine sessions for a user
   getUserActiveSessions: async (userId: string): Promise<MachineSession[]> => {
     try {
-      const { data: sessions, error } = await supabase
-        .from('machine_sessions')
-        .select('*, machine_types(name, description, difficulty, os_type)')
-        .eq('user_id', userId)
-        .neq('status', 'terminated')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
+      const sessions = await MachineSessionDbService.getUserActiveSessions(userId);
 
       // For each session, check its current status with the API
       for (const session of sessions) {
-        if (session.session_id) {
-          const currentStatus = await MachineSessionService.getMachineStatus(session.session_id);
+        if (session.session_id && session.session_id.indexOf('pending-') !== 0) {
+          const statusResponse = await MachineApi.getMachineStatus(session.session_id);
+          const currentStatus = statusResponse.activa ? 'running' : 'terminated';
           
           if (currentStatus !== session.status) {
             // Update status if it has changed
-            await supabase
-              .from('machine_sessions')
-              .update({ 
-                status: currentStatus,
-                updated_at: new Date().toISOString(),
-                terminated_at: currentStatus === 'terminated' ? new Date().toISOString() : null
-              })
-              .eq('id', session.id);
-            
+            await MachineSessionDbService.updateSessionStatus(session.id, currentStatus);
             session.status = currentStatus;
           }
         }
@@ -205,19 +80,8 @@ export const MachineSessionService = {
   // Check machine status directly from API
   getMachineStatus: async (sessionId: string): Promise<string> => {
     try {
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al verificar estado de la máquina');
-      }
-
-      const data = await response.json();
-      return data.activa ? 'running' : 'terminated';
+      const statusResponse = await MachineApi.getMachineStatus(sessionId);
+      return statusResponse.activa ? 'running' : 'terminated';
     } catch (error) {
       console.error('Error checking machine status:', error);
       return 'failed';
@@ -228,38 +92,17 @@ export const MachineSessionService = {
   terminateMachine: async (sessionId: string): Promise<boolean> => {
     try {
       // Call external API to release the machine
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/liberar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sesionId: sessionId
-        }),
-      });
+      const releaseResponse = await MachineApi.releaseMachine(sessionId);
 
-      if (!response.ok) {
-        throw new Error('Error al liberar la máquina');
+      if (!releaseResponse.exito) {
+        throw new Error(releaseResponse.mensaje || 'Error al liberar la máquina');
       }
 
       // Update status in database before deleting (for history logging via trigger)
-      await supabase
-        .from('machine_sessions')
-        .update({
-          status: 'terminated',
-          terminated_at: new Date().toISOString()
-        })
-        .eq('session_id', sessionId);
+      await MachineSessionDbService.updateSessionStatus(sessionId, 'terminated');
       
       // Delete from active sessions (triggers history logging)
-      const { error } = await supabase
-        .from('machine_sessions')
-        .delete()
-        .eq('session_id', sessionId);
-
-      if (error) {
-        throw error;
-      }
+      await MachineSessionDbService.deleteSession(sessionId);
 
       return true;
     } catch (error) {
@@ -271,17 +114,7 @@ export const MachineSessionService = {
   // Get user session history
   getUserSessionHistory: async (userId: string): Promise<any[]> => {
     try {
-      const { data, error } = await supabase
-        .from('machine_sessions_history')
-        .select('*, machine_types(name, difficulty, os_type)')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      return data;
+      return await MachineSessionDbService.getUserSessionHistory(userId);
     } catch (error) {
       console.error('Error fetching user session history:', error);
       return [];
@@ -296,29 +129,11 @@ async function checkAndUpdateMachineStatus(sessionId: string, dbSessionId: strin
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     // Check the status
-    const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Error al verificar estado de la máquina');
-    }
-
-    const data = await response.json();
-    const status = data.activa ? 'running' : 'terminated';
+    const statusResponse = await MachineApi.getMachineStatus(sessionId);
+    const status = statusResponse.activa ? 'running' : 'terminated';
     
     // Update in database
-    await supabase
-      .from('machine_sessions')
-      .update({
-        status: status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', dbSessionId);
-      
+    await MachineSessionDbService.updateSessionStatus(dbSessionId, status);
   } catch (error) {
     console.error('Error updating machine status:', error);
   }
