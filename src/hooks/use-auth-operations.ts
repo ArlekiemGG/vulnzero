@@ -80,7 +80,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       setLoading(true);
       setValidationErrors({});
       
-      // Check password strength
+      // Check password strength first before any API calls
       const passwordCheck = checkPasswordStrength(password);
       if (!passwordCheck.isStrong) {
         setValidationErrors(prev => ({ ...prev, password: passwordCheck.message }));
@@ -111,49 +111,60 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       const redirectUrl = `${siteUrl}/auth?verification=true`;
       
       console.log("Redirect URL for email verification:", redirectUrl);
-      
-      // Utilizando la función signUp con confirmación de correo electrónico
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            username
-          },
-          emailRedirectTo: redirectUrl
+
+      try {
+        // Utilizando la función signUp con confirmación de correo electrónico
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              username
+            },
+            emailRedirectTo: redirectUrl
+          }
+        });
+        
+        if (error) {
+          console.error("Error en registro:", error);
+          toast({
+            title: "Error de registro",
+            description: error.message || "Ha ocurrido un error durante el registro",
+            variant: "destructive"
+          });
+          return { success: false, error: error.message };
         }
-      });
-      
-      if (error) {
-        console.error("Error en registro:", error);
+        
+        console.log("Sign up response:", data);
+        
+        // Verifica si el usuario ya existe por el tamaño del array identities
+        if (data?.user?.identities && data.user.identities.length === 0) {
+          toast({
+            title: "Usuario ya registrado",
+            description: "Este correo electrónico ya está registrado. Por favor, inicia sesión.",
+            variant: "default"
+          });
+          return { success: false, error: 'already_exists' };
+        }
+        
+        // Solo mostrar toast de éxito si llegamos hasta aquí (todo ha ido bien)
         toast({
-          title: "Error de registro",
-          description: error.message || "Ha ocurrido un error durante el registro",
+          title: "Registro exitoso",
+          description: "Tu cuenta ha sido creada. Revisa tu correo para confirmar tu cuenta.",
+        });
+        
+        return { success: true };
+      } catch (apiError: any) {
+        console.error("Error en la API de registro:", apiError);
+        toast({
+          title: "Error en el servidor",
+          description: "Ha ocurrido un error durante el registro. Por favor, inténtalo de nuevo más tarde.",
           variant: "destructive"
         });
-        return { success: false, error: error.message };
+        return { success: false, error: apiError.message };
       }
-      
-      console.log("Sign up response:", data);
-      
-      // Verifica si el usuario ya existe por el tamaño del array identities
-      if (data?.user?.identities && data.user.identities.length === 0) {
-        toast({
-          title: "Usuario ya registrado",
-          description: "Este correo electrónico ya está registrado. Por favor, inicia sesión.",
-          variant: "default"
-        });
-        return { success: false, error: 'already_exists' };
-      }
-      
-      toast({
-        title: "Registro exitoso",
-        description: "Tu cuenta ha sido creada. Revisa tu correo para confirmar tu cuenta.",
-      });
-      
-      return { success: true };
     } catch (error: any) {
-      console.error("Error en el registro:", error);
+      console.error("Error general en el registro:", error);
       toast({
         title: "Error de registro",
         description: error.message || "Ha ocurrido un error durante el registro",

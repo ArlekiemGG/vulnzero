@@ -317,24 +317,52 @@ const RegisterForm = ({
     setIsLoading(true);
     
     try {
-      // Verificar si la contraseña cumple con todos los requisitos
-      const passwordCheck = checkPasswordStrength(data.password);
-      if (!passwordCheck.isStrong) {
-        form.setError('password', { message: passwordCheck.message });
+      // Verificar si la contraseña cumple con todos los requisitos antes de enviar
+      const passwordIsStrong = passwordStrength.hasMinLength && 
+                             passwordStrength.hasUppercase && 
+                             passwordStrength.hasLowercase && 
+                             passwordStrength.hasNumber && 
+                             passwordStrength.hasSpecial;
+                             
+      if (!passwordIsStrong) {
+        // Determinar qué requisito falta y mostrar el error específico
+        let errorMessage = "La contraseña debe cumplir todos los requisitos:";
+        
+        if (!passwordStrength.hasMinLength) errorMessage = "La contraseña debe tener al menos 8 caracteres";
+        else if (!passwordStrength.hasUppercase) errorMessage = "La contraseña debe incluir al menos una letra mayúscula";
+        else if (!passwordStrength.hasLowercase) errorMessage = "La contraseña debe incluir al menos una letra minúscula";
+        else if (!passwordStrength.hasNumber) errorMessage = "La contraseña debe incluir al menos un número";
+        else if (!passwordStrength.hasSpecial) errorMessage = "La contraseña debe incluir al menos un carácter especial";
+        
+        form.setError('password', { message: errorMessage });
         setIsLoading(false);
         return;
       }
       
+      // Ahora intentamos registrar al usuario
       const result = await onRegister(data.email, data.password, data.username);
+      
+      console.log("Registration result:", result);
       
       if (result.success) {
         // Solo mostrar la pantalla de confirmación si el registro fue exitoso
         setSubmittedEmail(data.email);
         setIsSubmitted(true);
       } else {
-        // Si hay un error específico de contraseña, mostrarlo en el campo correspondiente
+        // Si hay un error específico, mostrarlo en el campo correspondiente
         if (result.error?.includes('password')) {
           form.setError('password', { message: result.error });
+        } else if (result.error?.includes('email')) {
+          form.setError('email', { message: result.error });
+        } else if (result.error === 'already_exists') {
+          form.setError('email', { message: "Este correo ya está registrado. Por favor, inicia sesión." });
+        } else {
+          // Error genérico
+          toast({
+            title: "Error de registro",
+            description: result.error || "Ha ocurrido un error durante el registro",
+            variant: "destructive"
+          });
         }
       }
     } finally {
