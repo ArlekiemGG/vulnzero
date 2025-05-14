@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link, useSearchParams } from 'react-router-dom';
@@ -10,6 +11,19 @@ import { Shield, User, Lock, Mail, Github, Chrome, ArrowRight, CheckCircle } fro
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from '@/components/ui/form';
+import { checkPasswordStrength } from '@/utils/auth-utils';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const Auth = () => {
   const { user, signIn, signUp, signInWithGithub, signInWithGoogle } = useAuth();
@@ -240,42 +254,83 @@ const LoginForm = ({
   );
 };
 
+// Esquema de validación para el formulario de registro
+const registerSchema = z.object({
+  email: z.string().email('Email inválido').min(1, 'El email es requerido'),
+  username: z.string().min(3, 'El nombre de usuario debe tener al menos 3 caracteres'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  confirmPassword: z.string().min(1, 'Por favor confirma la contraseña'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
 const RegisterForm = ({ 
   onRegister,
   onGithubLogin,
   onGoogleLogin
 }: { 
-  onRegister: (email: string, password: string, username: string) => Promise<void>;
+  onRegister: (email: string, password: string, username: string) => Promise<{success: boolean, error?: string}>;
   onGithubLogin: () => Promise<void>;
   onGoogleLogin: () => Promise<void>;
 }) => {
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      setPasswordError('Las contraseñas no coinciden');
-      return;
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+    },
+    mode: 'onChange'
+  });
+
+  const { watch } = form;
+  const password = watch('password');
+
+  // Evaluar la fortaleza de la contraseña en tiempo real
+  useEffect(() => {
+    if (password) {
+      setPasswordStrength({
+        hasMinLength: password.length >= 8,
+        hasUppercase: /[A-Z]/.test(password),
+        hasLowercase: /[a-z]/.test(password),
+        hasNumber: /\d/.test(password),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      });
     }
-    
-    if (password.length < 6) {
-      setPasswordError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-    
-    setPasswordError('');
+  }, [password]);
+
+  const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     
     try {
-      await onRegister(email, password, username);
-      setIsSubmitted(true);
+      // Verificar si la contraseña cumple con todos los requisitos
+      const passwordCheck = checkPasswordStrength(data.password);
+      if (!passwordCheck.isStrong) {
+        form.setError('password', { message: passwordCheck.message });
+        return;
+      }
+      
+      const result = await onRegister(data.email, data.password, data.username);
+      
+      if (result.success) {
+        setSubmittedEmail(data.email);
+        setIsSubmitted(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -293,7 +348,7 @@ const RegisterForm = ({
             <Mail className="h-5 w-5 text-cybersec-neongreen" />
             <AlertTitle>Revisa tu bandeja de entrada</AlertTitle>
             <AlertDescription>
-              Hemos enviado un correo de verificación a <strong>{email}</strong>. 
+              Hemos enviado un correo de verificación a <strong>{submittedEmail}</strong>. 
               Por favor, revisa tu bandeja de entrada y haz clic en el enlace de confirmación para activar tu cuenta.
             </AlertDescription>
           </Alert>
@@ -347,78 +402,127 @@ const RegisterForm = ({
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="register-email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="register-email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-username">Nombre de Usuario</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="register-username"
-                  type="text"
-                  placeholder="hackerman123"
-                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-password">Contraseña</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="register-password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="register-confirm-password">Confirmar Contraseña</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="register-confirm-password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {passwordError && (
-                <p className="text-sm text-cybersec-red mt-1">{passwordError}</p>
-              )}
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Cargando...' : 'Registrarse'}
-            </Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <FormControl>
+                        <Input
+                          placeholder="tu@email.com"
+                          className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-cybersec-red" />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de Usuario</FormLabel>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <FormControl>
+                        <Input
+                          placeholder="hackerman123"
+                          className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-cybersec-red" />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-cybersec-red" />
+                    
+                    {/* Requisitos de contraseña visibles */}
+                    <div className="mt-2 text-xs space-y-1 text-gray-400">
+                      <div className={`flex items-center ${passwordStrength.hasMinLength ? 'text-green-400' : ''}`}>
+                        <span className="mr-1">{passwordStrength.hasMinLength ? '✓' : '○'}</span> Mínimo 8 caracteres
+                      </div>
+                      <div className={`flex items-center ${passwordStrength.hasUppercase ? 'text-green-400' : ''}`}>
+                        <span className="mr-1">{passwordStrength.hasUppercase ? '✓' : '○'}</span> Al menos una mayúscula
+                      </div>
+                      <div className={`flex items-center ${passwordStrength.hasLowercase ? 'text-green-400' : ''}`}>
+                        <span className="mr-1">{passwordStrength.hasLowercase ? '✓' : '○'}</span> Al menos una minúscula
+                      </div>
+                      <div className={`flex items-center ${passwordStrength.hasNumber ? 'text-green-400' : ''}`}>
+                        <span className="mr-1">{passwordStrength.hasNumber ? '✓' : '○'}</span> Al menos un número
+                      </div>
+                      <div className={`flex items-center ${passwordStrength.hasSpecial ? 'text-green-400' : ''}`}>
+                        <span className="mr-1">{passwordStrength.hasSpecial ? '✓' : '○'}</span> Al menos un carácter especial
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Contraseña</FormLabel>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-cybersec-red" />
+                  </FormItem>
+                )}
+              />
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
+                disabled={isLoading || !form.formState.isValid || 
+                  !passwordStrength.hasMinLength || 
+                  !passwordStrength.hasUppercase || 
+                  !passwordStrength.hasLowercase || 
+                  !passwordStrength.hasNumber || 
+                  !passwordStrength.hasSpecial}
+              >
+                {isLoading ? 'Cargando...' : 'Registrarse'}
+              </Button>
+            </form>
+          </Form>
         </div>
       </CardContent>
       <CardFooter className="text-xs text-gray-500 text-center">
@@ -503,26 +607,65 @@ const ResetPasswordForm = () => {
   );
 };
 
+// Esquema de validación para el formulario de restablecimiento de contraseña
+const passwordResetSchema = z.object({
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  confirmPassword: z.string().min(1, 'Por favor confirma la contraseña'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+type PasswordResetFormValues = z.infer<typeof passwordResetSchema>;
+
 const PasswordResetForm = () => {
   const { updatePassword } = useAuth();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      setPasswordError('Las contraseñas no coinciden');
-      return;
+  const form = useForm<PasswordResetFormValues>({
+    resolver: zodResolver(passwordResetSchema),
+    defaultValues: {
+      password: '',
+      confirmPassword: '',
+    },
+    mode: 'onChange'
+  });
+
+  const { watch } = form;
+  const password = watch('password');
+
+  // Evaluar la fortaleza de la contraseña en tiempo real
+  useEffect(() => {
+    if (password) {
+      setPasswordStrength({
+        hasMinLength: password.length >= 8,
+        hasUppercase: /[A-Z]/.test(password),
+        hasLowercase: /[a-z]/.test(password),
+        hasNumber: /\d/.test(password),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      });
     }
-    
-    setPasswordError('');
+  }, [password]);
+
+  const onSubmit = async (data: PasswordResetFormValues) => {
     setIsLoading(true);
     
     try {
-      await updatePassword(password);
+      // Verificar si la contraseña cumple con todos los requisitos
+      const passwordCheck = checkPasswordStrength(data.password);
+      if (!passwordCheck.isStrong) {
+        form.setError('password', { message: passwordCheck.message });
+        return;
+      }
+      
+      await updatePassword(data.password);
     } finally {
       setIsLoading(false);
     }
@@ -535,48 +678,85 @@ const PasswordResetForm = () => {
         <CardDescription>Establece tu nueva contraseña</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Nueva contraseña</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="new-password"
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar contraseña</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            {passwordError && (
-              <p className="text-sm text-cybersec-red mt-1">{passwordError}</p>
-            )}
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Actualizando...' : 'Actualizar contraseña'}
-          </Button>
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nueva contraseña</FormLabel>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage className="text-cybersec-red" />
+                  
+                  {/* Requisitos de contraseña visibles */}
+                  <div className="mt-2 text-xs space-y-1 text-gray-400">
+                    <div className={`flex items-center ${passwordStrength.hasMinLength ? 'text-green-400' : ''}`}>
+                      <span className="mr-1">{passwordStrength.hasMinLength ? '✓' : '○'}</span> Mínimo 8 caracteres
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasUppercase ? 'text-green-400' : ''}`}>
+                      <span className="mr-1">{passwordStrength.hasUppercase ? '✓' : '○'}</span> Al menos una mayúscula
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasLowercase ? 'text-green-400' : ''}`}>
+                      <span className="mr-1">{passwordStrength.hasLowercase ? '✓' : '○'}</span> Al menos una minúscula
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasNumber ? 'text-green-400' : ''}`}>
+                      <span className="mr-1">{passwordStrength.hasNumber ? '✓' : '○'}</span> Al menos un número
+                    </div>
+                    <div className={`flex items-center ${passwordStrength.hasSpecial ? 'text-green-400' : ''}`}>
+                      <span className="mr-1">{passwordStrength.hasSpecial ? '✓' : '○'}</span> Al menos un carácter especial
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar contraseña</FormLabel>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10 bg-cybersec-darkgray border-cybersec-darkgray"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage className="text-cybersec-red" />
+                </FormItem>
+              )}
+            />
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-cybersec-neongreen text-black hover:bg-cybersec-neongreen/80"
+              disabled={isLoading || !form.formState.isValid || 
+                !passwordStrength.hasMinLength || 
+                !passwordStrength.hasUppercase || 
+                !passwordStrength.hasLowercase || 
+                !passwordStrength.hasNumber || 
+                !passwordStrength.hasSpecial}
+            >
+              {isLoading ? 'Actualizando...' : 'Actualizar contraseña'}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

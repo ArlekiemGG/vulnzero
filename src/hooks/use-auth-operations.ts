@@ -6,6 +6,11 @@ import { cleanupAuthState, checkPasswordStrength, isCommonPassword, getSiteURL }
 
 export const useAuthOperations = (navigate: (path: string) => void) => {
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    password?: string;
+    email?: string;
+    username?: string;
+  }>({});
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -73,26 +78,29 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
   const signUp = async (email: string, password: string, username: string) => {
     try {
       setLoading(true);
+      setValidationErrors({});
       
       // Check password strength
       const passwordCheck = checkPasswordStrength(password);
       if (!passwordCheck.isStrong) {
+        setValidationErrors(prev => ({ ...prev, password: passwordCheck.message }));
         toast({
           title: "Contraseña débil",
           description: passwordCheck.message,
           variant: "destructive"
         });
-        return;
+        return { success: false, error: 'password_validation' };
       }
 
       // Check if password is commonly used
       if (isCommonPassword(password)) {
+        setValidationErrors(prev => ({ ...prev, password: "Esta contraseña es demasiado común y puede ser fácilmente adivinada" }));
         toast({
           title: "Contraseña vulnerable",
           description: "Esta contraseña es demasiado común y puede ser fácilmente adivinada. Por favor, elija una contraseña más segura.",
           variant: "destructive"
         });
-        return;
+        return { success: false, error: 'password_common' };
       }
       
       // Clean up existing state
@@ -126,13 +134,15 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
           description: "Este correo electrónico ya está registrado. Por favor, inicia sesión.",
           variant: "default"
         });
-        return;
+        return { success: false, error: 'already_exists' };
       }
       
       toast({
         title: "Registro exitoso",
         description: "Tu cuenta ha sido creada. Revisa tu correo para confirmar tu cuenta.",
       });
+      
+      return { success: true };
     } catch (error: any) {
       console.error("Error en el registro:", error);
       toast({
@@ -140,6 +150,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         description: error.message || "Ha ocurrido un error durante el registro",
         variant: "destructive"
       });
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
@@ -257,24 +268,26 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       // Check password strength
       const passwordCheck = checkPasswordStrength(newPassword);
       if (!passwordCheck.isStrong) {
+        setValidationErrors(prev => ({ ...prev, password: passwordCheck.message }));
         toast({
           title: "Contraseña débil",
           description: passwordCheck.message,
           variant: "destructive",
           duration: 5000
         });
-        return;
+        return { success: false };
       }
 
       // Check if password is commonly used
       if (isCommonPassword(newPassword)) {
+        setValidationErrors(prev => ({ ...prev, password: "Esta contraseña es demasiado común" }));
         toast({
           title: "Contraseña vulnerable",
           description: "Esta contraseña es demasiado común y puede ser fácilmente adivinada. Por favor, elija una contraseña más segura.",
           variant: "destructive",
           duration: 5000
         });
-        return;
+        return { success: false };
       }
       
       console.log("Updating password...");
@@ -292,6 +305,7 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
       });
       
       navigate('/dashboard');
+      return { success: true };
     } catch (error: any) {
       console.error("Error updating password:", error);
       toast({
@@ -300,11 +314,13 @@ export const useAuthOperations = (navigate: (path: string) => void) => {
         variant: "destructive",
         duration: 5000
       });
+      return { success: false };
     }
   };
 
   return {
     loading,
+    validationErrors,
     signIn,
     signUp,
     signInWithGithub,
