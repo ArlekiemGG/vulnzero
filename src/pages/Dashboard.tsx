@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Database, Trophy, Flag, Shield, Code, User, Activity } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
@@ -18,7 +19,7 @@ import { ActivityService } from '@/components/dashboard/ActivityService';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
 import { BadgeService } from '@/components/dashboard/BadgeService';
 
-// Mock data para máquinas recomendadas
+// Mock data para máquinas recomendadas - now with consistent hasActiveSession property like on machines page
 const recommendedMachines = [
   {
     id: "machine1",
@@ -31,7 +32,8 @@ const recommendedMachines = [
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=320&auto=format&fit=crop",
     osType: "linux" as const,
-    featured: true
+    featured: true,
+    hasActiveSession: false
   },
   {
     id: "machine2",
@@ -43,7 +45,8 @@ const recommendedMachines = [
     solvedBy: 842,
     userProgress: 45,
     image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=320&auto=format&fit=crop",
-    osType: "linux" as const
+    osType: "linux" as const,
+    hasActiveSession: false
   },
   {
     id: "machine3",
@@ -55,7 +58,8 @@ const recommendedMachines = [
     solvedBy: 356,
     userProgress: 0,
     image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=320&auto=format&fit=crop",
-    osType: "windows" as const
+    osType: "windows" as const,
+    hasActiveSession: false
   }
 ];
 
