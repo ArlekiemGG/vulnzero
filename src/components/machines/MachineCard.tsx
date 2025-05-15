@@ -69,7 +69,7 @@ const MachineCard: React.FC<MachineProps> = ({
   console.log(`Rendering MachineCard for machine: ${name} with ID: ${id}`);
 
   return (
-    <Card className={`bg-cybersec-darkgray ${borderClass} transition-all duration-300`}>
+    <Card className={`bg-cybersec-darkgray ${borderClass} transition-all duration-300 flex flex-col h-full`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-cybersec-neongreen flex items-center space-x-2">
@@ -84,7 +84,7 @@ const MachineCard: React.FC<MachineProps> = ({
           <DifficultyBadge difficulty={difficulty} />
         </div>
       </CardHeader>
-      <CardContent className="pb-4">
+      <CardContent className="pb-4 flex-1">
         <div className="mb-4">
           <AspectRatio ratio={16 / 9} className="rounded-md overflow-hidden bg-cybersec-black">
             <img 
@@ -142,7 +142,7 @@ const MachineCard: React.FC<MachineProps> = ({
           )}
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="mt-auto">
         <Button 
           className={`w-full ${
             hasActiveSession 
