@@ -219,15 +219,23 @@ export const CTFService = {
         throw error;
       }
       
-      // Log the activity for the user
-      await ActivityService.logActivity(
+      // Log the activity for the user - modificamos para asegurar que se crea la actividad correctamente
+      const activityResult = await ActivityService.logActivity(
         userId, 
         'ctf_registration', 
         `Registro en CTF: ${ctfName}`, 
         10  // Award some points for registering
       );
       
-      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}`);
+      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}, activity logged: ${activityResult}`);
+      
+      // Actualizamos manualmente los puntos del usuario para asegurarnos que se actualiza
+      await supabase
+        .from('profiles')
+        .update({ 
+          points: supabase.rpc('increment', { value: 10 }) 
+        })
+        .eq('id', userId);
       
       return { success: true, registrationId: data.id };
     } catch (error) {

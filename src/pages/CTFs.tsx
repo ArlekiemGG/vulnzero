@@ -46,106 +46,106 @@ const CTFs = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch CTFs data
+      const [activeCTFsData, pastCTFsData, leaderboardData] = await Promise.all([
+        CTFService.getActiveCTFs(),
+        CTFService.getPastCTFs(),
+        CTFService.getLeaderboard()
+      ]);
+      
+      // If user is logged in, load their registrations and mark which CTFs they're registered for
+      let userRegs: CTFRegistration[] = [];
+      if (user) {
+        userRegs = await loadUserRegistrations();
         
-        // Fetch CTFs data
-        const [activeCTFsData, pastCTFsData, leaderboardData] = await Promise.all([
-          CTFService.getActiveCTFs(),
-          CTFService.getPastCTFs(),
-          CTFService.getLeaderboard()
-        ]);
-        
-        // If user is logged in, load their registrations and mark which CTFs they're registered for
-        let userRegs: CTFRegistration[] = [];
-        if (user) {
-          userRegs = await loadUserRegistrations();
+        // Mark which CTFs the user is registered for
+        for (const ctf of activeCTFsData) {
+          const isRegistered = userRegs.some(reg => reg.ctf_id === ctf.id);
+          ctf.registered = isRegistered;
           
-          // Mark which CTFs the user is registered for
-          for (const ctf of activeCTFsData) {
-            const isRegistered = userRegs.some(reg => reg.ctf_id === ctf.id);
-            ctf.registered = isRegistered;
-            
-            // Store the registration ID for reference
-            const registration = userRegs.find(reg => reg.ctf_id === ctf.id);
-            if (registration) {
-              ctf.registrationId = registration.id;
-            }
+          // Store the registration ID for reference
+          const registration = userRegs.find(reg => reg.ctf_id === ctf.id);
+          if (registration) {
+            ctf.registrationId = registration.id;
           }
         }
-        
-        setActiveCTFs(activeCTFsData);
-        setPastCTFs(pastCTFsData);
-        
-        // Mark current user in leaderboard if present
-        if (user) {
-          const updatedLeaderboard = [...leaderboardData];
-          
-          // Find if current user is in the top 5
-          const currentUserIndex = updatedLeaderboard.findIndex(
-            entry => entry.name === localStorage.getItem('user_username')
-          );
-          
-          if (currentUserIndex >= 0) {
-            updatedLeaderboard[currentUserIndex].isCurrentUser = true;
-          } else {
-            // Add current user rank at the bottom if not in top 5
-            try {
-              const { data: userProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-              if (userProfile) {
-                // Get user rank
-                const { count: userRank } = await supabase
-                  .from('profiles')
-                  .select('*', { count: 'exact', head: true })
-                  .gt('points', userProfile.points || 0);
-
-                // Create a display username
-                let displayName = userProfile.username || `Usuario`;
-                
-                if (displayName.includes('@') && displayName.includes('.')) {
-                  displayName = displayName.split('@')[0];
-                }
-
-                updatedLeaderboard.push({
-                  rank: (userRank || 0) + 1,
-                  name: displayName,
-                  points: userProfile.points || 0,
-                  solved: userProfile.solved_machines || 0,
-                  isCurrentUser: true
-                });
-              }
-            } catch (error) {
-              console.error("Error getting user rank:", error);
-            }
-          }
-          
-          setLeaderboard(updatedLeaderboard);
-        } else {
-          setLeaderboard(leaderboardData);
-        }
-        
-        // For now we don't set any active CTF
-        setUserActiveCTF(null);
-      } catch (error) {
-        console.error('Error fetching CTF data:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los datos de los CTFs.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
       }
-    };
+      
+      setActiveCTFs(activeCTFsData);
+      setPastCTFs(pastCTFsData);
+      
+      // Mark current user in leaderboard if present
+      if (user) {
+        const updatedLeaderboard = [...leaderboardData];
+        
+        // Find if current user is in the top 5
+        const currentUserIndex = updatedLeaderboard.findIndex(
+          entry => entry.name === localStorage.getItem('user_username')
+        );
+        
+        if (currentUserIndex >= 0) {
+          updatedLeaderboard[currentUserIndex].isCurrentUser = true;
+        } else {
+          // Add current user rank at the bottom if not in top 5
+          try {
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
 
-    fetchData();
+            if (userProfile) {
+              // Get user rank
+              const { count: userRank } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .gt('points', userProfile.points || 0);
+
+              // Create a display username
+              let displayName = userProfile.username || `Usuario`;
+              
+              if (displayName.includes('@') && displayName.includes('.')) {
+                displayName = displayName.split('@')[0];
+              }
+
+              updatedLeaderboard.push({
+                rank: (userRank || 0) + 1,
+                name: displayName,
+                points: userProfile.points || 0,
+                solved: userProfile.solved_machines || 0,
+                isCurrentUser: true
+              });
+            }
+          } catch (error) {
+            console.error("Error getting user rank:", error);
+          }
+        }
+        
+        setLeaderboard(updatedLeaderboard);
+      } else {
+        setLeaderboard(leaderboardData);
+      }
+      
+      // For now we don't set any active CTF
+      setUserActiveCTF(null);
+    } catch (error) {
+      console.error('Error fetching CTF data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos de los CTFs.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, [user]);
 
   const handleRegisterCTF = async (ctfId: number) => {
@@ -179,6 +179,11 @@ const CTFs = () => {
           description: "Te has registrado correctamente en el CTF.",
           variant: "default"
         });
+        
+        // Refrescar toda la información del usuario para que se muestre actualizada
+        setTimeout(() => {
+          loadData();
+        }, 1000);
       } else {
         throw new Error("No se pudo completar el registro");
       }

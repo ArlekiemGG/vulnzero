@@ -57,7 +57,7 @@ export const ActivityService = {
         throw error;
       }
       
-      console.log('Activities fetched:', data?.length || 0);
+      console.log('Activities fetched:', data?.length || 0, data);
       
       if (!data || data.length === 0) {
         console.log('No activities found');
@@ -113,23 +113,36 @@ export const ActivityService = {
       
       console.log(`Logging new activity: ${type} - ${title} - ${points} points`);
       
-      // Log the new activity
-      const { data, error } = await supabase.rpc(
-        'log_user_activity',
-        {
-          p_user_id: userId,
-          p_type: type,
-          p_title: title,
-          p_points: points
-        }
-      );
+      // Cambiamos para usar insert directo en lugar de rpc para evitar problemas
+      const { data, error } = await supabase
+        .from('user_activities')
+        .insert({
+          user_id: userId,
+          type: type,
+          title: title,
+          points: points
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error logging activity:', error);
         throw error;
       }
       
-      console.log('Activity logged successfully');
+      // Si hay puntos, actualizamos el perfil del usuario
+      if (points > 0) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ points: supabase.rpc('increment', { value: points }) })
+          .eq('id', userId);
+          
+        if (updateError) {
+          console.error('Error updating user points:', updateError);
+        }
+      }
+      
+      console.log('Activity logged successfully:', data.id);
       return true;
     } catch (error) {
       console.error('Error al registrar actividad:', error);
