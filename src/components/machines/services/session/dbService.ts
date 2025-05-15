@@ -165,9 +165,14 @@ export const MachineSessionDbService = {
       throw fetchError;
     }
     
+    // Ensure connection_info is an object before trying to spread it
+    const currentConnectionInfo = typeof currentSession.connection_info === 'object' && 
+                                currentSession.connection_info !== null ? 
+                                currentSession.connection_info : {};
+    
     // Combinar la información existente con los nuevos detalles
     const updatedConnectionInfo = {
-      ...(currentSession.connection_info || {}),
+      ...currentConnectionInfo,
       services,
       vulnerabilities
     };
