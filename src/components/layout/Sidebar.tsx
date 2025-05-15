@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, Database, Book, Calendar, 
-  Flag, Activity
+  Flag, Activity, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -56,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
   const menuItems = [
     { icon: <Trophy className="h-4 w-4" />, label: 'Leaderboard', path: '/leaderboard' },
     { icon: <Database className="h-4 w-4" />, label: 'Máquinas', path: '/machines' },
+    { icon: <GraduationCap className="h-4 w-4" />, label: 'Cursos', path: '/courses' },
     { icon: <Calendar className="h-4 w-4" />, label: 'Desafíos', path: '/challenges' },
     { icon: <Flag className="h-4 w-4" />, label: 'CTFs', path: '/ctfs' },
   ];

@@ -47,11 +47,13 @@ const Navbar = () => {
     ? [
         { name: 'Dashboard', path: '/dashboard' },
         { name: 'Máquinas', path: '/machines' },
+        { name: 'Cursos', path: '/courses' },
         { name: 'Leaderboard', path: '/leaderboard' },
         { name: 'Desafíos', path: '/challenges' },
       ]
     : [
         { name: 'Inicio', path: '/' },
+        { name: 'Cursos', path: '/courses' },
       ];
 
   return (
