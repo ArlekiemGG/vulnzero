@@ -1,5 +1,6 @@
 
 // Tipos para la API de gestión de máquinas
+import { Json } from '@/integrations/supabase/types';
 
 // Respuesta de la API al solicitar una máquina
 export interface ApiMachineRequestResponse {
@@ -27,12 +28,25 @@ export interface ApiMachineStatusResponse {
   };
 }
 
+// Type that represents the allowed JSON structure for connection_info
+export interface MachineConnectionInfo {
+  puertoSSH?: number;
+  username?: string;
+  password?: string;
+  sshCommand?: string;
+  maxTimeMinutes?: number;
+  services?: MachineService[];
+  vulnerabilities?: MachineVulnerability[];
+  [key: string]: any; // Allow additional properties to be compatible with Json type
+}
+
 // Servicios detectados en la máquina virtual
 export interface MachineService {
   nombre: string;
   puerto: number;
   estado: string;
   version?: string;
+  [key: string]: any; // Allow additional properties to be compatible with Json type
 }
 
 // Vulnerabilidades detectadas en la máquina
@@ -41,6 +55,7 @@ export interface MachineVulnerability {
   severidad: 'baja' | 'media' | 'alta' | 'crítica';
   descripcion?: string;
   cve?: string;
+  [key: string]: any; // Allow additional properties to be compatible with Json type
 }
 
 // Respuesta de la API al liberar una máquina
@@ -62,7 +77,7 @@ export interface MachineSession {
   expiresAt: string;
   terminatedAt?: string;
   remainingTimeMinutes?: number;
-  connectionInfo?: Record<string, any>;
+  connectionInfo?: MachineConnectionInfo;
   machineDetails?: any;
   services?: MachineService[];
   vulnerabilities?: MachineVulnerability[];

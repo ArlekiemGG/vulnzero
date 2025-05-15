@@ -1,7 +1,12 @@
 
 import { MachineApi } from './services/session/api';
 import { MachineSessionDbService, mapDbSessionToMachineSession } from './services/session/dbService';
-import { MachineSession, MachineService, MachineVulnerability } from './services/session/types';
+import { 
+  MachineSession, 
+  MachineService, 
+  MachineVulnerability,
+  MachineConnectionInfo 
+} from './services/session/types';
 
 export type { MachineSession } from './services/session/types';
 
@@ -104,16 +109,16 @@ export const MachineSessionService = {
         
         // Add services and vulnerabilities if they exist in connection_info
         if (session.connection_info && typeof session.connection_info === 'object') {
+          const connectionInfo = session.connection_info as MachineConnectionInfo;
+          
           // Check if connection_info has services property and it's an array
-          if (session.connection_info.services && 
-              Array.isArray(session.connection_info.services)) {
-            machineSession.services = session.connection_info.services;
+          if (connectionInfo.services && Array.isArray(connectionInfo.services)) {
+            machineSession.services = connectionInfo.services;
           }
           
           // Check if connection_info has vulnerabilities property and it's an array
-          if (session.connection_info.vulnerabilities && 
-              Array.isArray(session.connection_info.vulnerabilities)) {
-            machineSession.vulnerabilities = session.connection_info.vulnerabilities;
+          if (connectionInfo.vulnerabilities && Array.isArray(connectionInfo.vulnerabilities)) {
+            machineSession.vulnerabilities = connectionInfo.vulnerabilities;
           }
         }
         

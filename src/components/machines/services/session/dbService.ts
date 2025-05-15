@@ -1,8 +1,9 @@
 
 // Operaciones de base de datos para las sesiones de máquinas
 import { supabase } from '@/integrations/supabase/client';
-import { MachineSession, MachineService, MachineVulnerability } from './types';
+import { MachineSession, MachineService, MachineVulnerability, MachineConnectionInfo } from './types';
 import { calculateRemainingTime } from '../../utils/SessionUtils';
+import { Json } from '@/integrations/supabase/types';
 
 // Helper function to map database session to MachineSession interface
 export const mapDbSessionToMachineSession = (session: any): MachineSession => {
@@ -16,7 +17,7 @@ export const mapDbSessionToMachineSession = (session: any): MachineSession => {
     ipAddress: session.ip_address,
     username: session.username,
     password: session.password,
-    connectionInfo: session.connection_info as Record<string, any>,
+    connectionInfo: session.connection_info as MachineConnectionInfo,
     startedAt: session.started_at,
     expiresAt: session.expires_at,
     terminatedAt: session.terminated_at,
@@ -114,19 +115,21 @@ export const MachineSessionDbService = {
     timeLimit: number,
     status: string = 'provisioning'
   ) => {
+    const connectionInfo: MachineConnectionInfo = {
+      puertoSSH: sshPort,
+      username: username,
+      password: password,
+      sshCommand: `ssh ${username}@${ipAddress} -p ${sshPort}`,
+      maxTimeMinutes: timeLimit / 60
+    };
+
     const { data: sessionData, error } = await supabase
       .from('machine_sessions')
       .update({
         session_id: sessionId,
         ip_address: ipAddress,
         status: status,
-        connection_info: {
-          puertoSSH: sshPort,
-          username: username,
-          password: password,
-          sshCommand: `ssh ${username}@${ipAddress} -p ${sshPort}`,
-          maxTimeMinutes: timeLimit / 60
-        },
+        connection_info: connectionInfo as Json,
         username: username,
         password: password,
         expires_at: new Date(Date.now() + (timeLimit * 1000)).toISOString(),
@@ -167,11 +170,11 @@ export const MachineSessionDbService = {
     
     // Ensure connection_info is an object before trying to spread it
     const currentConnectionInfo = typeof currentSession.connection_info === 'object' && 
-                                currentSession.connection_info !== null ? 
-                                currentSession.connection_info : {};
+                               currentSession.connection_info !== null ? 
+                               currentSession.connection_info as MachineConnectionInfo : {};
     
     // Combinar la información existente con los nuevos detalles
-    const updatedConnectionInfo = {
+    const updatedConnectionInfo: MachineConnectionInfo = {
       ...currentConnectionInfo,
       services,
       vulnerabilities
@@ -182,7 +185,7 @@ export const MachineSessionDbService = {
       .from('machine_sessions')
       .update({
         status,
-        connection_info: updatedConnectionInfo,
+        connection_info: updatedConnectionInfo as Json,
         updated_at: new Date().toISOString()
       })
       .eq('id', sessionDbId)
