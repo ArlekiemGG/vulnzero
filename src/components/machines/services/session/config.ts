@@ -1,10 +1,6 @@
 
 // API configuration constants
-const EXTERNAL_API_URL = window.location.hostname.includes("localhost") 
-  ? "http://localhost:5000"  // Local development
-  : window.location.hostname.includes("lovableproject.com")
-    ? "https://locviruzkdfnhusfquuc-machine-api.lovableproject.com" // Lovable preview environment
-    : "https://api.vulnzero.es"; // Production with custom domain
+const EXTERNAL_API_URL = "http://localhost:5000";
 
 // Timeout for API requests (ms)
 const API_TIMEOUT = 15000;
