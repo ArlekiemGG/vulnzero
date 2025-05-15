@@ -175,23 +175,22 @@ export const CTFService = {
     try {
       console.log(`Checking if user ${userId} is registered for CTF ${ctfId}...`);
       
-      // Use a direct query instead of RPC for checking registration status
-      const { data, error } = await supabase
-        .from('ctf_registrations')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('ctf_id', ctfId)
-        .single();
+      // Utilizar la función RPC que hemos creado (más segura)
+      const { data, error } = await supabase.rpc(
+        'is_registered_for_ctf',
+        { 
+          p_user_id: userId, 
+          p_ctf_id: ctfId 
+        }
+      );
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      if (error) {
         console.error('Error checking registration status:', error);
         return false;
       }
 
-      // If data exists, user is registered
-      const isRegistered = !!data;
-      console.log('Registration status:', isRegistered);
-      return isRegistered;
+      console.log('Registration status:', data);
+      return !!data;
     } catch (error) {
       console.error('Error checking registration status:', error);
       return false;
@@ -203,15 +202,14 @@ export const CTFService = {
     try {
       console.log(`Registering user ${userId} for CTF ${ctfId}...`);
       
-      // Insert the registration directly
-      const { data, error } = await supabase
-        .from('ctf_registrations')
-        .insert({
-          user_id: userId,
-          ctf_id: ctfId
-        })
-        .select()
-        .single();
+      // Utilizar la función RPC que hemos creado
+      const { data, error } = await supabase.rpc(
+        'register_for_ctf',
+        { 
+          p_user_id: userId, 
+          p_ctf_id: ctfId 
+        }
+      );
         
       if (error) {
         console.error('Error registering for CTF:', error);
@@ -234,9 +232,9 @@ export const CTFService = {
         10  // Award some points for registering
       );
       
-      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}, activity logged: ${activityResult}`);
+      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data}, activity logged: ${activityResult}`);
       
-      return { success: true, registrationId: data.id };
+      return { success: true, registrationId: data };
     } catch (error) {
       console.error('Error registering for CTF:', error);
       return { success: false };
