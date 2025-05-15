@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from './types';
 import { ActivityService } from '@/components/dashboard/ActivityService';
