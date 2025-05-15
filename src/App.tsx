@@ -12,6 +12,9 @@ import CTFs from './pages/CTFs';
 import Leaderboard from './pages/Leaderboard';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
+import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
+import LessonDetail from './pages/LessonDetail';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
@@ -76,6 +79,11 @@ function App() {
                 } />
                 
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                
+                {/* Nuevas rutas para los cursos */}
+                <Route path="/courses" element={<Courses />} />
+                <Route path="/courses/:courseId" element={<CourseDetail />} />
+                <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonDetail />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
