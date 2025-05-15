@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isTerminating, setIsTerminating] = useState(false);
+  const [isDownloadingVpn, setIsDownloadingVpn] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -75,6 +77,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
 
   const downloadVpnConfig = async () => {
     try {
+      setIsDownloadingVpn(true);
       const { success, config } = await MachineApi.downloadVpnConfig(machineSession.id);
       
       if (!success || !config) {
@@ -106,6 +109,8 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         variant: 'destructive',
         duration: 5000
       });
+    } finally {
+      setIsDownloadingVpn(false);
     }
   };
 
@@ -144,21 +149,25 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
               </div>
             </div>
             
-            {machineSession.vpnConfigAvailable && (
-              <div className="bg-cybersec-darkgray p-4 rounded-md">
-                <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">VPN Access</h3>
-                <p className="text-sm">Conéctate directamente desde tu equipo usando OpenVPN.</p>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 w-full border-cybersec-electricblue text-cybersec-electricblue"
-                  onClick={downloadVpnConfig}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar .ovpn
-                </Button>
-              </div>
-            )}
+            <div className="bg-cybersec-darkgray p-4 rounded-md">
+              <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">VPN Access</h3>
+              <p className="text-sm">Conéctate directamente desde tu equipo usando OpenVPN.</p>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full border-cybersec-electricblue text-cybersec-electricblue"
+                onClick={downloadVpnConfig}
+                disabled={isDownloadingVpn || !machineSession.vpnConfigAvailable}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloadingVpn ? "Descargando..." : "Descargar .ovpn"}
+              </Button>
+              {!machineSession.vpnConfigAvailable && (
+                <p className="text-xs text-amber-500 mt-1">
+                  La configuración VPN no está disponible para esta máquina.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -298,8 +307,22 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
       </Tabs>
       
       <CardFooter className="flex justify-between border-t border-cybersec-darkerborder pt-4">
-        <div className="text-sm text-gray-400">
-          <span>Sesión ID: <span className="font-mono text-xs">{machineSession.sessionId.substring(0, 12)}...</span></span>
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-400">
+            <span>Sesión ID: <span className="font-mono text-xs">{machineSession.sessionId.substring(0, 12)}...</span></span>
+          </div>
+          {machineSession.vpnConfigAvailable && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="border-cybersec-electricblue text-cybersec-electricblue"
+              onClick={downloadVpnConfig}
+              disabled={isDownloadingVpn}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              {isDownloadingVpn ? "Descargando..." : "VPN Config"}
+            </Button>
+          )}
         </div>
         <Button 
           variant="destructive" 
