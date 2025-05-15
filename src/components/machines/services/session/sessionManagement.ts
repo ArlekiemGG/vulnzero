@@ -34,6 +34,7 @@ export const SessionManagementService = {
       if (!apiResponse.sesionId || !apiResponse.ipAcceso || !apiResponse.puertoSSH || 
           !apiResponse.credenciales || !apiResponse.tiempoLimite) {
         console.error('API response incomplete:', apiResponse);
+        await MachineSessionDbService.markSessionAsFailed(initialSession.id);
         throw new Error('Respuesta de API incompleta');
       }
       
@@ -56,7 +57,14 @@ export const SessionManagementService = {
       console.log('Checking machine status...');
       checkAndUpdateMachineStatus(apiResponse.sesionId, initialSession.id);
 
-      return mapDbSessionToMachineSession(updatedSession);
+      const mappedSession = mapDbSessionToMachineSession(updatedSession);
+      
+      // Pass along any messages from the API
+      if (apiResponse.mensaje) {
+        mappedSession.mensaje = apiResponse.mensaje;
+      }
+      
+      return mappedSession;
     } catch (error) {
       console.error('Error requesting machine:', error);
       return null;

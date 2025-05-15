@@ -26,6 +26,12 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeout: numb
   } catch (error) {
     console.error(`Error en fetchWithTimeout para ${url}:`, error);
     clearTimeout(id);
+    
+    // If the error is due to timeout, provide a clearer message
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`La solicitud a ${url} excedió el tiempo límite de ${timeout/1000} segundos`);
+    }
+    
     throw error;
   }
 };

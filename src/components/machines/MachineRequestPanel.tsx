@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -87,15 +88,21 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
       const session = await MachineSessionService.requestMachine(user.id, id);
       console.log('Respuesta de solicitud de máquina:', session);
       
-      if (session) {
-        toast({
-          title: "Máquina solicitada",
-          description: "La máquina está siendo aprovisionada y estará lista en breve.",
-        });
-        onMachineRequested();
-      } else {
+      if (!session) {
         throw new Error("No se pudo solicitar la máquina. Verifique su conexión e intente nuevamente.");
       }
+      
+      // Check if the API returned an error
+      if (session && !session.exito && session.mensaje) {
+        throw new Error(session.mensaje);
+      }
+
+      toast({
+        title: "Máquina solicitada",
+        description: "La máquina está siendo aprovisionada y estará lista en breve.",
+      });
+      onMachineRequested();
+      
     } catch (error: any) {
       console.error('Error requesting machine:', error);
       
