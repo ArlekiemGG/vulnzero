@@ -37,6 +37,8 @@ export interface MachineConnectionInfo {
   maxTimeMinutes?: number;
   services?: MachineService[];
   vulnerabilities?: MachineVulnerability[];
+  vpnConfig?: string;  // Archivo de configuración OpenVPN
+  webTerminalEnabled?: boolean; // Si la terminal web está habilitada
   [key: string]: any; // Allow additional properties to be compatible with Json type
 }
 
@@ -81,6 +83,8 @@ export interface MachineSession {
   machineDetails?: any;
   services?: MachineService[];
   vulnerabilities?: MachineVulnerability[];
+  containerId?: string; // ID del contenedor Docker
+  vpnConfigAvailable?: boolean; // Indica si hay un archivo VPN disponible
 }
 
 // Estructura para el historial de sesiones

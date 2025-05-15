@@ -1,4 +1,3 @@
-
 // API para comunicarse con el backend de gestión de máquinas
 import { ApiMachineRequestResponse, ApiMachineStatusResponse, ApiMachineReleaseResponse } from './types';
 import { validateMachineRequestResponse, validateMachineStatusResponse, validateMachineReleaseResponse } from './validator';
@@ -43,7 +42,7 @@ export const MachineApi = {
   requestMachine: async (
     userId: string, 
     machineTypeId: string
-  ): Promise<ApiMachineRequestResponse> => {
+  ): Promise<ApiMachineRequestResponse & { containerId?: string }> => {
     try {
       console.log('Requesting machine from API:', machineTypeId, 'for user:', userId);
       
@@ -229,6 +228,48 @@ export const MachineApi = {
       return { 
         success: false, 
         output: error instanceof Error ? error.message : 'Error de comunicación con la máquina'
+      };
+    }
+  },
+  
+  /**
+   * Descarga configuración OpenVPN para conectarse a la máquina
+   */
+  downloadVpnConfig: async (sessionId: string): Promise<{ success: boolean, config?: string }> => {
+    try {
+      if (!sessionId) {
+        throw new Error('Se requiere ID de sesión');
+      }
+      
+      const response = await fetchWithTimeout(
+        `${EXTERNAL_API_URL}/api/maquinas/vpn-config?sesionId=${sessionId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+        API_TIMEOUT
+      );
+
+      if (!response.ok) {
+        throw new Error('Error al obtener la configuración VPN');
+      }
+
+      const data = await response.json();
+      
+      if (!data.exito || !data.config) {
+        throw new Error(data.mensaje || 'Configuración VPN no disponible');
+      }
+      
+      return {
+        success: true,
+        config: data.config
+      };
+    } catch (error) {
+      console.error('Error downloading VPN config:', error);
+      return { 
+        success: false
       };
     }
   }

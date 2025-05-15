@@ -1,4 +1,3 @@
-
 import { MachineApi } from './services/session/api';
 import { MachineSessionDbService, mapDbSessionToMachineSession } from './services/session/dbService';
 import { 
@@ -49,7 +48,8 @@ export const MachineSessionService = {
         apiResponse.credenciales.usuario,
         apiResponse.credenciales.password,
         apiResponse.tiempoLimite,
-        'provisioning' // Set to provisioning first, will be updated to running after machine is ready
+        'provisioning', // Set to provisioning first, will be updated to running after machine is ready
+        apiResponse.containerId // Añadimos el ID del contenedor si está disponible
       );
       console.log('Session updated:', updatedSession);
 
@@ -106,22 +106,6 @@ export const MachineSessionService = {
       // Convert DB sessions to MachineSession interface and add service info
       return sessions.map(session => {
         const machineSession = mapDbSessionToMachineSession(session);
-        
-        // Add services and vulnerabilities if they exist in connection_info
-        if (session.connection_info && typeof session.connection_info === 'object') {
-          const connectionInfo = session.connection_info as MachineConnectionInfo;
-          
-          // Check if connection_info has services property and it's an array
-          if (connectionInfo.services && Array.isArray(connectionInfo.services)) {
-            machineSession.services = connectionInfo.services;
-          }
-          
-          // Check if connection_info has vulnerabilities property and it's an array
-          if (connectionInfo.vulnerabilities && Array.isArray(connectionInfo.vulnerabilities)) {
-            machineSession.vulnerabilities = connectionInfo.vulnerabilities;
-          }
-        }
-        
         return machineSession;
       });
     } catch (error) {
@@ -184,6 +168,18 @@ export const MachineSessionService = {
     } catch (error) {
       console.error('Error fetching user session history:', error);
       return [];
+    }
+  },
+  
+  /**
+   * Obtiene la configuración VPN para una sesión específica
+   */
+  getVpnConfig: async (sessionId: string): Promise<string | null> => {
+    try {
+      return await MachineSessionDbService.getVpnConfig(sessionId);
+    } catch (error) {
+      console.error('Error getting VPN config:', error);
+      return null;
     }
   }
 };

@@ -1,4 +1,3 @@
-
 // Operaciones de base de datos para las sesiones de máquinas
 import { supabase } from '@/integrations/supabase/client';
 import { MachineSession, MachineService, MachineVulnerability, MachineConnectionInfo } from './types';
@@ -8,6 +7,7 @@ import { Json } from '@/integrations/supabase/types';
 // Helper function to map database session to MachineSession interface
 export const mapDbSessionToMachineSession = (session: any): MachineSession => {
   const remainingTimeMinutes = calculateRemainingTime(session.expires_at);
+  const connectionInfo = session.connection_info as MachineConnectionInfo | null;
   
   return {
     id: session.id,
@@ -17,14 +17,16 @@ export const mapDbSessionToMachineSession = (session: any): MachineSession => {
     ipAddress: session.ip_address,
     username: session.username,
     password: session.password,
-    connectionInfo: session.connection_info as MachineConnectionInfo,
+    connectionInfo: connectionInfo ?? undefined,
     startedAt: session.started_at,
     expiresAt: session.expires_at,
     terminatedAt: session.terminated_at,
     remainingTimeMinutes,
     machineDetails: session.machine_types,
-    services: session.connection_info?.services,
-    vulnerabilities: session.connection_info?.vulnerabilities
+    services: connectionInfo?.services,
+    vulnerabilities: connectionInfo?.vulnerabilities,
+    containerId: connectionInfo?.containerId,
+    vpnConfigAvailable: !!connectionInfo?.vpnConfig
   };
 };
 
@@ -113,15 +115,23 @@ export const MachineSessionDbService = {
     username: string,
     password: string,
     timeLimit: number,
-    status: string = 'provisioning'
+    status: string = 'provisioning',
+    containerId?: string,
+    vpnConfig?: string
   ) => {
     const connectionInfo: MachineConnectionInfo = {
       puertoSSH: sshPort,
       username: username,
       password: password,
       sshCommand: `ssh ${username}@${ipAddress} -p ${sshPort}`,
-      maxTimeMinutes: timeLimit / 60
+      maxTimeMinutes: timeLimit / 60,
+      webTerminalEnabled: true,
+      containerId: containerId
     };
+
+    if (vpnConfig) {
+      connectionInfo.vpnConfig = vpnConfig;
+    }
 
     const { data: sessionData, error } = await supabase
       .from('machine_sessions')
@@ -168,10 +178,13 @@ export const MachineSessionDbService = {
       throw fetchError;
     }
     
-    // Ensure connection_info is an object before trying to spread it
-    const currentConnectionInfo = typeof currentSession.connection_info === 'object' && 
-                               currentSession.connection_info !== null ? 
-                               currentSession.connection_info as MachineConnectionInfo : {};
+    // Asegurar que connection_info es un objeto antes de intentar expandirlo
+    let currentConnectionInfo: MachineConnectionInfo = {};
+    
+    if (currentSession.connection_info && 
+        typeof currentSession.connection_info === 'object') {
+      currentConnectionInfo = currentSession.connection_info as MachineConnectionInfo;
+    }
     
     // Combinar la información existente con los nuevos detalles
     const updatedConnectionInfo: MachineConnectionInfo = {
@@ -281,5 +294,29 @@ export const MachineSessionDbService = {
     }
 
     return data;
+  },
+
+  /**
+   * Obtiene el archivo de configuración VPN para una sesión
+   */
+  getVpnConfig: async (sessionId: string): Promise<string | null> => {
+    try {
+      const { data: session, error } = await supabase
+        .from('machine_sessions')
+        .select('connection_info')
+        .eq('id', sessionId)
+        .single();
+      
+      if (error || !session) {
+        console.error('Error fetching VPN config:', error);
+        return null;
+      }
+      
+      const connectionInfo = session.connection_info as MachineConnectionInfo;
+      return connectionInfo?.vpnConfig || null;
+    } catch (error) {
+      console.error('Error in getVpnConfig:', error);
+      return null;
+    }
   }
 };
