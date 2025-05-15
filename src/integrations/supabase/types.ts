@@ -157,6 +157,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ctf_registrations: {
+        Row: {
+          ctf_id: number
+          id: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          ctf_id: number
+          id?: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          ctf_id?: number
+          id?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       machine_hints: {
         Row: {
           content: string

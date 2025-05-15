@@ -93,10 +93,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchUserProfile();
     
-    // Subscribe to profile changes
+    // Subscribe to profile changes and activity changes
     if (user) {
-      const subscription = supabase
-        .channel('schema-db-changes')
+      // Subscribe to profile updates
+      const profileSubscription = supabase
+        .channel('schema-db-changes-profile')
         .on(
           'postgres_changes',
           {
@@ -111,9 +112,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         )
         .subscribe();
+      
+      // Subscribe to new activities (for CTF registrations, etc.)
+      const activitySubscription = supabase
+        .channel('schema-db-changes-activities')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_activities',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('New activity detected:', payload);
+            fetchUserProfile();
+          }
+        )
+        .subscribe();
         
       return () => {
-        supabase.removeChannel(subscription);
+        supabase.removeChannel(profileSubscription);
+        supabase.removeChannel(activitySubscription);
       };
     }
   }, [user]);
