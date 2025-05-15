@@ -1,6 +1,7 @@
 
 // API para comunicarse con el backend de gestión de máquinas
 import { ApiMachineRequestResponse, ApiMachineStatusResponse, ApiMachineReleaseResponse } from './types';
+import { validateMachineRequestResponse, validateMachineStatusResponse, validateMachineReleaseResponse } from './validator';
 
 // Configuración del API URL para desarrollo y producción
 const EXTERNAL_API_URL = window.location.hostname.includes("localhost") 
@@ -17,6 +18,11 @@ export const MachineApi = {
   ): Promise<ApiMachineRequestResponse> => {
     try {
       console.log('Requesting machine from API:', machineTypeId, 'for user:', userId);
+      
+      // Validar parámetros de entrada
+      if (!userId || !machineTypeId) {
+        throw new Error('Se requiere ID de usuario y tipo de máquina');
+      }
       
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
         method: 'POST',
@@ -36,6 +42,12 @@ export const MachineApi = {
       }
 
       const data = await response.json();
+      
+      // Validar la respuesta
+      if (!validateMachineRequestResponse(data)) {
+        throw new Error('La respuesta del API no contiene todos los datos necesarios');
+      }
+      
       return data;
     } catch (error) {
       console.error('Error in requestMachine API call:', error);
@@ -51,6 +63,11 @@ export const MachineApi = {
    */
   getMachineStatus: async (sessionId: string): Promise<ApiMachineStatusResponse> => {
     try {
+      // Validar parámetro de entrada
+      if (!sessionId) {
+        throw new Error('Se requiere ID de sesión');
+      }
+      
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`, {
         method: 'GET',
         headers: {
@@ -63,6 +80,12 @@ export const MachineApi = {
       }
 
       const data = await response.json();
+      
+      // Validar la respuesta
+      if (!validateMachineStatusResponse(data)) {
+        throw new Error('Respuesta de estado inválida');
+      }
+      
       return data;
     } catch (error) {
       console.error('Error checking machine status:', error);
@@ -78,6 +101,11 @@ export const MachineApi = {
    */
   releaseMachine: async (sessionId: string): Promise<ApiMachineReleaseResponse> => {
     try {
+      // Validar parámetro de entrada
+      if (!sessionId) {
+        throw new Error('Se requiere ID de sesión');
+      }
+      
       const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/liberar`, {
         method: 'POST',
         headers: {
@@ -93,6 +121,12 @@ export const MachineApi = {
       }
 
       const data = await response.json();
+      
+      // Validar la respuesta
+      if (!validateMachineReleaseResponse(data)) {
+        throw new Error('Respuesta de liberación inválida');
+      }
+      
       return data;
     } catch (error) {
       console.error('Error releasing machine:', error);
