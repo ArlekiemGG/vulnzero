@@ -1,0 +1,101 @@
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { supabase, queries } from '@/integrations/supabase/client';
+
+export interface UserStats {
+  level: number;
+  points: number;
+  pointsToNextLevel: number;
+  progress: number;
+  rank: number;
+  solvedMachines: number;
+  completedChallenges: number;
+}
+
+interface UserContextType {
+  userStats: UserStats;
+  loading: boolean;
+  refreshUserStats: () => Promise<void>;
+}
+
+const defaultUserStats: UserStats = {
+  level: 1,
+  points: 0,
+  pointsToNextLevel: 100,
+  progress: 0,
+  rank: 0,
+  solvedMachines: 0,
+  completedChallenges: 0,
+};
+
+const UserContext = createContext<UserContextType>({
+  userStats: defaultUserStats,
+  loading: true,
+  refreshUserStats: async () => {},
+});
+
+export const useUser = () => useContext(UserContext);
+
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const [userStats, setUserStats] = useState<UserStats>(defaultUserStats);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const fetchUserProfile = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (profile) {
+        // Calculate progress to next level (simple formula: need 500 points per level)
+        const pointsPerLevel = 500;
+        const currentLevelPoints = (profile.level - 1) * pointsPerLevel;
+        const nextLevelPoints = profile.level * pointsPerLevel;
+        const pointsInCurrentLevel = profile.points - currentLevelPoints;
+        const progressToNextLevel = Math.min(100, Math.round((pointsInCurrentLevel / pointsPerLevel) * 100));
+        
+        setUserStats({
+          level: profile.level || 1,
+          points: profile.points || 0,
+          pointsToNextLevel: nextLevelPoints - profile.points,
+          progress: progressToNextLevel,
+          rank: profile.rank || 0,
+          solvedMachines: profile.solved_machines || 0,
+          completedChallenges: profile.completed_challenges || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [user]);
+
+  const refreshUserStats = async () => {
+    await fetchUserProfile();
+  };
+
+  return (
+    <UserContext.Provider value={{ userStats, loading, refreshUserStats }}>
+      {children}
+    </UserContext.Provider>
+  );
+};

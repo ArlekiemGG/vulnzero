@@ -14,9 +14,10 @@ import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './contexts/AuthContext';
+import { UserProvider } from './contexts/UserContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Create a client
+// Create a client with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -32,52 +33,54 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/machines" element={
-                <ProtectedRoute>
-                  <Machines />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/machines/:machineId" element={
-                <ProtectedRoute>
-                  <MachineDetail />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/machines/:machineId/session" element={
-                <ProtectedRoute>
-                  <MachineSessionDetail />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/challenges" element={
-                <ProtectedRoute>
-                  <Challenges />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/ctfs" element={
-                <ProtectedRoute>
-                  <CTFs />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
+          <UserProvider>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/machines" element={
+                  <ProtectedRoute>
+                    <Machines />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/machines/:machineId" element={
+                  <ProtectedRoute>
+                    <MachineDetail />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/machines/:machineId/session" element={
+                  <ProtectedRoute>
+                    <MachineSessionDetail />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/challenges" element={
+                  <ProtectedRoute>
+                    <Challenges />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/ctfs" element={
+                  <ProtectedRoute>
+                    <CTFs />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+          </UserProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>
