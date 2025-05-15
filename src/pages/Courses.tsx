@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/layout/Sidebar';
+import Navbar from '@/components/layout/Navbar';
 
 const Courses: React.FC = () => {
   const { user } = useAuth();
@@ -87,6 +88,7 @@ const Courses: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <Navbar />
       <Sidebar userStats={userStats} />
       
       <main className="flex-1 pt-16 px-4 md:px-8 md:ml-64">
