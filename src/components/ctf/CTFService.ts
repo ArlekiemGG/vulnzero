@@ -166,12 +166,11 @@ export const CTFService = {
   // Check if user is registered for a CTF
   isUserRegisteredForCTF: async (userId: string, ctfId: number): Promise<boolean> => {
     try {
-      // Check registration status in the ctf_registrations table
-      const { data, error } = await supabase
-        .rpc('is_registered_for_ctf', { 
-          p_user_id: userId, 
-          p_ctf_id: ctfId 
-        });
+      // Use the function call with proper type casting
+      const { data, error } = await supabase.rpc('is_registered_for_ctf', { 
+        p_user_id: userId, 
+        p_ctf_id: ctfId 
+      });
 
       if (error) {
         console.error('Error checking registration status:', error);
@@ -203,17 +202,19 @@ export const CTFService = {
         ctfName = ctf.name;
       }
       
-      // Insert a new registration record using RPC to handle permissions properly
-      const { data, error } = await supabase
-        .rpc('register_for_ctf', {
-          p_user_id: userId,
-          p_ctf_id: ctfId
-        });
+      // Use the function call with proper type casting
+      const { data, error } = await supabase.rpc('register_for_ctf', {
+        p_user_id: userId,
+        p_ctf_id: ctfId
+      });
         
       if (error) {
         console.error('Error registering for CTF:', error);
         throw error;
       }
+      
+      // Ensure data is treated as a string for the registration ID
+      const registrationId = data as string;
       
       // Log the activity for the user
       await ActivityService.logActivity(
@@ -223,9 +224,9 @@ export const CTFService = {
         10  // Award some points for registering
       );
       
-      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data}`);
+      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${registrationId}`);
       
-      return { success: true, registrationId: data };
+      return { success: true, registrationId };
     } catch (error) {
       console.error('Error registering for CTF:', error);
       return { success: false };
@@ -235,17 +236,17 @@ export const CTFService = {
   // Get user's CTF registrations
   getUserCTFRegistrations: async (userId: string): Promise<CTFRegistration[]> => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_user_ctf_registrations', {
-          p_user_id: userId
-        });
+      const { data, error } = await supabase.rpc('get_user_ctf_registrations', {
+        p_user_id: userId
+      });
         
       if (error) {
         console.error('Error fetching user CTF registrations:', error);
         throw error;
       }
       
-      return data || [];
+      // Ensure we return a properly typed array of registrations
+      return (data as CTFRegistration[]) || [];
     } catch (error) {
       console.error('Error fetching user CTF registrations:', error);
       return [];

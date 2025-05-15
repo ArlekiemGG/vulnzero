@@ -130,10 +130,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         )
         .subscribe();
+      
+      // Subscribe to CTF registrations
+      const registrationSubscription = supabase
+        .channel('schema-db-changes-registrations')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'ctf_registrations',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('New CTF registration detected:', payload);
+            fetchUserProfile();
+          }
+        )
+        .subscribe();
         
       return () => {
         supabase.removeChannel(profileSubscription);
         supabase.removeChannel(activitySubscription);
+        supabase.removeChannel(registrationSubscription);
       };
     }
   }, [user]);
