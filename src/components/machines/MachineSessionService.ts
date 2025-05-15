@@ -1,6 +1,7 @@
+
 import { MachineApi } from './services/session/api';
 import { MachineSessionDbService, mapDbSessionToMachineSession } from './services/session/dbService';
-import { MachineSession } from './services/session/types';
+import { MachineSession, MachineService, MachineVulnerability } from './services/session/types';
 
 export type { MachineSession } from './services/session/types';
 
@@ -66,18 +67,53 @@ export const MachineSessionService = {
       // For each session, check its current status with the API
       for (const session of sessions) {
         if (session.session_id && session.session_id.indexOf('pending-') !== 0) {
+          // Obtener información completa de la sesión desde la API
           const statusResponse = await MachineApi.getMachineStatus(session.session_id);
           const currentStatus = statusResponse.activa ? 'running' : 'terminated';
           
-          if (currentStatus !== session.status) {
-            // Update status if it has changed
-            await MachineSessionDbService.updateSessionStatus(session.id, currentStatus);
+          // Si la respuesta incluye detalles de servicios y vulnerabilidades, guardarlos
+          let services: MachineService[] = [];
+          let vulnerabilities: MachineVulnerability[] = [];
+          
+          if (statusResponse.detalles) {
+            if (statusResponse.detalles.servicios) {
+              services = statusResponse.detalles.servicios;
+            }
+            
+            if (statusResponse.detalles.vulnerabilidades) {
+              vulnerabilities = statusResponse.detalles.vulnerabilidades;
+            }
+          }
+          
+          if (currentStatus !== session.status || services.length > 0 || vulnerabilities.length > 0) {
+            // Update status if it has changed and add service/vulnerability info
+            await MachineSessionDbService.updateSessionWithDetails(
+              session.id, 
+              currentStatus, 
+              services, 
+              vulnerabilities
+            );
             session.status = currentStatus;
           }
         }
       }
 
-      return sessions.map(mapDbSessionToMachineSession);
+      // Convert DB sessions to MachineSession interface and add service info
+      return sessions.map(session => {
+        const machineSession = mapDbSessionToMachineSession(session);
+        
+        // Add services and vulnerabilities if they exist in connection_info
+        if (session.connection_info) {
+          if (session.connection_info.services) {
+            machineSession.services = session.connection_info.services;
+          }
+          if (session.connection_info.vulnerabilities) {
+            machineSession.vulnerabilities = session.connection_info.vulnerabilities;
+          }
+        }
+        
+        return machineSession;
+      });
     } catch (error) {
       console.error('Error fetching user machine sessions:', error);
       return [];
@@ -92,6 +128,19 @@ export const MachineSessionService = {
     } catch (error) {
       console.error('Error checking machine status:', error);
       return 'failed';
+    }
+  },
+  
+  // Execute a command on the machine via the API
+  executeCommand: async (sessionId: string, command: string): Promise<{success: boolean, output: string}> => {
+    try {
+      return await MachineApi.executeCommand(sessionId, command);
+    } catch (error) {
+      console.error('Error executing command:', error);
+      return {
+        success: false,
+        output: error instanceof Error ? error.message : 'Error ejecutando comando'
+      };
     }
   },
 
@@ -144,9 +193,23 @@ async function checkAndUpdateMachineStatus(sessionId: string, dbSessionId: strin
     const status = statusResponse.activa ? 'running' : 'terminated';
     console.log(`Machine status: ${status}`);
     
-    // Update in database
-    await MachineSessionDbService.updateSessionStatus(dbSessionId, status);
-    console.log(`Database updated with status: ${status}`);
+    // Si hay información de servicios y vulnerabilidades, guardarla
+    let services: MachineService[] = [];
+    let vulnerabilities: MachineVulnerability[] = [];
+    
+    if (statusResponse.detalles) {
+      if (statusResponse.detalles.servicios) {
+        services = statusResponse.detalles.servicios;
+      }
+      
+      if (statusResponse.detalles.vulnerabilidades) {
+        vulnerabilities = statusResponse.detalles.vulnerabilidades;
+      }
+    }
+    
+    // Update in database with machine details
+    await MachineSessionDbService.updateSessionWithDetails(dbSessionId, status, services, vulnerabilities);
+    console.log(`Database updated with status: ${status} and machine details`);
   } catch (error) {
     console.error('Error updating machine status:', error);
   }

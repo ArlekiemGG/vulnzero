@@ -137,7 +137,12 @@ export const MachineApi = {
       console.error('Error checking machine status:', error);
       return { 
         activa: false, 
-        mensaje: error instanceof Error ? error.message : 'Error desconocido al verificar estado'
+        mensaje: error instanceof Error ? error.message : 'Error desconocido al verificar estado',
+        estado: 'error',
+        detalles: {
+          servicios: [],
+          vulnerabilidades: []
+        }
       };
     }
   },
@@ -183,6 +188,47 @@ export const MachineApi = {
       return { 
         exito: false, 
         mensaje: error instanceof Error ? error.message : 'Error desconocido al liberar máquina'
+      };
+    }
+  },
+  
+  /**
+   * Ejecuta un comando en la máquina vía SSH
+   */
+  executeCommand: async (sessionId: string, command: string): Promise<{success: boolean, output: string}> => {
+    try {
+      // Validar parámetros de entrada
+      if (!sessionId || !command) {
+        throw new Error('Se requiere ID de sesión y comando');
+      }
+      
+      const response = await fetchWithTimeout(
+        `${EXTERNAL_API_URL}/api/maquinas/comando`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId,
+            command
+          }),
+        },
+        API_TIMEOUT * 2 // Comandos pueden tardar más
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error al ejecutar comando: ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error executing command:', error);
+      return { 
+        success: false, 
+        output: error instanceof Error ? error.message : 'Error de comunicación con la máquina'
       };
     }
   }

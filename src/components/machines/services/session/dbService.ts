@@ -1,6 +1,7 @@
+
 // Operaciones de base de datos para las sesiones de máquinas
 import { supabase } from '@/integrations/supabase/client';
-import { MachineSession } from './types';
+import { MachineSession, MachineService, MachineVulnerability } from './types';
 import { calculateRemainingTime } from '../../utils/SessionUtils';
 
 // Helper function to map database session to MachineSession interface
@@ -20,7 +21,9 @@ export const mapDbSessionToMachineSession = (session: any): MachineSession => {
     expiresAt: session.expires_at,
     terminatedAt: session.terminated_at,
     remainingTimeMinutes,
-    machineDetails: session.machine_types
+    machineDetails: session.machine_types,
+    services: session.connection_info?.services,
+    vulnerabilities: session.connection_info?.vulnerabilities
   };
 };
 
@@ -139,6 +142,54 @@ export const MachineSessionDbService = {
     }
 
     return sessionData;
+  },
+  
+  /**
+   * Actualiza una sesión con detalles de servicios y vulnerabilidades
+   */
+  updateSessionWithDetails: async (
+    sessionDbId: string,
+    status: string,
+    services: MachineService[] = [],
+    vulnerabilities: MachineVulnerability[] = []
+  ) => {
+    // Primero obtener los datos actuales de la sesión
+    const { data: currentSession, error: fetchError } = await supabase
+      .from('machine_sessions')
+      .select('connection_info')
+      .eq('id', sessionDbId)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching session details:', fetchError);
+      throw fetchError;
+    }
+    
+    // Combinar la información existente con los nuevos detalles
+    const updatedConnectionInfo = {
+      ...(currentSession.connection_info || {}),
+      services,
+      vulnerabilities
+    };
+    
+    // Actualizar la sesión con los nuevos detalles
+    const { data, error } = await supabase
+      .from('machine_sessions')
+      .update({
+        status,
+        connection_info: updatedConnectionInfo,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionDbId)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error updating session with details:', error);
+      throw error;
+    }
+    
+    return data;
   },
 
   /**

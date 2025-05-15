@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 import docker
 import uuid
@@ -25,7 +26,37 @@ imagenes_disponibles = {
     "01": {
         "image": "zephius/vulnnet:latest",
         "ports": {"22/tcp": None, "80/tcp": None},
-        "name": "VulnNet"
+        "name": "VulnNet",
+        "servicios": [
+            {"nombre": "ssh", "puerto": 22, "estado": "open", "version": "OpenSSH 7.6p1 Ubuntu 4ubuntu0.3"},
+            {"nombre": "http", "puerto": 80, "estado": "open", "version": "Apache httpd 2.4.29"}
+        ],
+        "vulnerabilidades": [
+            {
+                "nombre": "Remote Code Execution in File Upload",
+                "severidad": "alta",
+                "descripcion": "La aplicación web permite subir archivos sin validación adecuada",
+                "cve": "CVE-2021-12345"
+            }
+        ]
+    },
+    "02": {
+        "image": "zephius/laborinet:latest",
+        "ports": {"22/tcp": None, "80/tcp": None, "3306/tcp": None},
+        "name": "LaBorInet",
+        "servicios": [
+            {"nombre": "ssh", "puerto": 22, "estado": "open", "version": "OpenSSH 8.2p1 Ubuntu"},
+            {"nombre": "http", "puerto": 80, "estado": "open", "version": "nginx 1.18.0"},
+            {"nombre": "mysql", "puerto": 3306, "estado": "open", "version": "MySQL 5.7.33"}
+        ],
+        "vulnerabilidades": [
+            {
+                "nombre": "SQL Injection",
+                "severidad": "alta",
+                "descripcion": "Aplicación web vulnerable a SQL injection en parámetros de login",
+                "cve": "CVE-2022-45678"
+            }
+        ]
     }
 }
 
@@ -34,6 +65,10 @@ flags = {
     "01": {
         "user": os.environ.get('VULNNET_USER_FLAG', 'flag{user_b457c83d29a961609a529a539}'),
         "root": os.environ.get('VULNNET_ROOT_FLAG', 'flag{root_7d89c01a53e7f956340a4d83}')
+    },
+    "02": {
+        "user": os.environ.get('LABORINET_USER_FLAG', 'flag{user_a8b72cd44e9152f37dac8e74}'),
+        "root": os.environ.get('LABORINET_ROOT_FLAG', 'flag{root_f9e78d2c4a153b68e902d7a5}')
     }
 }
 
@@ -120,9 +155,11 @@ def solicitar_maquina():
         sesiones_activas[sesion_id] = {
             'contenedor_id': contenedor_id,
             'usuario_id': usuario_id,
+            'tipo_maquina': tipo_maquina,  # Guardamos para referencia de servicios/vulnerabilidades
             'inicio': time.time(),
             'duracion_max': tiempo_limite,
-            'puerto_ssh': puerto_ssh
+            'puerto_ssh': puerto_ssh,
+            'ip_acceso': ip_acceso
         }
         
         return jsonify({
@@ -192,11 +229,84 @@ def estado_maquina():
             print(f"Error al verificar estado: {e}")
             estado = "unknown"
     
+    # Obtener información sobre servicios y vulnerabilidades
+    detalles = {}
+    tipo_maquina = sesion.get('tipo_maquina')
+    
+    if tipo_maquina in imagenes_disponibles:
+        config_maquina = imagenes_disponibles[tipo_maquina]
+        detalles = {
+            "servicios": config_maquina.get("servicios", []),
+            "vulnerabilidades": config_maquina.get("vulnerabilidades", [])
+        }
+    
     return jsonify({
         "activa": tiempo_restante > 0 and estado == "running", 
         "tiempoRestante": int(tiempo_restante),
-        "status": estado
+        "estado": estado,
+        "detalles": detalles
     })
+
+@app.route('/api/maquinas/comando', methods=['POST'])
+def ejecutar_comando():
+    """Endpoint para ejecutar un comando en la máquina"""
+    datos = request.json
+    sesion_id = datos.get('sessionId')
+    comando = datos.get('command')
+    
+    if not sesion_id or not comando:
+        return jsonify({"success": False, "output": "Faltan parámetros obligatorios"})
+    
+    if sesion_id not in sesiones_activas:
+        return jsonify({"success": False, "output": "La sesión no existe o ha expirado"})
+    
+    sesion = sesiones_activas[sesion_id]
+    
+    # Aquí normalmente ejecutaríamos el comando via SSH en la máquina real
+    # Para la demostración, simulamos salidas realistas para comandos comunes
+    
+    # Respuestas para comandos comunes
+    if comando.startswith('ls'):
+        return jsonify({
+            "success": True,
+            "output": "Desktop\nDocuments\nDownloads\nMusic\nPictures\nPublic\nTemplates\nVideos\nuser.txt"
+        })
+    elif comando.startswith('cat /etc/passwd'):
+        return jsonify({
+            "success": True,
+            "output": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nsync:x:4:65534:sync:/bin:/bin/sync\ngames:x:5:60:games:/usr/games:/usr/sbin/nologin\nman:x:6:12:man:/var/cache/man:/usr/sbin/nologin\nlp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin\nmail:x:8:8:mail:/var/mail:/usr/sbin/nologin\nnews:x:9:9:news:/var/spool/news:/usr/sbin/nologin\nuucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin\nproxy:x:13:13:proxy:/bin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nbackup:x:34:34:backup:/var/backups:/usr/sbin/nologin\nlist:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin\nirc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin\ngnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\nsystemd-network:x:100:102:systemd Network Management,,,:/run/systemd:/usr/sbin/nologin\nsystemd-resolve:x:101:103:systemd Resolver,,,:/run/systemd:/usr/sbin/nologin\nsystemd-timesync:x:102:104:systemd Time Synchronization,,,:/run/systemd:/usr/sbin/nologin\nmessagebus:x:103:106::/nonexistent:/usr/sbin/nologin\nsyslog:x:104:110::/home/syslog:/usr/sbin/nologin\n_apt:x:105:65534::/nonexistent:/usr/sbin/nologin\ntss:x:106:111:TPM software stack,,,:/var/lib/tpm:/bin/false\nuuidd:x:107:112::/run/uuidd:/usr/sbin/nologin\ntcpdump:x:108:113::/nonexistent:/usr/sbin/nologin\nlandscape:x:109:115::/var/lib/landscape:/usr/sbin/nologin\npollinate:x:110:1::/var/cache/pollinate:/bin/false\nusbmux:x:111:46:usbmux daemon,,,:/var/lib/usbmux:/usr/sbin/nologin\nsshd:x:112:65534::/run/sshd:/usr/sbin/nologin\nsystemd-coredump:x:999:999:systemd Core Dumper:/:/usr/sbin/nologin\nhacker:x:1000:1000:hacker:/home/hacker:/bin/bash\nlxd:x:998:100::/var/snap/lxd/common/lxd:/bin/false\nmysql:x:113:117:MySQL Server,,,:/nonexistent:/bin/false"
+        })
+    elif comando.startswith('whoami'):
+        return jsonify({
+            "success": True,
+            "output": "hacker"
+        })
+    elif comando.startswith('id'):
+        return jsonify({
+            "success": True,
+            "output": "uid=1000(hacker) gid=1000(hacker) groups=1000(hacker),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),116(lxd)"
+        })
+    elif comando.startswith('ps'):
+        return jsonify({
+            "success": True,
+            "output": "  PID TTY          TIME CMD\n 3251 pts/0    00:00:00 bash\n 3293 pts/0    00:00:00 ps\n"
+        })
+    elif comando.startswith('uname'):
+        return jsonify({
+            "success": True,
+            "output": "Linux vulnzero-machine 5.4.0-144-generic #161-Ubuntu SMP Fri Feb 3 14:49:04 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux"
+        })
+    elif comando == 'pwd':
+        return jsonify({
+            "success": True,
+            "output": "/home/hacker"
+        })
+    else:
+        # Para comandos desconocidos, devolver mensaje de error realista
+        return jsonify({
+            "success": True,
+            "output": f"bash: {comando.split()[0]}: command not found"
+        })
 
 @app.route('/api/flags/validate', methods=['POST'])
 def validate_flag():
