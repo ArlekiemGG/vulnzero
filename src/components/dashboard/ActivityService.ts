@@ -5,7 +5,7 @@ import { Tables } from '@/integrations/supabase/client';
 // Define the activity type structure
 export interface UserActivity {
   id: string;
-  type: 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up' | 'course_enrolled';
+  type: 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up' | 'course_enrolled' | 'ctf_registration';
   title: string;
   date: string;
   points: number;
@@ -34,8 +34,15 @@ export const ActivityService = {
         .eq('user_id', userId)
         // Only get activities with points (real gamified tasks)
         .gt('points', 0)
-        // Only get activities for completed tasks
-        .in('type', ['machine_completed', 'badge_earned', 'challenge_completed', 'level_up', 'course_enrolled'])
+        // Only get activities for completed tasks and registrations
+        .in('type', [
+          'machine_completed', 
+          'badge_earned', 
+          'challenge_completed', 
+          'level_up', 
+          'course_enrolled',
+          'ctf_registration'
+        ])
         // Filter out any test/demo data
         .not('title', 'ilike', '%Test%')
         .not('title', 'ilike', '%WebIntrusion%')
@@ -68,7 +75,7 @@ export const ActivityService = {
       return uniqueActivities.map(activity => ({
         id: activity.id,
         user_id: activity.user_id,
-        type: activity.type as 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up' | 'course_enrolled',
+        type: activity.type as UserActivity['type'],
         title: activity.title,
         date: formatDate(activity.created_at),
         points: activity.points
@@ -84,7 +91,7 @@ export const ActivityService = {
    */
   logActivity: async (
     userId: string, 
-    type: 'machine_completed' | 'badge_earned' | 'challenge_completed' | 'level_up' | 'course_enrolled',
+    type: UserActivity['type'],
     title: string,
     points: number = 0
   ): Promise<boolean> => {
@@ -104,6 +111,8 @@ export const ActivityService = {
         return true;
       }
       
+      console.log(`Logging new activity: ${type} - ${title} - ${points} points`);
+      
       // Log the new activity
       const { data, error } = await supabase.rpc(
         'log_user_activity',
@@ -115,7 +124,12 @@ export const ActivityService = {
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error logging activity:', error);
+        throw error;
+      }
+      
+      console.log('Activity logged successfully');
       return true;
     } catch (error) {
       console.error('Error al registrar actividad:', error);

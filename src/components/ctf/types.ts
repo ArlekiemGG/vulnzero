@@ -17,6 +17,7 @@ export interface CTF {
   image: string;
   rank?: number;
   totalParticipants?: number;
+  registrationId?: string; // Added to track registration
 }
 
 export interface LeaderboardEntry {
@@ -41,4 +42,11 @@ export interface CTFSession {
   challenges: number;
   participants: number;
   difficulty: string;
+}
+
+export interface CTFRegistration {
+  id: string;
+  user_id: string;
+  ctf_id: number;
+  registered_at: string;
 }

@@ -16,12 +16,12 @@ import CTFCard from '@/components/ctf/CTFCard';
 import CTFLeaderboardCard from '@/components/ctf/CTFLeaderboardCard';
 import CTFGuideCard from '@/components/ctf/CTFGuideCard';
 import CTFSessionCard from '@/components/ctf/CTFSessionCard';
-import { CTF, LeaderboardEntry, CTFSession } from '@/components/ctf/types';
+import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from '@/components/ctf/types';
 import { CTFCardSkeleton, CTFSessionSkeleton } from '@/components/ui/loading-skeleton';
 
 const CTFs = () => {
   const { user } = useAuth();
-  const { userStats, loading: userLoading } = useUser();
+  const { userStats, refreshUserStats, loading: userLoading } = useUser();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState<boolean>(true);
@@ -29,6 +29,22 @@ const CTFs = () => {
   const [pastCTFs, setPastCTFs] = useState<CTF[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userActiveCTF, setUserActiveCTF] = useState<CTFSession | null>(null);
+  const [userRegistrations, setUserRegistrations] = useState<CTFRegistration[]>([]);
+
+  // Load user registrations
+  const loadUserRegistrations = async () => {
+    if (!user) return [];
+    try {
+      console.log('Loading user registrations...');
+      const registrations = await CTFService.getUserCTFRegistrations(user.id);
+      console.log('User registrations loaded:', registrations);
+      setUserRegistrations(registrations);
+      return registrations;
+    } catch (error) {
+      console.error('Error loading user registrations:', error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,10 +58,21 @@ const CTFs = () => {
           CTFService.getLeaderboard()
         ]);
         
-        // If user is logged in, mark which CTFs they're registered for
+        // If user is logged in, load their registrations and mark which CTFs they're registered for
+        let userRegs: CTFRegistration[] = [];
         if (user) {
+          userRegs = await loadUserRegistrations();
+          
+          // Mark which CTFs the user is registered for
           for (const ctf of activeCTFsData) {
-            ctf.registered = await CTFService.isUserRegisteredForCTF(user.id, ctf.id);
+            const isRegistered = userRegs.some(reg => reg.ctf_id === ctf.id);
+            ctf.registered = isRegistered;
+            
+            // Store the registration ID for reference
+            const registration = userRegs.find(reg => reg.ctf_id === ctf.id);
+            if (registration) {
+              ctf.registrationId = registration.id;
+            }
           }
         }
         
@@ -133,13 +160,19 @@ const CTFs = () => {
     }
 
     try {
-      const success = await CTFService.registerUserForCTF(user.id, ctfId);
+      const result = await CTFService.registerUserForCTF(user.id, ctfId);
       
-      if (success) {
+      if (result.success) {
         // Update the local state
         setActiveCTFs(activeCTFs.map(ctf => 
-          ctf.id === ctfId ? { ...ctf, registered: true } : ctf
+          ctf.id === ctfId ? { ...ctf, registered: true, registrationId: result.registrationId } : ctf
         ));
+        
+        // Reload user registrations
+        await loadUserRegistrations();
+        
+        // Refresh user stats to show updated points
+        await refreshUserStats();
         
         toast({
           title: "Registro completado",

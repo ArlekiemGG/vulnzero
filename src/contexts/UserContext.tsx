@@ -45,10 +45,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async () => {
     if (!user) {
       setLoading(false);
+      setUserStats(defaultUserStats);
       return;
     }
 
     try {
+      console.log('Fetching user profile for:', user.id);
       setLoading(true);
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -57,10 +59,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
+        console.error('Error fetching user profile:', error);
         throw error;
       }
 
       if (profile) {
+        console.log('User profile loaded:', profile);
         // Calculate progress to next level (simple formula: need 500 points per level)
         const pointsPerLevel = 500;
         const currentLevelPoints = (profile.level - 1) * pointsPerLevel;
@@ -77,6 +81,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           solvedMachines: profile.solved_machines || 0,
           completedChallenges: profile.completed_challenges || 0,
         });
+        console.log('User stats updated');
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -87,9 +92,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     fetchUserProfile();
+    
+    // Subscribe to profile changes
+    if (user) {
+      const subscription = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Profile updated:', payload);
+            fetchUserProfile();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(subscription);
+      };
+    }
   }, [user]);
 
   const refreshUserStats = async () => {
+    console.log('Manually refreshing user stats');
     await fetchUserProfile();
   };
 

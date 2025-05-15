@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CTF, LeaderboardEntry } from './types';
+import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from './types';
+import { ActivityService } from '@/components/dashboard/ActivityService';
 
 export const CTFService = {
   // Get active/upcoming CTFs
@@ -164,16 +165,90 @@ export const CTFService = {
 
   // Check if user is registered for a CTF
   isUserRegisteredForCTF: async (userId: string, ctfId: number): Promise<boolean> => {
-    // This is a placeholder for future implementation
-    return false;
+    try {
+      // Check registration status in the ctf_registrations table
+      const { data, error } = await supabase
+        .from('ctf_registrations')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('ctf_id', ctfId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {  // PGRST116 is "no rows returned"
+        console.error('Error checking registration status:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error checking registration status:', error);
+      return false;
+    }
   },
 
   // Register user for CTF
-  registerUserForCTF: async (userId: string, ctfId: number): Promise<boolean> => {
-    // This is a placeholder for future implementation
-    // In a real implementation, this would create a record in Supabase
-    console.log(`Registering user ${userId} for CTF ${ctfId}`);
-    return true;
+  registerUserForCTF: async (userId: string, ctfId: number): Promise<{ success: boolean, registrationId?: string }> => {
+    try {
+      // First, check if already registered to prevent duplicates
+      const isRegistered = await CTFService.isUserRegisteredForCTF(userId, ctfId);
+      if (isRegistered) {
+        console.log(`User ${userId} already registered for CTF ${ctfId}`);
+        return { success: true };
+      }
+
+      // Get the CTF details for activity logging
+      let ctfName = '';
+      const activeCTFs = await CTFService.getActiveCTFs();
+      const ctf = activeCTFs.find(c => c.id === ctfId);
+      if (ctf) {
+        ctfName = ctf.name;
+      }
+      
+      // Insert a new registration record
+      const { data, error } = await supabase
+        .from('ctf_registrations')
+        .insert({
+          user_id: userId,
+          ctf_id: ctfId,
+          registered_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+        
+      if (error) throw error;
+      
+      // Log the activity for the user
+      await ActivityService.logActivity(
+        userId, 
+        'ctf_registration', 
+        `Registro en CTF: ${ctfName}`, 
+        10  // Award some points for registering
+      );
+      
+      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data?.id}`);
+      
+      return { success: true, registrationId: data?.id };
+    } catch (error) {
+      console.error('Error registering for CTF:', error);
+      return { success: false };
+    }
+  },
+
+  // Get user's CTF registrations
+  getUserCTFRegistrations: async (userId: string): Promise<CTFRegistration[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('ctf_registrations')
+        .select('*')
+        .eq('user_id', userId);
+        
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user CTF registrations:', error);
+      return [];
+    }
   }
 };
 
