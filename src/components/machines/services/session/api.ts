@@ -8,7 +8,7 @@ const EXTERNAL_API_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:5000"  // Local development
   : window.location.hostname.includes("lovableproject.com")
     ? "https://locviruzkdfnhusfquuc-machine-api.lovableproject.com" // Lovable preview environment
-    : "https://api.vulnzero.es"; // Production
+    : "https://api.vulnzero.es"; // Production with custom domain
 
 console.log("API URL configurada:", EXTERNAL_API_URL);
 
