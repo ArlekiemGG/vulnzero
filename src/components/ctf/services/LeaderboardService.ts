@@ -47,15 +47,29 @@ export const LeaderboardService = {
     }
   },
 
-  // Function to update a user's rank in the database
+  // Function to update user ranks in the database
   updateLeaderboardRanks: async (): Promise<void> => {
     try {
-      // Call the database function to recalculate ranks
-      const { error } = await supabase.rpc('recalculate_user_ranks');
+      // Instead of calling the RPC function directly, we'll manually update ranks
+      // based on points in descending order
+      const { data: profiles, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id, points')
+        .order('points', { ascending: false });
       
-      if (error) {
-        console.error('Error updating leaderboard ranks:', error);
-        throw error;
+      if (fetchError) throw fetchError;
+      
+      // Update each profile with its new rank
+      for (let i = 0; i < profiles.length; i++) {
+        const newRank = i + 1;
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ rank: newRank })
+          .eq('id', profiles[i].id);
+          
+        if (updateError) {
+          console.error(`Error updating rank for profile ${profiles[i].id}:`, updateError);
+        }
       }
       
       console.log('Leaderboard ranks updated successfully');
