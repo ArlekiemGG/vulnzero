@@ -1,24 +1,38 @@
-
 import React, { useState, useEffect } from 'react';
 import { MachineSessionService } from './MachineSessionService';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Send } from 'lucide-react';
 
 interface MachineTerminalProps {
-  sessionId: string;
+  sessionId?: string;
   onRefresh?: () => void;
+  onCommand?: (command: string) => void;
+  output?: string[];
+  isConnected?: boolean;
 }
 
 const MachineTerminal: React.FC<MachineTerminalProps> = ({ 
   sessionId,
-  onRefresh
+  onRefresh,
+  onCommand,
+  output: externalOutput,
+  isConnected
 }) => {
   const [command, setCommand] = useState<string>('');
-  const [output, setOutput] = useState<string[]>(['Connecting to session...']);
+  const [output, setOutput] = useState<string[]>(externalOutput || ['Terminal ready. Type commands below.']);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  // Initial connection check
+  // Update internal output state when external output changes
   useEffect(() => {
+    if (externalOutput) {
+      setOutput(externalOutput);
+    }
+  }, [externalOutput]);
+  
+  // Initial connection check - only if we have a sessionId
+  useEffect(() => {
+    if (!sessionId) return;
+    
     const checkConnection = async () => {
       try {
         const result = await MachineSessionService.executeCommand(
@@ -46,16 +60,24 @@ const MachineTerminal: React.FC<MachineTerminalProps> = ({
     try {
       setIsLoading(true);
       setOutput(prev => [...prev, `$ ${command}`]);
+      const currentCommand = command;
       setCommand('');
       
-      const result = await MachineSessionService.executeCommand(sessionId, command);
-      
-      if (result.success) {
-        // Split output by newlines to display correctly
-        const outputLines = result.output.split('\n');
-        setOutput(prev => [...prev, ...outputLines]);
-      } else {
-        setOutput(prev => [...prev, `Error: ${result.output}`]);
+      // If we have an onCommand prop, use that
+      if (onCommand) {
+        onCommand(currentCommand);
+      } 
+      // Otherwise use the session-based execution if we have a sessionId
+      else if (sessionId) {
+        const result = await MachineSessionService.executeCommand(sessionId, currentCommand);
+        
+        if (result.success) {
+          // Split output by newlines to display correctly
+          const outputLines = result.output.split('\n');
+          setOutput(prev => [...prev, ...outputLines]);
+        } else {
+          setOutput(prev => [...prev, `Error: ${result.output}`]);
+        }
       }
     } catch (error) {
       console.error('Command execution error:', error);
@@ -68,6 +90,16 @@ const MachineTerminal: React.FC<MachineTerminalProps> = ({
   const handleRefresh = async () => {
     setOutput(['Refreshing connection...']);
     
+    if (onRefresh) {
+      onRefresh();
+      return;
+    }
+    
+    if (!sessionId) {
+      setOutput(['No session ID provided. Cannot refresh.']);
+      return;
+    }
+    
     try {
       const result = await MachineSessionService.executeCommand(
         sessionId,
@@ -76,11 +108,6 @@ const MachineTerminal: React.FC<MachineTerminalProps> = ({
       
       if (result.success) {
         setOutput(['Connection refreshed. Terminal ready.']);
-        
-        // Notify parent component if refresh callback provided
-        if (onRefresh) {
-          onRefresh();
-        }
       } else {
         setOutput(['Error refreshing connection.']);
       }
@@ -93,12 +120,13 @@ const MachineTerminal: React.FC<MachineTerminalProps> = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center p-2 bg-cybersec-darkgray text-sm">
-        <div>Web Terminal</div>
+        <div>Web Terminal {isConnected === false ? "(Disconnected)" : ""}</div>
         <Button 
           variant="ghost" 
           size="sm" 
           className="h-7 px-2" 
           onClick={handleRefresh}
+          disabled={isConnected === false}
         >
           <RefreshCw className="h-3 w-3" />
         </Button>
@@ -117,14 +145,14 @@ const MachineTerminal: React.FC<MachineTerminalProps> = ({
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleExecuteCommand()}
           className="flex-grow bg-cybersec-darkgray py-2 px-3 font-mono text-sm outline-none border-0"
-          placeholder="Type command..."
-          disabled={isLoading}
+          placeholder={isConnected === false ? "Terminal disconnected" : "Type command..."}
+          disabled={isLoading || isConnected === false}
         />
         <Button 
           variant="ghost"
           className="h-10 px-3 rounded-none"
           onClick={handleExecuteCommand}
-          disabled={isLoading}
+          disabled={isLoading || isConnected === false}
         >
           <Send className="h-4 w-4" />
         </Button>
