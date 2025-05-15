@@ -8,6 +8,23 @@ const EXTERNAL_API_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:5000"  // Local development
   : "https://api.vulnzero.es"; // Production
 
+// Timeout para las solicitudes API (ms)
+const API_TIMEOUT = 15000;
+
+// Función para manejar el timeout de fetch
+const fetchWithTimeout = async (url: string, options: RequestInit, timeout: number) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  
+  const response = await fetch(url, {
+    ...options,
+    signal: controller.signal
+  });
+  
+  clearTimeout(id);
+  return response;
+};
+
 export const MachineApi = {
   /**
    * Solicita una nueva instancia de máquina al backend
@@ -24,16 +41,20 @@ export const MachineApi = {
         throw new Error('Se requiere ID de usuario y tipo de máquina');
       }
       
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/solicitar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        `${EXTERNAL_API_URL}/api/maquinas/solicitar`, 
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            usuarioId: userId,
+            tipoMaquinaId: machineTypeId
+          }),
         },
-        body: JSON.stringify({
-          usuarioId: userId,
-          tipoMaquinaId: machineTypeId
-        }),
-      });
+        API_TIMEOUT
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -68,12 +89,16 @@ export const MachineApi = {
         throw new Error('Se requiere ID de sesión');
       }
       
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        `${EXTERNAL_API_URL}/api/maquinas/estado?sesionId=${sessionId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
-      });
+        API_TIMEOUT
+      );
 
       if (!response.ok) {
         throw new Error('Error al verificar estado de la máquina');
@@ -106,15 +131,19 @@ export const MachineApi = {
         throw new Error('Se requiere ID de sesión');
       }
       
-      const response = await fetch(`${EXTERNAL_API_URL}/api/maquinas/liberar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        `${EXTERNAL_API_URL}/api/maquinas/liberar`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sesionId: sessionId
+          }),
         },
-        body: JSON.stringify({
-          sesionId: sessionId
-        }),
-      });
+        API_TIMEOUT
+      );
 
       if (!response.ok) {
         throw new Error('Error al liberar la máquina');
