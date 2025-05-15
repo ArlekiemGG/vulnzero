@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,7 +83,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
   const downloadVpnConfiguration = async () => {
     try {
       setIsDownloadingVpn(true);
-      const { success, config } = await downloadVpnConfig(machineSession.id);
+      const { success, config } = await downloadVpnConfig(machineSession.sessionId);
       
       if (!success || !config) {
         throw new Error('No se pudo obtener la configuración VPN');
