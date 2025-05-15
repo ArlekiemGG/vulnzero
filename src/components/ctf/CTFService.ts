@@ -17,7 +17,15 @@ export const CTFService = {
 
   // Get leaderboard data
   getLeaderboard: async (): Promise<LeaderboardEntry[]> => {
-    return LeaderboardService.getLeaderboard();
+    const leaderboard = await LeaderboardService.getLeaderboard();
+    
+    // Update leaderboard ranks in the database periodically
+    // This is done separately to avoid blocking the UI
+    setTimeout(() => {
+      LeaderboardService.updateLeaderboardRanks().catch(console.error);
+    }, 0);
+    
+    return leaderboard;
   },
 
   // Check if user is registered for a CTF
@@ -35,7 +43,17 @@ export const CTFService = {
       ctfName = ctf.name;
     }
     
-    return RegistrationService.registerUserForCTF(userId, ctfId, ctfName);
+    // Register the user
+    const result = await RegistrationService.registerUserForCTF(userId, ctfId, ctfName);
+    
+    // Update leaderboard ranks after registration
+    if (result.success) {
+      setTimeout(() => {
+        LeaderboardService.updateLeaderboardRanks().catch(console.error);
+      }, 0);
+    }
+    
+    return result;
   },
 
   // Get user's CTF registrations
