@@ -1,4 +1,3 @@
-
 // Operaciones de base de datos para las sesiones de máquinas
 import { supabase } from '@/integrations/supabase/client';
 import { MachineSession } from './types';
@@ -34,28 +33,69 @@ export const MachineSessionDbService = {
     machineTypeId: string,
     initialStatus: string = 'requested'
   ) => {
-    const placeholderExpireDate = new Date(Date.now() + (120 * 60 * 1000)).toISOString(); // Default 2 hours
-    const tempSessionId = 'pending-' + Date.now(); // Temporary session ID until we get the real one
+    try {
+      const placeholderExpireDate = new Date(Date.now() + (120 * 60 * 1000)).toISOString(); // Default 2 hours
+      const tempSessionId = 'pending-' + Date.now(); // Temporary session ID until we get the real one
       
-    const { data: initialSession, error: initialError } = await supabase
-      .from('machine_sessions')
-      .insert({
-        user_id: userId,
-        machine_type_id: machineTypeId,
-        status: initialStatus,
-        started_at: new Date().toISOString(),
-        expires_at: placeholderExpireDate,
-        session_id: tempSessionId
-      })
-      .select()
-      .single();
+      // First, check if machine_type_id exists in the machine_types table
+      const { data: machineTypeData, error: machineTypeError } = await supabase
+        .from('machine_types')
+        .select('id')
+        .eq('id', machineTypeId)
+        .single();
+
+      // If machine doesn't exist in the database, we need to create a record for it
+      if (machineTypeError || !machineTypeData) {
+        console.log('Machine type not found in database, creating a new record');
+        
+        // Create a new machine type entry using the local machine data
+        const { data: newMachineType, error: createError } = await supabase
+          .from('machine_types')
+          .insert({
+            id: crypto.randomUUID(), // Generate a new UUID for the machine
+            name: `Machine ${machineTypeId}`, // Placeholder name
+            description: `Description for machine ${machineTypeId}`,
+            difficulty: 'medium',
+            os_type: 'linux',
+            points: 20
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error('Error creating machine type:', createError);
+          throw new Error('Error al crear el tipo de máquina');
+        }
+        
+        machineTypeId = newMachineType.id;
+      } else {
+        machineTypeId = machineTypeData.id;
+      }
       
-    if (initialError) {
-      console.error('Error creating initial session:', initialError);
-      throw new Error('Error al iniciar el proceso de solicitud de máquina');
+      // Now create the session with the valid machine_type_id
+      const { data: initialSession, error: initialError } = await supabase
+        .from('machine_sessions')
+        .insert({
+          user_id: userId,
+          machine_type_id: machineTypeId,
+          status: initialStatus,
+          started_at: new Date().toISOString(),
+          expires_at: placeholderExpireDate,
+          session_id: tempSessionId
+        })
+        .select()
+        .single();
+        
+      if (initialError) {
+        console.error('Error creating initial session:', initialError);
+        throw new Error('Error al iniciar el proceso de solicitud de máquina');
+      }
+      
+      return initialSession;
+    } catch (error) {
+      console.error('Error in createInitialSession:', error);
+      throw error;
     }
-    
-    return initialSession;
   },
 
   /**

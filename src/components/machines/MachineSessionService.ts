@@ -1,4 +1,3 @@
-
 import { MachineApi } from './services/session/api';
 import { MachineSessionDbService, mapDbSessionToMachineSession } from './services/session/dbService';
 import { MachineSession } from './services/session/types';
