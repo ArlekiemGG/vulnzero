@@ -142,23 +142,31 @@ export const useProgressService = () => {
 
       const courseId = section.course_id;
 
-      // Preparar la subconsulta para obtener las secciones del curso
-      const sectionsQuery = supabase
+      // Obtener IDs de las secciones del curso
+      const { data: sectionsData } = await supabase
         .from('course_sections')
         .select('id')
         .eq('course_id', courseId);
+      
+      if (!sectionsData || sectionsData.length === 0) return;
+      
+      const sectionIds = sectionsData.map(section => section.id);
         
       // Contar el total de lecciones del curso
       const { count: totalLessons } = await supabase
         .from('course_lessons')
         .select('*', { count: 'exact', head: true })
-        .in('section_id', await sectionsQuery);
+        .in('section_id', sectionIds);
 
-      // Preparar la subconsulta para obtener las lecciones de las secciones del curso
-      const lessonsQuery = supabase
+      // Obtener IDs de las lecciones de las secciones del curso
+      const { data: lessonsData } = await supabase
         .from('course_lessons')
         .select('id')
-        .in('section_id', await sectionsQuery);
+        .in('section_id', sectionIds);
+        
+      if (!lessonsData || lessonsData.length === 0) return;
+      
+      const lessonIds = lessonsData.map(lesson => lesson.id);
         
       // Contar lecciones completadas
       const { count: completedLessons } = await supabase
@@ -166,7 +174,7 @@ export const useProgressService = () => {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('completed', true)
-        .in('lesson_id', await lessonsQuery);
+        .in('lesson_id', lessonIds);
 
       if (!totalLessons || totalLessons === 0) return;
 

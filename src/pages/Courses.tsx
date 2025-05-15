@@ -1,15 +1,15 @@
 
-import { Helmet } from 'react-helmet';
 import CourseTabs from '@/components/courses/CourseTabs';
 import { SearchIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 const Courses: React.FC = () => {
+  useEffect(() => {
+    document.title = "Cursos - VulnZero";
+  }, []);
+
   return (
     <div className="container px-4 py-8 mx-auto">
-      <Helmet>
-        <title>Cursos - VulnZero</title>
-      </Helmet>
-
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Cursos de Ciberseguridad</h1>

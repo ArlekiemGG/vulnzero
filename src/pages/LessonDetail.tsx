@@ -1,16 +1,13 @@
 
-import { Helmet } from 'react-helmet';
 import LessonDetailComponent from '@/components/courses/LessonDetail';
+import { useEffect } from 'react';
 
 const LessonDetail = () => {
-  return (
-    <>
-      <Helmet>
-        <title>Lección - VulnZero</title>
-      </Helmet>
-      <LessonDetailComponent />
-    </>
-  );
+  useEffect(() => {
+    document.title = "Lección - VulnZero";
+  }, []);
+
+  return <LessonDetailComponent />;
 };
 
 export default LessonDetail;
