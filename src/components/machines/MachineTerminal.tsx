@@ -1,160 +1,134 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
-import { MachineApi } from './services/session/api';
+import React, { useState, useEffect } from 'react';
+import { MachineSessionService } from './MachineSessionService';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Send } from 'lucide-react';
 
 interface MachineTerminalProps {
-  onCommand: (command: string) => void;
-  output: string[];
-  isConnected: boolean;
-  sessionId?: string;
-  loading?: boolean;
-  realConnection?: boolean;
+  sessionId: string;
+  onRefresh?: () => void;
 }
 
-const MachineTerminal: React.FC<MachineTerminalProps> = ({
-  onCommand,
-  output,
-  isConnected,
+const MachineTerminal: React.FC<MachineTerminalProps> = ({ 
   sessionId,
-  loading = false,
-  realConnection = false
+  onRefresh
 }) => {
-  const [command, setCommand] = useState('');
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [command, setCommand] = useState<string>('');
+  const [output, setOutput] = useState<string[]>(['Connecting to session...']);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  // Mantener el terminal desplazado hacia abajo
+  // Initial connection check
   useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [output]);
-  
-  // Focus en el input al cargar
-  useEffect(() => {
-    if (inputRef.current && !loading) {
-      inputRef.current.focus();
-    }
-  }, [loading, isConnected]);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!command.trim() || loading) return;
-    
-    // Guardar comando en el historial
-    setHistory(prev => [...prev, command]);
-    setHistoryIndex(-1);
-    
-    if (realConnection && sessionId) {
-      setIsExecuting(true);
+    const checkConnection = async () => {
       try {
-        // Ejecutar comando real en la máquina
-        const result = await MachineApi.executeCommand(sessionId, command);
+        const result = await MachineSessionService.executeCommand(
+          sessionId,
+          'echo "Terminal connection established"'
+        );
+        
         if (result.success) {
-          // Mostrar salida del comando
-          onCommand(command);
+          setOutput(['Terminal connected. Type commands below.']);
         } else {
-          // Mostrar error
-          onCommand(command);
-          // El manejador de comandos mostrará el error
+          setOutput(['Error connecting to terminal. Please try again or refresh.']);
         }
       } catch (error) {
-        console.error('Error executing command:', error);
-      } finally {
-        setIsExecuting(false);
+        console.error('Terminal connection error:', error);
+        setOutput(['Connection error. The machine may still be starting up.']);
       }
-    } else {
-      // Modo simulación
-      onCommand(command);
-    }
+    };
     
-    setCommand('');
+    checkConnection();
+  }, [sessionId]);
+  
+  const handleExecuteCommand = async () => {
+    if (!command.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      setOutput(prev => [...prev, `$ ${command}`]);
+      setCommand('');
+      
+      const result = await MachineSessionService.executeCommand(sessionId, command);
+      
+      if (result.success) {
+        // Split output by newlines to display correctly
+        const outputLines = result.output.split('\n');
+        setOutput(prev => [...prev, ...outputLines]);
+      } else {
+        setOutput(prev => [...prev, `Error: ${result.output}`]);
+      }
+    } catch (error) {
+      console.error('Command execution error:', error);
+      setOutput(prev => [...prev, 'Command execution failed. Try again.']);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Navegar por el historial con las flechas arriba/abajo
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (historyIndex < history.length - 1) {
-        const newIndex = historyIndex + 1;
-        setHistoryIndex(newIndex);
-        setCommand(history[history.length - 1 - newIndex]);
+  const handleRefresh = async () => {
+    setOutput(['Refreshing connection...']);
+    
+    try {
+      const result = await MachineSessionService.executeCommand(
+        sessionId,
+        'echo "Connection refreshed"'
+      );
+      
+      if (result.success) {
+        setOutput(['Connection refreshed. Terminal ready.']);
+        
+        // Notify parent component if refresh callback provided
+        if (onRefresh) {
+          onRefresh();
+        }
+      } else {
+        setOutput(['Error refreshing connection.']);
       }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setCommand(history[history.length - 1 - newIndex]);
-      } else if (historyIndex === 0) {
-        setHistoryIndex(-1);
-        setCommand('');
-      }
+    } catch (error) {
+      console.error('Refresh error:', error);
+      setOutput(['Refresh failed. The machine may be unavailable.']);
     }
   };
-
+  
   return (
-    <div 
-      className="h-full bg-black font-mono text-sm text-green-500 rounded-md overflow-hidden flex flex-col"
-      onClick={() => inputRef.current?.focus()}
-    >
-      {/* Terminal output */}
-      <div 
-        ref={terminalRef}
-        className="flex-1 p-2 overflow-y-auto"
-      >
-        {loading ? (
-          <div className="flex items-center gap-2 text-yellow-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Iniciando terminal...</span>
-          </div>
-        ) : !isConnected ? (
-          <div className="text-red-400">
-            <div>Conexión no establecida.</div>
-            <div>Espere a que la máquina esté en estado 'running'.</div>
-          </div>
-        ) : (
-          <>
-            {output.map((line, i) => (
-              <div key={i} className={`whitespace-pre-wrap ${
-                line.startsWith('$') ? 'text-blue-400' : 
-                line.startsWith('SUCCESS') ? 'text-green-500' : 
-                line.startsWith('ERROR') ? 'text-red-500' :
-                line.startsWith('INFO') ? 'text-yellow-500' : ''
-              }`}>
-                {line}
-              </div>
-            ))}
-            {isExecuting && (
-              <div className="flex items-center gap-2 text-yellow-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Ejecutando...</span>
-              </div>
-            )}
-          </>
-        )}
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center p-2 bg-cybersec-darkgray text-sm">
+        <div>Web Terminal</div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-7 px-2" 
+          onClick={handleRefresh}
+        >
+          <RefreshCw className="h-3 w-3" />
+        </Button>
       </div>
       
-      {/* Command input */}
-      <form onSubmit={handleSubmit} className="border-t border-gray-800">
-        <div className="flex items-center px-2 py-1">
-          <span className="text-blue-400">$</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={loading || !isConnected || isExecuting}
-            className="flex-1 bg-transparent border-none outline-none px-2 py-1 text-green-500"
-            placeholder={loading || !isConnected ? '' : 'Ingrese un comando...'}
-          />
-        </div>
-      </form>
+      <div className="flex-grow p-3 font-mono text-xs overflow-auto bg-cybersec-darkblack text-green-400">
+        {output.map((line, index) => (
+          <div key={index} className="whitespace-pre-wrap mb-1">{line}</div>
+        ))}
+      </div>
+      
+      <div className="flex border-t border-cybersec-darkerborder">
+        <input
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleExecuteCommand()}
+          className="flex-grow bg-cybersec-darkgray py-2 px-3 font-mono text-sm outline-none border-0"
+          placeholder="Type command..."
+          disabled={isLoading}
+        />
+        <Button 
+          variant="ghost"
+          className="h-10 px-3 rounded-none"
+          onClick={handleExecuteCommand}
+          disabled={isLoading}
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

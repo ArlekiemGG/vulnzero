@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Clock, Server, Terminal, Download, Wifi, AlertTriangle } from 'lucide-react';
 import { MachineSession } from './MachineSessionService';
-import { calculateTimeLeft } from './utils/SessionUtils';
+import { calculateRemainingTime } from './utils/SessionUtils';
 import MachineTerminal from './MachineTerminal';
 import { useToast } from '@/components/ui/use-toast';
 import { MachineApi } from './services/session/api';
@@ -29,7 +28,10 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     // Actualizar tiempo restante cada segundo
     const updateTimeLeft = () => {
       if (machineSession.expiresAt) {
-        setTimeLeft(calculateTimeLeft(machineSession.expiresAt));
+        const remainingMinutes = calculateRemainingTime(machineSession.expiresAt);
+        const hours = Math.floor(remainingMinutes / 60);
+        const minutes = remainingMinutes % 60;
+        setTimeLeft(`${hours}h ${minutes}m`);
       }
     };
     
@@ -203,10 +205,12 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         <TabsContent value="terminal" className="border-none p-0 pt-4">
           <CardContent className="p-0">
             <div className="min-h-[400px] bg-cybersec-black rounded-md overflow-hidden">
-              <MachineTerminal 
-                machineSession={machineSession}
-                onRefresh={onRefresh}
-              />
+              {onRefresh && (
+                <MachineTerminal 
+                  sessionId={machineSession.sessionId}
+                  onRefresh={onRefresh}
+                />
+              )}
             </div>
           </CardContent>
         </TabsContent>
