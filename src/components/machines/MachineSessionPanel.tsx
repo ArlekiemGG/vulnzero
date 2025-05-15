@@ -306,10 +306,13 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
                   <span className="text-gray-400">IP Address:</span>
                   <div className="flex items-center gap-1">
                     {isProvisioning ? (
-                      <Skeleton className="h-5 w-24" />
+                      <div className="flex items-center">
+                        <Skeleton className="h-5 w-24" />
+                        <span className="ml-2 text-xs text-yellow-500">(Pendiente)</span>
+                      </div>
                     ) : (
                       <>
-                        <span className="font-mono">{machineSession.ipAddress || 'Pendiente'}</span>
+                        <span className="font-mono">{machineSession.ipAddress || 'No disponible'}</span>
                         {machineSession.ipAddress && (
                           <Button 
                             variant="ghost" 
@@ -330,10 +333,13 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
                   <span className="text-gray-400">Usuario:</span>
                   <div className="flex items-center gap-1">
                     {isProvisioning ? (
-                      <Skeleton className="h-5 w-24" />
+                      <div className="flex items-center">
+                        <Skeleton className="h-5 w-24" />
+                        <span className="ml-2 text-xs text-yellow-500">(Pendiente)</span>
+                      </div>
                     ) : (
                       <>
-                        <span className="font-mono">{machineSession.username || 'Pendiente'}</span>
+                        <span className="font-mono">{machineSession.username || 'No disponible'}</span>
                         {machineSession.username && (
                           <Button 
                             variant="ghost" 
@@ -354,10 +360,13 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
                   <span className="text-gray-400">Contraseña:</span>
                   <div className="flex items-center gap-1">
                     {isProvisioning ? (
-                      <Skeleton className="h-5 w-24" />
+                      <div className="flex items-center">
+                        <Skeleton className="h-5 w-24" />
+                        <span className="ml-2 text-xs text-yellow-500">(Pendiente)</span>
+                      </div>
                     ) : (
                       <>
-                        <span className="font-mono">{machineSession.password || 'Pendiente'}</span>
+                        <span className="font-mono">{machineSession.password || 'No disponible'}</span>
                         {machineSession.password && (
                           <Button 
                             variant="ghost" 
@@ -374,7 +383,7 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
                 </div>
                 
                 {/* SSH Command with loading state */}
-                {machineSession.connectionInfo?.sshCommand && !isProvisioning && (
+                {!isProvisioning && machineSession.status === 'running' && machineSession.connectionInfo?.sshCommand && (
                   <div className="mt-3 p-2 bg-cybersec-darkgray rounded border border-cybersec-darkgray">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-gray-400">Comando SSH:</span>
@@ -390,6 +399,13 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
                     <code className="text-xs font-mono text-cybersec-electricblue">
                       {machineSession.connectionInfo.sshCommand}
                     </code>
+                  </div>
+                )}
+                
+                {/* Mensaje de información en modo de provisioning */}
+                {isProvisioning && (
+                  <div className="mt-3 p-3 bg-blue-900/20 rounded text-sm text-blue-400 border border-blue-900/40">
+                    <p>La información de conexión estará disponible una vez que la máquina haya sido aprovisionada completamente.</p>
                   </div>
                 )}
               </div>

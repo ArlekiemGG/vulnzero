@@ -46,7 +46,8 @@ export const MachineService = {
       solvedBy: machine.solvedBy || 0,
       userProgress: machine.userProgress || 0,
       image: machine.image || "/placeholder.svg",
-      ipAddress: '10.10.10.' + Math.floor(Math.random() * 254 + 1),
+      // No generamos una IP falsa aquí, esta se asignará solo cuando la máquina esté en ejecución
+      ipAddress: undefined, // Cambiado de IP falsa a undefined
       creator: 'VulnZero Team',
       releaseDate: '2025-01-15',
       requirements: machine.requirements || [
