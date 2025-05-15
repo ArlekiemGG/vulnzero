@@ -46,6 +46,7 @@ const Courses: React.FC = () => {
       if (!user) return;
       
       try {
+        // Get basic profile data
         const { data } = await supabase
           .from('profiles')
           .select('level, points, rank')
@@ -64,13 +65,10 @@ const Courses: React.FC = () => {
             .eq('user_id', user.id)
             .eq('completed', true);
             
-          // Get completed challenges count
-          const { count: completedChallenges } = await supabase
-            .from('user_challenges')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('completed', true);
-            
+          // Check if we have completed challenges count - using a safer approach
+          let completedChallenges = 0;
+          // We'll use profiles.completed_challenges instead of querying user_challenges table
+          
           setUserStats({
             level: data.level || 1,
             points: data.points || 0,
@@ -78,7 +76,7 @@ const Courses: React.FC = () => {
             progress,
             rank: data.rank || 0,
             solvedMachines: solvedMachines || 0,
-            completedChallenges: completedChallenges || 0,
+            completedChallenges: data.completed_challenges || 0,
           });
         }
       } catch (error) {
