@@ -87,7 +87,8 @@ export const ActivityService = {
   },
 
   /**
-   * Logs a new user activity
+   * Logs a new user activity and updates user points
+   * This is the central place where user points are managed
    */
   logActivity: async (
     userId: string, 
