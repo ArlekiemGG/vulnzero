@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { MachineSession } from './MachineSessionService';
 import { calculateRemainingTime } from './utils/SessionUtils';
 import MachineTerminal from './MachineTerminal';
 import { useToast } from '@/components/ui/use-toast';
-import { MachineApi } from './services/session/api';
+import { MachineApi, downloadVpnConfig } from './services/session/api';
 import MachineStatusIndicator from './components/MachineStatusIndicator';
 import ConnectionDetails from './components/ConnectionDetails';
 import ServicesTab from './components/ServicesTab';
@@ -80,10 +79,10 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
   };
 
   // Handle VPN config download
-  const downloadVpnConfig = async () => {
+  const downloadVpnConfiguration = async () => {
     try {
       setIsDownloadingVpn(true);
-      const { success, config } = await MachineApi.downloadVpnConfig(machineSession.id);
+      const { success, config } = await downloadVpnConfig(machineSession.id);
       
       if (!success || !config) {
         throw new Error('No se pudo obtener la configuración VPN');
@@ -117,6 +116,16 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     } finally {
       setIsDownloadingVpn(false);
     }
+  };
+
+  // Create a compatible object for ConnectionDetails from MachineSession
+  const connectionDetailsProps = {
+    status: machineSession.status,
+    username: machineSession.username || '',
+    password: machineSession.password || '',
+    ipAddress: machineSession.ipAddress || '',
+    connectionInfo: machineSession.connectionInfo,
+    vpnConfigAvailable: machineSession.vpnConfigAvailable
   };
 
   return (
@@ -179,9 +188,9 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         <TabsContent value="connection" className="border-none">
           <CardContent>
             <ConnectionDetails 
-              machineSession={machineSession}
+              machineSession={connectionDetailsProps}
               isDownloadingVpn={isDownloadingVpn}
-              onDownloadVpn={downloadVpnConfig}
+              onDownloadVpn={downloadVpnConfiguration}
             />
           </CardContent>
         </TabsContent>
@@ -197,7 +206,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
               variant="outline" 
               size="sm"
               className="border-cybersec-electricblue text-cybersec-electricblue"
-              onClick={downloadVpnConfig}
+              onClick={downloadVpnConfiguration}
               disabled={isDownloadingVpn}
             >
               <Download className="h-4 w-4 mr-1" />

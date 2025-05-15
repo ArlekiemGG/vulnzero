@@ -6,8 +6,9 @@ import VpnAccessPanel from './VpnAccessPanel';
 interface ConnectionDetailsProps {
   machineSession: {
     status: string;
-    username: string;
-    ipAddress: string;
+    username?: string; // Make username optional
+    password?: string; // Add password as optional
+    ipAddress?: string; // Make ipAddress optional
     connectionInfo?: {
       puertoSSH?: number;
     };

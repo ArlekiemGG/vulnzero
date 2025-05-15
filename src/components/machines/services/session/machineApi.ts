@@ -1,4 +1,3 @@
-
 import { EXTERNAL_API_URL, API_TIMEOUT, fetchWithTimeout } from './config';
 import { ApiMachineRequestResponse, ApiMachineStatusResponse, ApiMachineReleaseResponse } from './types';
 import { validateMachineRequestResponse, validateMachineStatusResponse, validateMachineReleaseResponse } from './validator';
@@ -240,5 +239,55 @@ export const MachineApi = {
         success: false
       };
     }
+  }
+};
+
+export const downloadVpnConfig = async (sessionId: string): Promise<{ success: boolean, config?: string }> => {
+  try {
+    // Implement the API call to download VPN config
+    // For now, we'll return a mock successful response
+    return {
+      success: true,
+      config: `# OpenVPN configuration for VulnZero session ${sessionId}
+client
+dev tun
+proto udp
+remote vpn.vulnzero.com 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+cipher AES-256-CBC
+auth SHA256
+verb 3
+key-direction 1
+<ca>
+-----BEGIN CERTIFICATE-----
+MIIDQjCCAiqgAwIBAgIUJWZtx6XGO9wYjmJkX9JGxPP3VfQwDQYJKoZIhvcNAQEL
+BQAwEzERMA8GA1UEAwwIQ2hhbmdlTWUwHhcNMjAwNzA4MjAyMzM3WhcNMzAwNzA2
+-----END CERTIFICATE-----
+</ca>
+<cert>
+-----BEGIN CERTIFICATE-----
+MIIDTjCCAjagAwIBAgIRAO5mXYv1DEb2SFLfMwRz5/AwDQYJKoZIhvcNAQELBQAw
+EzERMA8GA1UEAwwIQ2hhbmdlTWUwHhcNMjAwNzA4MjAyMzM5WhcNMzAwNzA2MjAy
+-----END CERTIFICATE-----
+</cert>
+<key>
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDKm5I9VPz9+6R5
+VbJe17bSC9FaBglosYIK/xYN0yI9hKT+j+SwblOOjyjOZmBg4F3rG+WNxH+YRCPX
+-----END PRIVATE KEY-----
+</key>
+<tls-auth>
+-----BEGIN OpenVPN Static key V1-----
+15cd89a85bf23562bda15732f9c5e3a8
+6018bd60da1d2a5f663ee78dde559a9f
+-----END OpenVPN Static key V1-----
+</tls-auth>`
+    };
+  } catch (error) {
+    console.error('Error downloading VPN config:', error);
+    return { success: false };
   }
 };
