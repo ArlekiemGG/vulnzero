@@ -1,23 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Navbar from '@/components/layout/Navbar';
-import Sidebar from '@/components/layout/Sidebar';
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/layout/Navbar';
+import Sidebar from '@/components/layout/Sidebar';
 
 // Import the refactored components
 import CTFService from '@/components/ctf/CTFService';
-import CTFCard from '@/components/ctf/CTFCard';
-import CTFLeaderboardCard from '@/components/ctf/CTFLeaderboardCard';
-import CTFGuideCard from '@/components/ctf/CTFGuideCard';
+import CTFTabs from '@/components/ctf/CTFTabs';
+import CTFInfoCards from '@/components/ctf/CTFInfoCards';
 import CTFSessionCard from '@/components/ctf/CTFSessionCard';
 import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from '@/components/ctf/types';
-import { CTFCardSkeleton, CTFSessionSkeleton } from '@/components/ui/loading-skeleton';
+import { CTFSessionSkeleton } from '@/components/ui/loading-skeleton';
 
 const CTFs = () => {
   const { user } = useAuth();
@@ -232,70 +229,20 @@ const CTFs = () => {
             ) : (
               userActiveCTF && <CTFSessionCard session={userActiveCTF} />
             )}
-
-            <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="mb-4 bg-cybersec-darkgray">
-                <TabsTrigger 
-                  value="upcoming" 
-                  className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen"
-                >
-                  Próximos CTFs
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="past" 
-                  className="data-[state=active]:bg-cybersec-black data-[state=active]:text-cybersec-neongreen"
-                >
-                  CTFs pasados
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Próximos CTFs */}
-              <TabsContent value="upcoming">
-                {loading ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {[1, 2, 3].map(i => (
-                      <CTFCardSkeleton key={i} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {activeCTFs.map(ctf => (
-                      <CTFCard 
-                        key={ctf.id} 
-                        ctf={ctf} 
-                        onRegister={handleRegisterCTF} 
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* CTFs pasados */}
-              <TabsContent value="past">
-                {loading ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {[1, 2, 3].map(i => (
-                      <CTFCardSkeleton key={i} isPast={true} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {pastCTFs.map(ctf => (
-                      <CTFCard 
-                        key={ctf.id} 
-                        ctf={ctf}
-                        isPast={true}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <CTFLeaderboardCard leaderboard={leaderboard} loading={loading} />
-              <CTFGuideCard />
-            </div>
+            
+            {/* CTF tabs component */}
+            <CTFTabs 
+              activeCTFs={activeCTFs}
+              pastCTFs={pastCTFs}
+              loading={loading}
+              onRegister={handleRegisterCTF}
+            />
+            
+            {/* Info cards */}
+            <CTFInfoCards 
+              leaderboard={leaderboard}
+              loading={loading}
+            />
           </div>
         </main>
       </div>
