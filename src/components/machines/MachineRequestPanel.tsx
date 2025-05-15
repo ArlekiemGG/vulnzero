@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -82,15 +81,11 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
     setRequestError(null);
     
     try {
-      // Check VPN connection first (simulated)
-      const isVpnConnected = true; // In a real scenario, we would implement a VPN check
-      
-      if (!isVpnConnected) {
-        throw new Error("Para iniciar una máquina, necesita activar la VPN primero");
-      }
+      console.log(`Iniciando solicitud de máquina ${id} para usuario ${user.id}`);
       
       // Request the machine
       const session = await MachineSessionService.requestMachine(user.id, id);
+      console.log('Respuesta de solicitud de máquina:', session);
       
       if (session) {
         toast({
@@ -103,10 +98,14 @@ export const MachineRequestPanel: React.FC<MachineTypeProps> = ({
       }
     } catch (error: any) {
       console.error('Error requesting machine:', error);
-      setRequestError(error.message || "Error al solicitar la máquina");
+      
+      // Mensaje más descriptivo para el usuario
+      const errorMessage = error.message || "No se pudo solicitar la máquina. Intente nuevamente.";
+      setRequestError(errorMessage);
+      
       toast({
-        title: "Error",
-        description: error.message || "No se pudo solicitar la máquina. Intente nuevamente.",
+        title: "Error al solicitar máquina",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

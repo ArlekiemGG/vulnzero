@@ -6,7 +6,11 @@ import { validateMachineRequestResponse, validateMachineStatusResponse, validate
 // Configuración del API URL para desarrollo y producción
 const EXTERNAL_API_URL = window.location.hostname.includes("localhost") 
   ? "http://localhost:5000"  // Local development
-  : "https://api.vulnzero.es"; // Production
+  : window.location.hostname.includes("lovableproject.com")
+    ? "https://locviruzkdfnhusfquuc-machine-api.lovableproject.com" // Lovable preview environment
+    : "https://api.vulnzero.es"; // Production
+
+console.log("API URL configurada:", EXTERNAL_API_URL);
 
 // Timeout para las solicitudes API (ms)
 const API_TIMEOUT = 15000;
@@ -16,13 +20,20 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeout: numb
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   
-  const response = await fetch(url, {
-    ...options,
-    signal: controller.signal
-  });
-  
-  clearTimeout(id);
-  return response;
+  try {
+    console.log(`Enviando solicitud a: ${url}`, options);
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    console.error(`Error en fetchWithTimeout para ${url}:`, error);
+    clearTimeout(id);
+    throw error;
+  }
 };
 
 export const MachineApi = {
@@ -41,31 +52,41 @@ export const MachineApi = {
         throw new Error('Se requiere ID de usuario y tipo de máquina');
       }
       
+      const requestBody = {
+        usuarioId: userId,
+        tipoMaquinaId: machineTypeId
+      };
+      
+      console.log(`Enviando solicitud a ${EXTERNAL_API_URL}/api/maquinas/solicitar con datos:`, requestBody);
+      
       const response = await fetchWithTimeout(
         `${EXTERNAL_API_URL}/api/maquinas/solicitar`, 
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Origin': window.location.origin
           },
-          body: JSON.stringify({
-            usuarioId: userId,
-            tipoMaquinaId: machineTypeId
-          }),
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
         },
         API_TIMEOUT
       );
 
+      console.log('Respuesta recibida:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API response not OK:', errorText);
-        throw new Error(`Error al solicitar la máquina: ${response.status}`);
+        console.error('API response not OK:', response.status, errorText);
+        throw new Error(`Error al solicitar la máquina: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Datos recibidos de la API:', data);
       
       // Validar la respuesta
       if (!validateMachineRequestResponse(data)) {
+        console.error('Respuesta inválida del API:', data);
         throw new Error('La respuesta del API no contiene todos los datos necesarios');
       }
       
