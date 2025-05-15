@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from './types';
 import { ActivityService } from '@/components/dashboard/ActivityService';
@@ -6,60 +5,67 @@ import { ActivityService } from '@/components/dashboard/ActivityService';
 export const CTFService = {
   // Get active/upcoming CTFs
   getActiveCTFs: async (): Promise<CTF[]> => {
-    // This is a placeholder for future API implementation
-    // In a real implementation, this would fetch from Supabase
-    const activeCTFsData: CTF[] = [
-      {
-        id: 1,
-        name: 'Weekly Web Challenge',
-        description: 'Desafío semanal con foco en vulnerabilidades web modernas.',
-        startDate: '2023-06-01T08:00:00',
-        endDate: '2023-06-08T20:00:00',
-        type: 'Jeopardy',
-        organizer: 'CyberChallenge',
-        difficulty: 'Intermedio',
-        registered: false,
-        challenges: 8,
-        participants: 342,
-        maxPoints: 1000,
-        format: 'Individual',
-        image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=320&auto=format&fit=crop'
-      },
-      {
-        id: 2,
-        name: 'Network Defenders 2023',
-        description: 'CTF centrado en seguridad de redes y detección de intrusiones.',
-        startDate: '2023-06-05T10:00:00',
-        endDate: '2023-06-07T18:00:00',
-        type: 'Attack-Defense',
-        organizer: 'NetworkSec Community',
-        difficulty: 'Avanzado',
-        registered: false,
-        challenges: 12,
-        participants: 156,
-        maxPoints: 2000,
-        format: 'Equipo',
-        image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=320&auto=format&fit=crop'
-      },
-      {
-        id: 3,
-        name: 'Crypto Masters',
-        description: 'Competición de criptografía con desafíos desde clásicos hasta modernos.',
-        startDate: '2023-06-10T09:00:00',
-        endDate: '2023-06-12T21:00:00',
-        type: 'Jeopardy',
-        organizer: 'CryptoAlliance',
-        difficulty: 'Experto',
-        registered: false,
-        challenges: 10,
-        participants: 98,
-        maxPoints: 1500,
-        format: 'Individual/Equipo',
-        image: 'https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?q=80&w=320&auto=format&fit=crop'
-      }
-    ];
+    try {
+      console.log('Getting active CTFs...');
+      
+      // This is a placeholder for future API implementation
+      // In a real implementation, this would fetch from Supabase
+      const activeCTFsData: CTF[] = [
+        {
+          id: 1,
+          name: 'Weekly Web Challenge',
+          description: 'Desafío semanal con foco en vulnerabilidades web modernas.',
+          startDate: '2023-06-01T08:00:00',
+          endDate: '2023-06-08T20:00:00',
+          type: 'Jeopardy',
+          organizer: 'CyberChallenge',
+          difficulty: 'Intermedio',
+          registered: false,
+          challenges: 8,
+          participants: 342,
+          maxPoints: 1000,
+          format: 'Individual',
+          image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=320&auto=format&fit=crop'
+        },
+        {
+          id: 2,
+          name: 'Network Defenders 2023',
+          description: 'CTF centrado en seguridad de redes y detección de intrusiones.',
+          startDate: '2023-06-05T10:00:00',
+          endDate: '2023-06-07T18:00:00',
+          type: 'Attack-Defense',
+          organizer: 'NetworkSec Community',
+          difficulty: 'Avanzado',
+          registered: false,
+          challenges: 12,
+          participants: 156,
+          maxPoints: 2000,
+          format: 'Equipo',
+          image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=320&auto=format&fit=crop'
+        },
+        {
+          id: 3,
+          name: 'Crypto Masters',
+          description: 'Competición de criptografía con desafíos desde clásicos hasta modernos.',
+          startDate: '2023-06-10T09:00:00',
+          endDate: '2023-06-12T21:00:00',
+          type: 'Jeopardy',
+          organizer: 'CryptoAlliance',
+          difficulty: 'Experto',
+          registered: false,
+          challenges: 10,
+          participants: 98,
+          maxPoints: 1500,
+          format: 'Individual/Equipo',
+          image: 'https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?q=80&w=320&auto=format&fit=crop'
+        }
+      ];
 
-    return activeCTFsData;
+      return activeCTFsData;
+    } catch (error) {
+      console.error('Error fetching active CTFs:', error);
+      return [];
+    }
   },
 
   // Get past CTFs
@@ -166,19 +172,23 @@ export const CTFService = {
   // Check if user is registered for a CTF
   isUserRegisteredForCTF: async (userId: string, ctfId: number): Promise<boolean> => {
     try {
-      // Use the generic fetch approach instead of rpc to avoid TypeScript errors
-      const { data, error } = await supabase
-        .from('ctf_registrations')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('ctf_id', ctfId)
-        .maybeSingle();
+      console.log(`Checking if user ${userId} is registered for CTF ${ctfId}...`);
+      
+      // Utilizar la función RPC que hemos creado (más segura)
+      const { data, error } = await supabase.rpc(
+        'is_registered_for_ctf',
+        { 
+          p_user_id: userId, 
+          p_ctf_id: ctfId 
+        }
+      );
 
       if (error) {
         console.error('Error checking registration status:', error);
         return false;
       }
 
+      console.log('Registration status:', data);
       return !!data;
     } catch (error) {
       console.error('Error checking registration status:', error);
@@ -189,13 +199,22 @@ export const CTFService = {
   // Register user for CTF
   registerUserForCTF: async (userId: string, ctfId: number): Promise<{ success: boolean, registrationId?: string }> => {
     try {
-      // First, check if already registered to prevent duplicates
-      const isRegistered = await CTFService.isUserRegisteredForCTF(userId, ctfId);
-      if (isRegistered) {
-        console.log(`User ${userId} already registered for CTF ${ctfId}`);
-        return { success: true };
+      console.log(`Registering user ${userId} for CTF ${ctfId}...`);
+      
+      // Utilizar la función RPC que hemos creado
+      const { data, error } = await supabase.rpc(
+        'register_for_ctf',
+        { 
+          p_user_id: userId, 
+          p_ctf_id: ctfId 
+        }
+      );
+        
+      if (error) {
+        console.error('Error registering for CTF:', error);
+        throw error;
       }
-
+      
       // Get the CTF details for activity logging
       let ctfName = '';
       const activeCTFs = await CTFService.getActiveCTFs();
@@ -204,22 +223,7 @@ export const CTFService = {
         ctfName = ctf.name;
       }
       
-      // Insert directly into the ctf_registrations table
-      const { data, error } = await supabase
-        .from('ctf_registrations')
-        .insert({
-          user_id: userId,
-          ctf_id: ctfId
-        })
-        .select()
-        .single();
-        
-      if (error) {
-        console.error('Error registering for CTF:', error);
-        throw error;
-      }
-      
-      // Log the activity for the user
+      // Log the activity for the user using our centralized activity service
       const activityResult = await ActivityService.logActivity(
         userId, 
         'ctf_registration', 
@@ -227,37 +231,9 @@ export const CTFService = {
         10  // Award some points for registering
       );
       
-      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}, activity logged: ${activityResult}`);
+      console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data}, activity logged: ${activityResult}`);
       
-      // Update the points directly if the activity logging failed
-      if (!activityResult) {
-        // If activity logging failed, manually update points as a fallback
-        // First get current points
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('points')
-          .eq('id', userId)
-          .single();
-          
-        if (profileError) {
-          console.error('Error fetching user points:', profileError);
-        } else {
-          // Then update with new points
-          const currentPoints = profileData.points || 0;
-          const newPoints = currentPoints + 10;
-          
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ points: newPoints })
-            .eq('id', userId);
-            
-          if (updateError) {
-            console.error('Error manually updating user points:', updateError);
-          }
-        }
-      }
-      
-      return { success: true, registrationId: data.id };
+      return { success: true, registrationId: data };
     } catch (error) {
       console.error('Error registering for CTF:', error);
       return { success: false };
@@ -267,6 +243,8 @@ export const CTFService = {
   // Get user's CTF registrations
   getUserCTFRegistrations: async (userId: string): Promise<CTFRegistration[]> => {
     try {
+      console.log(`Getting registrations for user ${userId}...`);
+      
       const { data, error } = await supabase
         .from('ctf_registrations')
         .select('*')
@@ -277,6 +255,7 @@ export const CTFService = {
         throw error;
       }
       
+      console.log(`Found ${data?.length || 0} registrations for user ${userId}`);
       return (data as CTFRegistration[]) || [];
     } catch (error) {
       console.error('Error fetching user CTF registrations:', error);

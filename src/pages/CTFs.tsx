@@ -58,24 +58,34 @@ const CTFs = () => {
       ]);
       
       // If user is logged in, load their registrations and mark which CTFs they're registered for
-      let userRegs: CTFRegistration[] = [];
       if (user) {
-        userRegs = await loadUserRegistrations();
+        console.log('User is logged in, checking registrations...');
+        const userRegs = await loadUserRegistrations();
         
         // Mark which CTFs the user is registered for
-        for (const ctf of activeCTFsData) {
-          const isRegistered = userRegs.some(reg => reg.ctf_id === ctf.id);
+        const updatedActiveCTFs = [...activeCTFsData];
+        
+        // Check each CTF individually with database to ensure accurate data
+        for (let i = 0; i < updatedActiveCTFs.length; i++) {
+          const ctf = updatedActiveCTFs[i];
+          const isRegistered = await CTFService.isUserRegisteredForCTF(user.id, ctf.id);
+          
           ctf.registered = isRegistered;
           
-          // Store the registration ID for reference
+          // Find the registration if it exists
           const registration = userRegs.find(reg => reg.ctf_id === ctf.id);
           if (registration) {
             ctf.registrationId = registration.id;
           }
+          
+          console.log(`CTF ${ctf.id} (${ctf.name}) - Registered: ${isRegistered}`);
         }
+        
+        setActiveCTFs(updatedActiveCTFs);
+      } else {
+        setActiveCTFs(activeCTFsData);
       }
       
-      setActiveCTFs(activeCTFsData);
       setPastCTFs(pastCTFsData);
       
       // Mark current user in leaderboard if present
@@ -160,6 +170,7 @@ const CTFs = () => {
     }
 
     try {
+      console.log(`Registering for CTF ${ctfId}...`);
       const result = await CTFService.registerUserForCTF(user.id, ctfId);
       
       if (result.success) {
@@ -172,7 +183,9 @@ const CTFs = () => {
         await loadUserRegistrations();
         
         // Refresh user stats to show updated points
-        await refreshUserStats();
+        if (refreshUserStats) {
+          await refreshUserStats();
+        }
         
         toast({
           title: "Registro completado",
@@ -180,7 +193,7 @@ const CTFs = () => {
           variant: "default"
         });
         
-        // Refrescar toda la información del usuario para que se muestre actualizada
+        // Refrescar toda la información después de un registro exitoso
         setTimeout(() => {
           loadData();
         }, 1000);
