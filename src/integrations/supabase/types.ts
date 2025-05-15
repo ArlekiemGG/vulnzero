@@ -620,6 +620,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment: {
+        Args: { row_id: string; value: number }
+        Returns: undefined
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean

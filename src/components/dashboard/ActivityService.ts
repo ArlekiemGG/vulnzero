@@ -113,7 +113,7 @@ export const ActivityService = {
       
       console.log(`Logging new activity: ${type} - ${title} - ${points} points`);
       
-      // Cambiamos para usar insert directo en lugar de rpc para evitar problemas
+      // Insert activity directly
       const { data, error } = await supabase
         .from('user_activities')
         .insert({
@@ -130,11 +130,11 @@ export const ActivityService = {
         throw error;
       }
       
-      // Si hay puntos, actualizamos el perfil del usuario
+      // If there are points, update the user's profile directly
       if (points > 0) {
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ points: supabase.rpc('increment', { value: points }) })
+          .update({ points: supabase.sql`points + ${points}` })
           .eq('id', userId);
           
         if (updateError) {

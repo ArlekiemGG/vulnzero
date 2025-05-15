@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from './types';
 import { ActivityService } from '@/components/dashboard/ActivityService';
@@ -219,7 +218,7 @@ export const CTFService = {
         throw error;
       }
       
-      // Log the activity for the user - modificamos para asegurar que se crea la actividad correctamente
+      // Log the activity for the user
       const activityResult = await ActivityService.logActivity(
         userId, 
         'ctf_registration', 
@@ -229,13 +228,18 @@ export const CTFService = {
       
       console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}, activity logged: ${activityResult}`);
       
-      // Actualizamos manualmente los puntos del usuario para asegurarnos que se actualiza
-      await supabase
-        .from('profiles')
-        .update({ 
-          points: supabase.rpc('increment', { value: 10 }) 
-        })
-        .eq('id', userId);
+      // Update the points directly with plain SQL query
+      if (!activityResult) {
+        // If activity logging failed, manually update points as a fallback
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ points: supabase.sql`points + 10` })
+          .eq('id', userId);
+          
+        if (updateError) {
+          console.error('Error manually updating user points:', updateError);
+        }
+      }
       
       return { success: true, registrationId: data.id };
     } catch (error) {
