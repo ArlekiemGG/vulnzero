@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { CTF, LeaderboardEntry, CTFSession, CTFRegistration } from './types';
 import { ActivityService } from '@/components/dashboard/ActivityService';
@@ -228,16 +229,31 @@ export const CTFService = {
       
       console.log(`User ${userId} registered for CTF ${ctfId}, reg ID: ${data.id}, activity logged: ${activityResult}`);
       
-      // Update the points directly with plain SQL query
+      // Update the points directly if the activity logging failed
       if (!activityResult) {
         // If activity logging failed, manually update points as a fallback
-        const { error: updateError } = await supabase
+        // First get current points
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .update({ points: supabase.sql`points + 10` })
-          .eq('id', userId);
+          .select('points')
+          .eq('id', userId)
+          .single();
           
-        if (updateError) {
-          console.error('Error manually updating user points:', updateError);
+        if (profileError) {
+          console.error('Error fetching user points:', profileError);
+        } else {
+          // Then update with new points
+          const currentPoints = profileData.points || 0;
+          const newPoints = currentPoints + 10;
+          
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ points: newPoints })
+            .eq('id', userId);
+            
+          if (updateError) {
+            console.error('Error manually updating user points:', updateError);
+          }
         }
       }
       

@@ -132,13 +132,28 @@ export const ActivityService = {
       
       // If there are points, update the user's profile directly
       if (points > 0) {
-        const { error: updateError } = await supabase
+        // First get current points
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .update({ points: supabase.sql`points + ${points}` })
-          .eq('id', userId);
+          .select('points')
+          .eq('id', userId)
+          .single();
           
-        if (updateError) {
-          console.error('Error updating user points:', updateError);
+        if (profileError) {
+          console.error('Error fetching user points:', profileError);
+        } else {
+          // Then update with new points
+          const currentPoints = profileData.points || 0;
+          const newPoints = currentPoints + points;
+          
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ points: newPoints })
+            .eq('id', userId);
+            
+          if (updateError) {
+            console.error('Error updating user points:', updateError);
+          }
         }
       }
       
