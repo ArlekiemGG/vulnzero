@@ -84,7 +84,7 @@ const MachineCard: React.FC<MachineProps> = ({
           <DifficultyBadge difficulty={difficulty} />
         </div>
       </CardHeader>
-      <CardContent className="pb-4 flex-1">
+      <CardContent className="flex-1 pb-0 flex flex-col">
         <div className="mb-4">
           <AspectRatio ratio={16 / 9} className="rounded-md overflow-hidden bg-cybersec-black">
             <img 
@@ -112,7 +112,7 @@ const MachineCard: React.FC<MachineProps> = ({
           </AspectRatio>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1 flex flex-col">
           <p className="text-sm text-gray-300 line-clamp-2">{description}</p>
           
           <div className="flex flex-wrap gap-1.5">
@@ -132,7 +132,7 @@ const MachineCard: React.FC<MachineProps> = ({
           </div>
           
           {userProgress > 0 && (
-            <div>
+            <div className="mt-auto">
               <div className="flex justify-between text-xs mb-1">
                 <span>Progreso</span>
                 <span>{userProgress}%</span>
@@ -142,7 +142,7 @@ const MachineCard: React.FC<MachineProps> = ({
           )}
         </div>
       </CardContent>
-      <CardFooter className="mt-auto">
+      <CardFooter className="pb-6 pt-4 mt-auto">
         <Button 
           className={`w-full ${
             hasActiveSession 
