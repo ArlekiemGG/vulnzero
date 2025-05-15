@@ -61,6 +61,19 @@ const recommendedMachines = [
     image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=320&auto=format&fit=crop",
     osType: "windows" as const,
     hasActiveSession: false
+  },
+  {
+    id: "04", // Added fourth machine
+    name: "NetHunter",
+    description: "Máquina especializada en seguridad de redes y detección de intrusiones. Requiere conocimientos avanzados.",
+    difficulty: "insane" as const,
+    categories: ["Network", "Forensics"],
+    points: 50,
+    solvedBy: 124,
+    userProgress: 0,
+    image: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=320&auto=format&fit=crop",
+    osType: "linux" as const,
+    hasActiveSession: false
   }
 ];
 
