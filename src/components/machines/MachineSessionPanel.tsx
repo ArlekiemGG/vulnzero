@@ -9,6 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Clock, Server, Terminal, ExternalLink, Power, Info, Copy, Loader2 } from 'lucide-react';
 import { MachineSession, MachineSessionService } from './MachineSessionService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MachineTerminal from './MachineTerminal';
 
 interface MachineSessionPanelProps {
   machineSession: MachineSession;
@@ -26,10 +28,14 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     machineSession.remainingTimeMinutes || 0
   );
   const [isTerminating, setIsTerminating] = useState(false);
-  const [countdown, setCountdown] = useState<number>(0);
   const [isProvisioning, setIsProvisioning] = useState(
     machineSession.status === 'requested' || machineSession.status === 'provisioning'
   );
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([
+    'INFO: Terminal web conectada. Escribe "help" para ver comandos disponibles.',
+    'INFO: Para conectarte a SSH, usa el comando "ssh".'
+  ]);
+  const [terminalConnected, setTerminalConnected] = useState(false);
   
   // Calculate total time from session data
   const totalTime = machineSession.connectionInfo?.maxTimeMinutes || 120; // Default 2 hours
@@ -52,6 +58,12 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     setIsProvisioning(
       machineSession.status === 'requested' || machineSession.status === 'provisioning'
     );
+    
+    if (machineSession.status === 'running') {
+      setTerminalConnected(true);
+    } else {
+      setTerminalConnected(false);
+    }
   }, [machineSession.status]);
 
   // Calculate remaining time in hours and minutes
@@ -118,6 +130,91 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     }
   };
 
+  // Handle terminal commands
+  const handleCommand = (command: string) => {
+    // Log the command with a prefix
+    setTerminalOutput(prev => [...prev, `$ ${command}`]);
+    
+    // Process commands
+    if (command.toLowerCase() === 'help') {
+      setTerminalOutput(prev => [
+        ...prev, 
+        'Comandos disponibles:',
+        '  help - Muestra esta ayuda',
+        '  clear - Limpia la terminal',
+        '  ssh - Inicia conexión SSH a la máquina',
+        '  ping - Hace ping a la máquina',
+        '  nmap - Escaneo básico de puertos',
+        '  getshell - Intenta obtener una shell en la máquina',
+        '  exit - Cierra la sesión SSH actual'
+      ]);
+    } else if (command.toLowerCase() === 'clear') {
+      setTerminalOutput([]);
+    } else if (command.toLowerCase() === 'ssh') {
+      // Simulate SSH connection
+      setTerminalOutput(prev => [
+        ...prev,
+        'Conectando a ' + machineSession.ipAddress + '...',
+        'Autenticando con usuario: ' + machineSession.username,
+        'SUCCESS: Conexión establecida',
+        `${machineSession.username}@${machineSession.ipAddress}:~$ `
+      ]);
+    } else if (command.toLowerCase() === 'ping') {
+      // Simulate ping
+      setTerminalOutput(prev => [
+        ...prev,
+        'PING ' + machineSession.ipAddress + ' 56(84) bytes of data.',
+        '64 bytes from ' + machineSession.ipAddress + ': icmp_seq=1 ttl=64 time=0.045 ms',
+        '64 bytes from ' + machineSession.ipAddress + ': icmp_seq=2 ttl=64 time=0.038 ms',
+        '64 bytes from ' + machineSession.ipAddress + ': icmp_seq=3 ttl=64 time=0.041 ms',
+        '64 bytes from ' + machineSession.ipAddress + ': icmp_seq=4 ttl=64 time=0.039 ms',
+        '--- ' + machineSession.ipAddress + ' ping statistics ---',
+        '4 packets transmitted, 4 received, 0% packet loss, time 3055ms',
+        'rtt min/avg/max/mdev = 0.038/0.040/0.045/0.005 ms'
+      ]);
+    } else if (command.toLowerCase() === 'nmap') {
+      // Simulate nmap scan
+      setTerminalOutput(prev => [
+        ...prev,
+        'Iniciando escaneo Nmap 7.91 en ' + machineSession.ipAddress,
+        'Scanning ' + machineSession.ipAddress + ' [1000 ports]',
+        'Discovered open port 22/tcp on ' + machineSession.ipAddress,
+        'Discovered open port 80/tcp on ' + machineSession.ipAddress,
+        'Completed Nmap scan at ' + new Date().toLocaleTimeString(),
+        'Nmap scan report for ' + machineSession.ipAddress,
+        'Host is up (0.00045s latency).',
+        'PORT   STATE SERVICE',
+        '22/tcp open  ssh',
+        '80/tcp open  http'
+      ]);
+    } else if (command.toLowerCase() === 'exit') {
+      setTerminalOutput(prev => [
+        ...prev,
+        'Cerrando sesión...',
+        'Conexión terminada.',
+        'INFO: Terminal web conectada. Escribe "help" para ver comandos disponibles.'
+      ]);
+    } else if (command.toLowerCase() === 'getshell') {
+      setTerminalOutput(prev => [
+        ...prev,
+        'Intentando explotar vulnerabilidades conocidas...',
+        'Probando rutas web comunes...',
+        'Encontrado punto de entrada potencial...',
+        'Inyectando payload...',
+        'SUCCESS: ¡Shell obtenida!',
+        'user@' + machineSession.ipAddress + ':~$ '
+      ]);
+    } else {
+      // Simulate command execution with a generic response
+      setTerminalOutput(prev => [
+        ...prev,
+        'Ejecutando: ' + command,
+        'Comando simulado en entorno de práctica.',
+        `${machineSession.username}@${machineSession.ipAddress}:~$ `
+      ]);
+    }
+  };
+
   return (
     <Card className="bg-cybersec-darkgray border-cybersec-darkgray mb-6">
       <CardHeader className="pb-2">
@@ -171,114 +268,134 @@ export const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
           </div>
         )}
         
-        {/* Información de conexión */}
-        <div className="p-4 bg-cybersec-black rounded-md">
-          <h4 className="text-cybersec-electricblue mb-2 flex items-center gap-2">
-            <Server className="h-4 w-4" /> Información de conexión
-          </h4>
+        {/* Tabs para conexión e información */}
+        <Tabs defaultValue="terminal" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="terminal" className="flex items-center gap-2">
+              <Terminal className="h-4 w-4" />
+              Terminal Web
+            </TabsTrigger>
+            <TabsTrigger value="info" className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Información
+            </TabsTrigger>
+          </TabsList>
           
-          <div className="space-y-3 text-sm">
-            {/* IP Address with loading state */}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">IP Address:</span>
-              <div className="flex items-center gap-1">
-                {isProvisioning ? (
-                  <Skeleton className="h-5 w-24" />
-                ) : (
-                  <>
-                    <span className="font-mono">{machineSession.ipAddress || 'Pendiente'}</span>
-                    {machineSession.ipAddress && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => copyToClipboard(machineSession.ipAddress || '', 'IP')}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
+          {/* Terminal Tab */}
+          <TabsContent value="terminal" className="mt-0">
+            <div className="h-80">
+              <MachineTerminal 
+                onCommand={handleCommand}
+                output={terminalOutput}
+                isConnected={machineSession.status === 'running'}
+                loading={isProvisioning}
+              />
             </div>
-            
-            {/* Username with loading state */}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Usuario:</span>
-              <div className="flex items-center gap-1">
-                {isProvisioning ? (
-                  <Skeleton className="h-5 w-24" />
-                ) : (
-                  <>
-                    <span className="font-mono">{machineSession.username || 'Pendiente'}</span>
-                    {machineSession.username && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => copyToClipboard(machineSession.username || '', 'Usuario')}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+          </TabsContent>
+          
+          {/* Info Tab */}
+          <TabsContent value="info" className="mt-0">
+            <div className="p-4 bg-cybersec-black rounded-md">
+              <h4 className="text-cybersec-electricblue mb-2 flex items-center gap-2">
+                <Server className="h-4 w-4" /> Información de conexión
+              </h4>
+              
+              <div className="space-y-3 text-sm">
+                {/* IP Address with loading state */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">IP Address:</span>
+                  <div className="flex items-center gap-1">
+                    {isProvisioning ? (
+                      <Skeleton className="h-5 w-24" />
+                    ) : (
+                      <>
+                        <span className="font-mono">{machineSession.ipAddress || 'Pendiente'}</span>
+                        {machineSession.ipAddress && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => copyToClipboard(machineSession.ipAddress || '', 'IP')}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* Password with loading state */}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Contraseña:</span>
-              <div className="flex items-center gap-1">
-                {isProvisioning ? (
-                  <Skeleton className="h-5 w-24" />
-                ) : (
-                  <>
-                    <span className="font-mono">{machineSession.password || 'Pendiente'}</span>
-                    {machineSession.password && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => copyToClipboard(machineSession.password || '', 'Contraseña')}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* SSH Command with loading state */}
-            {machineSession.connectionInfo?.sshCommand && !isProvisioning && (
-              <div className="mt-3 p-2 bg-cybersec-darkgray rounded border border-cybersec-darkgray">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-gray-400">Comando SSH:</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => copyToClipboard(machineSession.connectionInfo.sshCommand, 'Comando SSH')}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                  </div>
                 </div>
-                <code className="text-xs font-mono text-cybersec-electricblue">
-                  {machineSession.connectionInfo.sshCommand}
-                </code>
+                
+                {/* Username with loading state */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Usuario:</span>
+                  <div className="flex items-center gap-1">
+                    {isProvisioning ? (
+                      <Skeleton className="h-5 w-24" />
+                    ) : (
+                      <>
+                        <span className="font-mono">{machineSession.username || 'Pendiente'}</span>
+                        {machineSession.username && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => copyToClipboard(machineSession.username || '', 'Usuario')}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Password with loading state */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Contraseña:</span>
+                  <div className="flex items-center gap-1">
+                    {isProvisioning ? (
+                      <Skeleton className="h-5 w-24" />
+                    ) : (
+                      <>
+                        <span className="font-mono">{machineSession.password || 'Pendiente'}</span>
+                        {machineSession.password && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => copyToClipboard(machineSession.password || '', 'Contraseña')}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* SSH Command with loading state */}
+                {machineSession.connectionInfo?.sshCommand && !isProvisioning && (
+                  <div className="mt-3 p-2 bg-cybersec-darkgray rounded border border-cybersec-darkgray">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-gray-400">Comando SSH:</span>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => copyToClipboard(machineSession.connectionInfo.sshCommand, 'Comando SSH')}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <code className="text-xs font-mono text-cybersec-electricblue">
+                      {machineSession.connectionInfo.sshCommand}
+                    </code>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Estado y advertencias */}
-        {machineSession.status === 'provisioning' && (
-          <div className="flex items-center p-2 bg-yellow-900/20 text-yellow-500 rounded-md text-sm">
-            <Info className="h-4 w-4 mr-2" />
-            <span>La máquina está siendo aprovisionada. Este proceso puede tardar hasta 2 minutos.</span>
-          </div>
-        )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
       
       <CardFooter className="flex gap-2 justify-between">
