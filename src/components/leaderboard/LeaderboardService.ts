@@ -1,3 +1,4 @@
+
 import { queries, type Profiles } from '@/integrations/supabase/client';
 import { LeaderboardUser } from '@/components/leaderboard/LeaderboardTable';
 import { toast } from '@/components/ui/use-toast';
@@ -14,8 +15,7 @@ export const mapProfilesToLeaderboardUsers = (
   }
 
   return profiles.map((profile, index) => {
-    // Use the username directly from the profile
-    // If username is not available, use a default
+    // Ensure we always have a valid username to display
     const displayName = profile.username || 'Usuario';
     
     return {
@@ -101,7 +101,7 @@ export const getCurrentUserLeaderboardPosition = async (
     
     if (!userProfile) return null;
     
-    // Use the username directly from the profile
+    // Ensure we always have a valid username to display
     const displayName = userProfile.username || 'Usuario';
     
     // We would need to fetch total count of users with higher points

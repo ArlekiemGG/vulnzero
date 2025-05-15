@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,13 +54,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, username')
         .eq('id', userId)
         .single();
       
       if (error) {
         console.error('Error checking admin status:', error);
         return false;
+      }
+      
+      // Store username in localStorage for easy access
+      if (data?.username) {
+        localStorage.setItem('user_username', data.username);
       }
       
       setIsAdmin(data?.role === 'admin');
@@ -162,6 +166,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setUser(null);
               setSession(null);
               setIsAdmin(false);
+              
+              // Also clear username from localStorage
+              localStorage.removeItem('user_username');
               
               if (!notificationShown.signOut) {
                 notificationShown.signOut = true;

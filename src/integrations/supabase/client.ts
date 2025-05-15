@@ -152,5 +152,23 @@ export const queries = {
       console.error("Error logging user activity:", error);
       return { success: false, id: null };
     }
+  },
+  
+  // Add a function to update user profile
+  updateUserProfile: async (userId: string, updates: Partial<Profiles>) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      return { success: false, data: null };
+    }
   }
 };
