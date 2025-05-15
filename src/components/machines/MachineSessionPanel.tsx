@@ -3,12 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Clock, Server, Terminal, Download, Wifi, AlertTriangle } from 'lucide-react';
+import { Clock, Server, Terminal, Download, Wifi } from 'lucide-react';
 import { MachineSession } from './MachineSessionService';
 import { calculateRemainingTime } from './utils/SessionUtils';
 import MachineTerminal from './MachineTerminal';
 import { useToast } from '@/components/ui/use-toast';
 import { MachineApi } from './services/session/api';
+import MachineStatusIndicator from './components/MachineStatusIndicator';
+import ConnectionDetails from './components/ConnectionDetails';
+import ServicesTab from './components/ServicesTab';
 
 interface MachineSessionPanelProps {
   machineSession: MachineSession;
@@ -26,8 +29,8 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
   const [isDownloadingVpn, setIsDownloadingVpn] = useState(false);
   const { toast } = useToast();
   
+  // Update remaining time every second
   useEffect(() => {
-    // Actualizar tiempo restante cada segundo
     const updateTimeLeft = () => {
       if (machineSession.expiresAt) {
         const remainingMinutes = calculateRemainingTime(machineSession.expiresAt);
@@ -43,11 +46,12 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     return () => clearInterval(interval);
   }, [machineSession.expiresAt]);
   
+  // Handle machine termination
   const handleTerminate = async () => {
     try {
       setIsTerminating(true);
       
-      // Llamar a la API para liberar la máquina
+      // Call API to release the machine
       const result = await MachineApi.releaseMachine(machineSession.sessionId);
       
       if (!result.exito) {
@@ -60,7 +64,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         duration: 5000
       });
       
-      // Notificar al componente padre
+      // Notify parent component
       onTerminate();
     } catch (error) {
       console.error('Error terminating machine:', error);
@@ -75,6 +79,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     }
   };
 
+  // Handle VPN config download
   const downloadVpnConfig = async () => {
     try {
       setIsDownloadingVpn(true);
@@ -84,7 +89,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         throw new Error('No se pudo obtener la configuración VPN');
       }
       
-      // Crear un blob y descargarlo como archivo
+      // Create a blob and download it as a file
       const blob = new Blob([config], { type: 'application/x-openvpn-profile' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -114,68 +119,6 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
     }
   };
 
-  // Determinar el estado de la máquina para mostrar el indicador correcto
-  const getMachineStatusIndicator = () => {
-    switch (machineSession.status) {
-      case 'requested':
-        return <div className="flex items-center"><Shield className="h-4 w-4 text-yellow-500 mr-1" /> Solicitada</div>;
-      case 'provisioning':
-        return <div className="flex items-center"><Server className="h-4 w-4 text-yellow-500 mr-1 animate-pulse" /> Iniciando</div>;
-      case 'running':
-        return <div className="flex items-center"><Shield className="h-4 w-4 text-green-500 mr-1" /> Activa</div>;
-      case 'terminated':
-        return <div className="flex items-center"><Shield className="h-4 w-4 text-gray-500 mr-1" /> Terminada</div>;
-      case 'failed':
-        return <div className="flex items-center"><AlertTriangle className="h-4 w-4 text-red-500 mr-1" /> Error</div>;
-      default:
-        return <div className="flex items-center"><Shield className="h-4 w-4 text-gray-500 mr-1" /> Desconocido</div>;
-    }
-  };
-
-  // Renderizar detalles de conexión según el status
-  const renderConnectionDetails = () => {
-    if (machineSession.status === 'running') {
-      return (
-        <div className="mt-4 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-cybersec-darkgray p-4 rounded-md">
-              <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">SSH Access</h3>
-              <div className="text-sm font-mono bg-cybersec-black p-2 rounded">
-                ssh {machineSession.username}@{machineSession.ipAddress} -p {machineSession.connectionInfo?.puertoSSH}
-              </div>
-              <div className="mt-2 text-sm">
-                <p>Username: <span className="font-mono">{machineSession.username}</span></p>
-                <p>Password: <span className="font-mono">{machineSession.password}</span></p>
-              </div>
-            </div>
-            
-            <div className="bg-cybersec-darkgray p-4 rounded-md">
-              <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">VPN Access</h3>
-              <p className="text-sm">Conéctate directamente desde tu equipo usando OpenVPN.</p>
-              <Button 
-                variant="outline"
-                size="sm"
-                className="mt-2 w-full border-cybersec-electricblue text-cybersec-electricblue"
-                onClick={downloadVpnConfig}
-                disabled={isDownloadingVpn || !machineSession.vpnConfigAvailable}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isDownloadingVpn ? "Descargando..." : "Descargar .ovpn"}
-              </Button>
-              {!machineSession.vpnConfigAvailable && (
-                <p className="text-xs text-amber-500 mt-1">
-                  La configuración VPN no está disponible para esta máquina.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
   return (
     <Card className="w-full bg-cybersec-darkgray border-cybersec-darkerborder">
       <CardHeader className="pb-4">
@@ -185,7 +128,7 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
               Máquina en ejecución
             </CardTitle>
             <CardDescription>
-              {getMachineStatusIndicator()}
+              <MachineStatusIndicator status={machineSession.status} />
             </CardDescription>
           </div>
           <div className="flex items-center text-sm">
@@ -226,82 +169,20 @@ const MachineSessionPanel: React.FC<MachineSessionPanelProps> = ({
         
         <TabsContent value="services" className="border-none">
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">Servicios detectados</h3>
-                {machineSession.services && machineSession.services.length > 0 ? (
-                  <div className="bg-cybersec-black p-3 rounded-md overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-cybersec-darkerborder">
-                          <th className="text-left py-2 px-3 text-cybersec-electricblue">Servicio</th>
-                          <th className="text-left py-2 px-3 text-cybersec-electricblue">Puerto</th>
-                          <th className="text-left py-2 px-3 text-cybersec-electricblue">Estado</th>
-                          <th className="text-left py-2 px-3 text-cybersec-electricblue">Versión</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {machineSession.services.map((service, index) => (
-                          <tr key={index} className={index % 2 === 0 ? 'bg-cybersec-darkgray/20' : ''}>
-                            <td className="py-2 px-3 font-mono">{service.nombre}</td>
-                            <td className="py-2 px-3 font-mono">{service.puerto}</td>
-                            <td className="py-2 px-3">
-                              <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                                service.estado === 'open' ? 'bg-green-900/30 text-green-500' : 
-                                service.estado === 'filtered' ? 'bg-yellow-900/30 text-yellow-500' :
-                                'bg-red-900/30 text-red-500'
-                              }`}>
-                                {service.estado}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3 font-mono text-xs">{service.version || 'N/A'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="bg-cybersec-black p-4 rounded-md text-center text-gray-400">
-                    No se han detectado servicios aún
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-cybersec-electricblue mb-2">Vulnerabilidades potenciales</h3>
-                {machineSession.vulnerabilities && machineSession.vulnerabilities.length > 0 ? (
-                  <div className="space-y-2">
-                    {machineSession.vulnerabilities.map((vuln, index) => (
-                      <div key={index} className="bg-cybersec-black p-3 rounded-md">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium">{vuln.nombre}</span>
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                            vuln.severidad === 'crítica' ? 'bg-red-900/30 text-red-500' : 
-                            vuln.severidad === 'alta' ? 'bg-orange-900/30 text-orange-500' :
-                            vuln.severidad === 'media' ? 'bg-yellow-900/30 text-yellow-500' :
-                            'bg-blue-900/30 text-blue-500'
-                          }`}>
-                            {vuln.severidad}
-                          </span>
-                        </div>
-                        {vuln.cve && <div className="text-xs font-mono text-cybersec-electricblue mt-1">{vuln.cve}</div>}
-                        {vuln.descripcion && <div className="text-xs mt-1">{vuln.descripcion}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-cybersec-black p-4 rounded-md text-center text-gray-400">
-                    No se han detectado vulnerabilidades aún
-                  </div>
-                )}
-              </div>
-            </div>
+            <ServicesTab 
+              services={machineSession.services} 
+              vulnerabilities={machineSession.vulnerabilities} 
+            />
           </CardContent>
         </TabsContent>
         
         <TabsContent value="connection" className="border-none">
           <CardContent>
-            {renderConnectionDetails()}
+            <ConnectionDetails 
+              machineSession={machineSession}
+              isDownloadingVpn={isDownloadingVpn}
+              onDownloadVpn={downloadVpnConfig}
+            />
           </CardContent>
         </TabsContent>
       </Tabs>
