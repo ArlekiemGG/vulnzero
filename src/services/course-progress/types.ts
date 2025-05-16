@@ -1,0 +1,33 @@
+
+// Interfaces para los modelos de datos
+export interface LessonProgressItem {
+  id?: string;
+  lesson_id: string;
+  course_id: string;
+  user_id: string;
+  completed: boolean;
+  completed_at?: string;
+}
+
+export interface CourseProgressItem {
+  id?: string;
+  user_id: string;
+  course_id: string;
+  progress_percentage: number;
+  completed: boolean;
+  completed_at?: string | null;
+  last_lesson_id?: string | null;
+  started_at?: string;
+}
+
+export interface QuizResult {
+  score: number;
+  answers: Record<string, number>;
+}
+
+// Tipo de retorno para la función fetchUserProgressData
+export interface ProgressResult {
+  progress: number;
+  completedLessons: Record<string, boolean>;
+  completedQuizzes: Record<string, boolean>;
+}
