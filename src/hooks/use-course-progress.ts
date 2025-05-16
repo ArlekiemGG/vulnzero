@@ -8,17 +8,44 @@ import type {
   CompletedLessonsMap, 
   CompletedQuizzesMap 
 } from '@/types/course-progress';
+import { HybridCourseService } from '@/components/courses/services/HybridCourseService';
 
 /**
  * Hook para gestionar el progreso del curso
  */
-export const useUserCourseProgress = (courseId?: string, userId?: string): CourseProgressHook => {
+export const useUserCourseProgress = (courseSlug?: string, userId?: string): CourseProgressHook => {
   const [progress, setProgress] = useState<number>(0);
   const [completedLessons, setCompletedLessons] = useState<CompletedLessonsMap>({});
   const [completedQuizzes, setCompletedQuizzes] = useState<CompletedQuizzesMap>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [courseId, setCourseId] = useState<string | undefined>(undefined);
   const { detailedProgress, refreshUserStats } = useUser();
+
+  // Primero, resolvemos el courseId real (UUID) a partir del slug
+  useEffect(() => {
+    const resolveCourseId = async () => {
+      if (!courseSlug) return;
+      
+      try {
+        // Obtenemos el curso desde el servicio híbrido usando el slug
+        const course = await HybridCourseService.getCourseById(courseSlug);
+        if (course?.id && course.id !== courseSlug) {
+          console.log(`useUserCourseProgress: Resolved courseSlug ${courseSlug} to courseId ${course.id}`);
+          setCourseId(course.id);
+        } else {
+          // Si no encontramos un UUID real, usamos el slug como fallback (funcionará con datos estáticos)
+          console.log(`useUserCourseProgress: Using courseSlug as courseId: ${courseSlug}`);
+          setCourseId(courseSlug);
+        }
+      } catch (error) {
+        console.error("Error resolving course ID from slug:", error);
+        setCourseId(courseSlug); // Fallback al slug
+      }
+    };
+    
+    resolveCourseId();
+  }, [courseSlug]);
 
   // Intentar recuperar progreso del curso desde el contexto de usuario
   useEffect(() => {
@@ -77,12 +104,14 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
       await loadUserProgress();
     };
 
-    fetchProgress();
+    if (courseId) {
+      fetchProgress();
+    }
     
     return () => {
       isMounted = false;
     };
-  }, [loadUserProgress]);
+  }, [loadUserProgress, courseId]);
 
   /**
    * Marca una lección como completada

@@ -1,212 +1,135 @@
 
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
 import { courseProgressService } from '@/services/course-progress-service';
+import { useUser } from '@/contexts/UserContext';
+import { useState, useCallback } from 'react';
+import { toast } from '@/components/ui/use-toast';
+import { HybridCourseService } from './HybridCourseService';
 
-/**
- * Hook para gestionar el progreso de cursos y lecciones
- * Utiliza el servicio centralizado courseProgressService
- */
 export function useProgressService() {
-  const { user: userSession } = useAuth();
+  const { user } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
+  const { refreshUserStats } = useUser();
+
+  // Función para determinar el ID del curso a partir del ID de la lección
+  const getCourseIdFromLesson = useCallback(async (lessonId: string) => {
+    try {
+      // Primero intentamos obtener el ID del curso a partir de la lección
+      const lessonData = await HybridCourseService.getLessonById(lessonId);
+      if (!lessonData) {
+        console.error("ProgressService: Lesson not found:", lessonId);
+        return null;
+      }
+
+      // Si tenemos el ID de la sección, obtenemos el curso
+      if (lessonData.section_id) {
+        const sectionData = await HybridCourseService.getSectionById(lessonData.section_id);
+        if (sectionData && sectionData.course_id) {
+          return sectionData.course_id;
+        }
+      }
+
+      // Fallback: consultamos directamente a la base de datos
+      const courseInfo = await courseProgressService.getLessonCourseInfo(lessonId);
+      if (courseInfo.data?.course_sections?.course_id) {
+        return courseInfo.data.course_sections.course_id;
+      }
+
+      console.warn(`ProgressService: Could not determine course ID for lesson ${lessonId}`);
+      return null;
+    } catch (error) {
+      console.error("Error getting course ID from lesson:", error);
+      return null;
+    }
+  }, []);
 
   /**
    * Obtiene el progreso de una lección específica
    */
-  const getLessonProgress = async (lessonId: string) => {
-    if (!userSession) {
-      console.log('ProgressService: No user session found, cannot get lesson progress');
-      return null;
-    }
-
+  const getLessonProgress = useCallback(async (lessonId: string) => {
+    if (!user) return null;
+    
     try {
-      console.log(`ProgressService: Getting lesson progress for ${lessonId} and user ${userSession.id}`);
-      
-      // Intentamos obtener información del curso para esta lección
-      const { data: lessonData, error: lessonError } = await courseProgressService.getLessonCourseInfo(lessonId);
-      
-      if (lessonError) {
-        console.error('ProgressService: Error getting course info for lesson:', lessonError);
-        return null;
-      }
-      
-      const courseId = lessonData?.course_sections?.course_id;
-      
-      if (!courseId) {
-        console.log(`ProgressService: Could not determine course_id for lesson ${lessonId}`);
-        // Intentamos obtener el progreso sin courseId como fallback
-        const result = await courseProgressService.fetchLessonProgressByLessonId(userSession.id, lessonId);
-        console.log('ProgressService: Fallback lesson progress result:', result);
-        return result.data;
-      }
-      
-      console.log(`ProgressService: Found courseId ${courseId} for lesson ${lessonId}`);
-      
-      // Obtenemos el progreso usando courseProgressService
-      const { data, error } = await courseProgressService.checkLessonProgressExists(
-        userSession.id, 
-        courseId, 
-        lessonId
-      );
-      
-      if (error) {
-        console.error('ProgressService: Error fetching lesson progress:', error);
-        return null;
-      }
-      
-      console.log('ProgressService: Lesson progress data:', data);
-      return data || null;
+      const response = await courseProgressService.fetchLessonProgressByLessonId(user.id, lessonId);
+      return response.data;
     } catch (error) {
-      console.error('ProgressService: Error in getLessonProgress:', error);
+      console.error("Error getting lesson progress:", error);
       return null;
     }
-  };
-
-  /**
-   * Obtiene el progreso de un curso específico
-   */
-  const getCourseProgress = async (courseId: string) => {
-    if (!userSession) {
-      console.log('ProgressService: No user session found, cannot get course progress');
-      return null;
-    }
-
-    try {
-      console.log(`ProgressService: Getting course progress for ${courseId} and user ${userSession.id}`);
-      const { data, error } = await courseProgressService.getCourseProgress(userSession.id, courseId);
-      
-      if (error) {
-        console.error('ProgressService: Error fetching course progress:', error);
-        return null;
-      }
-      
-      console.log('ProgressService: Course progress data:', data);
-      return data || null;
-    } catch (error) {
-      console.error('ProgressService: Error fetching course progress:', error);
-      return null;
-    }
-  };
+  }, [user]);
 
   /**
    * Marca una lección como completada
+   * @param lessonId ID de la lección a marcar como completada
+   * @param moduleId Opcional: ID del módulo/sección (para actualización de estado en UI)
    */
-  const markLessonAsCompleted = async (lessonId: string, courseId?: string) => {
-    if (!userSession) {
-      console.log("ProgressService: Cannot mark lesson as completed: no user session");
-      toast({
-        title: "No autorizado",
-        description: "Debes iniciar sesión para marcar la lección como completada.",
-        variant: "destructive",
-      });
+  const markLessonAsCompleted = useCallback(async (lessonId: string, moduleId?: string) => {
+    if (!user) {
+      console.error("ProgressService: No user logged in");
       return false;
     }
 
+    setIsLoading(true);
+    
     try {
-      console.log(`ProgressService: Marking lesson ${lessonId} as completed for user ${userSession.id}`);
+      console.log(`ProgressService: Marking lesson ${lessonId} as completed`);
       
-      // Si no tenemos el courseId, intentar determinarlo
-      let effectiveCourseId = courseId;
-      if (!effectiveCourseId) {
-        console.log("ProgressService: No course ID provided, attempting to determine it from lesson");
-        const { data: lessonData, error: lessonError } = await courseProgressService.getLessonCourseInfo(lessonId);
-        
-        if (lessonError) {
-          console.error('ProgressService: Error getting course info for lesson:', lessonError);
-          toast({
-            title: "Error",
-            description: "No se pudo determinar el curso de la lección.",
-            variant: "destructive",
-          });
-          return false;
-        }
-        
-        effectiveCourseId = lessonData?.course_sections?.course_id;
-        console.log(`ProgressService: Determined course ID: ${effectiveCourseId}`);
-      }
-
-      if (!effectiveCourseId) {
-        console.error('ProgressService: Could not determine course_id for lesson:', lessonId);
+      // 1. Determinar el curso al que pertenece esta lección
+      const courseId = await getCourseIdFromLesson(lessonId);
+      
+      if (!courseId) {
         toast({
-          title: "Error",
-          description: "No se pudo determinar el curso de la lección.",
           variant: "destructive",
+          title: "Error",
+          description: "No se pudo determinar el curso al que pertenece esta lección"
         });
         return false;
       }
-
-      console.log(`ProgressService: Marking lesson ${lessonId} complete in course ${effectiveCourseId}`);
       
-      // Usar el servicio centralizado para marcar la lección como completada
+      console.log(`ProgressService: Lesson ${lessonId} belongs to course ${courseId}`);
+      
+      // 2. Marcar la lección como completada
       const success = await courseProgressService.markLessonComplete(
-        userSession.id, 
-        effectiveCourseId, 
+        user.id,
+        courseId,
         lessonId
       );
       
       if (success) {
-        console.log('ProgressService: Lesson marked as completed successfully');
+        console.log(`ProgressService: Successfully marked lesson ${lessonId} as completed`);
         
-        // Actualizar el progreso del curso después de marcar la lección
-        const progressUpdated = await courseProgressService.updateCourseProgressData(
-          userSession.id,
-          effectiveCourseId
-        );
+        // 3. Actualizar el progreso global del usuario
+        await refreshUserStats();
         
-        console.log(`ProgressService: Course progress updated: ${progressUpdated}`);
-        
+        toast({
+          title: "Lección completada",
+          description: "Se ha guardado tu progreso correctamente"
+        });
         return true;
       } else {
-        console.error('ProgressService: Failed to mark lesson as completed');
+        console.error(`ProgressService: Failed to mark lesson ${lessonId} as completed`);
         toast({
-          title: "Error",
-          description: "No se pudo marcar la lección como completada.",
           variant: "destructive",
+          title: "Error",
+          description: "No se pudo guardar el progreso de la lección"
         });
         return false;
       }
     } catch (error) {
-      console.error('ProgressService: Error marking lesson as completed:', error);
+      console.error("Error marking lesson as completed:", error);
       toast({
-        title: "Error",
-        description: "Ocurrió un error al marcar la lección como completada.",
         variant: "destructive",
+        title: "Error",
+        description: "Ocurrió un error al guardar el progreso"
       });
       return false;
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  /**
-   * Actualiza el progreso de un curso
-   */
-  const updateCourseProgress = async (courseId: string) => {
-    if (!userSession) {
-      console.log('ProgressService: No user session found, cannot update course progress');
-      return false;
-    }
-
-    try {
-      console.log(`ProgressService: Updating course progress for ${courseId} and user ${userSession.id}`);
-      const success = await courseProgressService.updateCourseProgressData(userSession.id, courseId);
-      console.log(`ProgressService: Course progress update result: ${success}`);
-      return success;
-    } catch (error) {
-      console.error('ProgressService: Error updating course progress:', error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al actualizar el progreso del curso.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
+  }, [user, getCourseIdFromLesson, refreshUserStats]);
 
   return {
-    getLessonProgress,
     markLessonAsCompleted,
-    updateCourseProgress,
-    getCourseProgress,
+    getLessonProgress,
+    isLoading
   };
 }
-
-export default useProgressService;

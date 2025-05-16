@@ -10,25 +10,32 @@ interface CompletionButtonProps {
 }
 
 const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonProps) => {
+  // Usamos estado interno para mostrar el estado correcto de UI incluso si el prop no se actualiza
   const [isLoading, setIsLoading] = useState(false);
   const [completed, setCompleted] = useState(isCompleted);
   
-  // Update internal state when prop changes
+  // Actualizamos el estado interno cuando cambia el prop
   useEffect(() => {
     console.log("LessonCompletionButton: isCompleted prop changed:", isCompleted);
     setCompleted(isCompleted);
   }, [isCompleted]);
   
   const handleComplete = async () => {
+    // No hacemos nada si ya está cargando o completado
     if (isLoading || completed) return;
     
     console.log("LessonCompletionButton: Starting completion process");
     setIsLoading(true);
+    
     try {
       console.log("LessonCompletionButton: Calling onComplete callback");
       await onComplete();
       console.log("LessonCompletionButton: Completion callback executed successfully");
+      
+      // Actualizamos nuestro estado interno para mostrar como completado
+      // incluso si el prop no se actualiza inmediatamente
       setCompleted(true);
+      
       toast({
         title: "Lección completada",
         description: "Se ha guardado tu progreso correctamente",
