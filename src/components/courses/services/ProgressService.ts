@@ -22,23 +22,21 @@ export function useProgressService() {
     try {
       console.log(`Getting lesson progress for ${lessonId} and user ${userSession.id}`);
       
-      // Buscamos el course_id para esta lección (requerido para el formato de clave estandarizado)
-      // Esto es necesario para compatibilidad con el código existente que solo pasa el lessonId
-      let courseId = null;
-      
-      // Intentar determinar el curso de la lección
+      // Intentamos obtener información del curso para esta lección
       const { data: lessonData, error: lessonError } = await courseProgressService.getLessonCourseInfo(lessonId);
+      
       if (lessonError) {
         console.error('Error getting course info for lesson:', lessonError);
-      } else if (lessonData) {
-        courseId = lessonData.course_id;
+        return null;
       }
+      
+      const courseId = lessonData?.course_sections?.course_id;
       
       if (!courseId) {
         console.log(`Could not determine course_id for lesson ${lessonId}`);
         // Intentamos obtener el progreso sin courseId como fallback
         const result = await courseProgressService.fetchLessonProgressByLessonId(userSession.id, lessonId);
-        return result;
+        return result.data;
       }
       
       // Obtenemos el progreso usando courseProgressService
@@ -116,7 +114,7 @@ export function useProgressService() {
           return false;
         }
         
-        effectiveCourseId = lessonData?.course_id;
+        effectiveCourseId = lessonData?.course_sections?.course_id;
       }
 
       if (!effectiveCourseId) {
