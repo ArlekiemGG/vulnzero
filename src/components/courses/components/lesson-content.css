@@ -1,0 +1,111 @@
+
+/* Base Lesson Content Styling */
+.lesson-content {
+  @apply text-cybersec-neongreen;
+}
+
+/* Typography enhancements */
+.lesson-content h1,
+.lesson-content h2,
+.lesson-content h3,
+.lesson-content h4,
+.lesson-content h5,
+.lesson-content h6 {
+  @apply font-bold my-6 text-cybersec-neongreen;
+}
+
+.lesson-content h1 {
+  @apply text-3xl border-b border-muted pb-2;
+}
+
+.lesson-content h2 {
+  @apply text-2xl border-b border-muted pb-2 mt-10;
+}
+
+.lesson-content h3 {
+  @apply text-xl mt-8;
+}
+
+.lesson-content h4 {
+  @apply text-lg;
+}
+
+/* Paragraph spacing */
+.lesson-content p {
+  @apply my-4 leading-7;
+}
+
+/* Lists */
+.lesson-content ul,
+.lesson-content ol {
+  @apply pl-6 my-4 space-y-2;
+}
+
+.lesson-content ul {
+  @apply list-disc;
+}
+
+.lesson-content ol {
+  @apply list-decimal;
+}
+
+.lesson-content li {
+  @apply pl-1;
+}
+
+/* Code blocks */
+.lesson-content pre {
+  @apply p-4 rounded-lg my-4 bg-gray-900 text-sm overflow-x-auto;
+}
+
+.lesson-content code:not(pre code) {
+  @apply px-1.5 py-0.5 rounded bg-muted text-cybersec-neongreen text-sm;
+}
+
+/* Links */
+.lesson-content a {
+  @apply text-cybersec-electricblue hover:underline;
+}
+
+/* Images */
+.lesson-content img {
+  @apply rounded-lg max-w-full my-8 border border-muted;
+}
+
+/* Tables */
+.lesson-content table {
+  @apply w-full border-collapse my-6;
+}
+
+.lesson-content th,
+.lesson-content td {
+  @apply border border-muted p-2;
+}
+
+.lesson-content th {
+  @apply bg-muted;
+}
+
+/* Custom content blocks */
+.lesson-content .bg-red-900,
+.lesson-content .bg-blue-900,
+.lesson-content .bg-yellow-900,
+.lesson-content .bg-purple-900,
+.lesson-content .bg-gray-800 {
+  @apply rounded-lg p-5 my-6;
+}
+
+/* Quote blocks */
+.lesson-content blockquote {
+  @apply border-l-4 border-cybersec-electricblue pl-4 italic my-6;
+}
+
+/* Horizontal rule */
+.lesson-content hr {
+  @apply my-8 border-muted;
+}
+
+/* Animation for important elements */
+.lesson-content .highlight {
+  @apply animate-pulse-neon;
+}

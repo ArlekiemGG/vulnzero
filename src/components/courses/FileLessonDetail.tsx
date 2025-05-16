@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { findCourseById, findModuleById, findLessonById } from '@/data/courses';
 import { useUserCourseProgress } from '@/hooks/use-course-progress';
 import LessonQuiz from './components/LessonQuiz';
+import EnhancedContentRenderer from './components/EnhancedContentRenderer';
+import './components/lesson-content.css';
 
 interface FileLessonDetailProps {
   courseId: string;
@@ -261,8 +263,8 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
             <span>{lesson.duration_minutes} minutos de lectura</span>
           </div>
           
-          <div className="prose prose-invert max-w-none mb-8">
-            <div dangerouslySetInnerHTML={{ __html: content }} />
+          <div className="mb-8 bg-cybersec-black p-6 rounded-lg border border-muted shadow-lg">
+            <EnhancedContentRenderer content={content} />
           </div>
           
           {quizVisible && lesson.has_quiz && (
@@ -319,7 +321,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
         
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
-          <Card className="sticky top-24">
+          <Card className="sticky top-24 bg-cybersec-black border-muted shadow-lg">
             <CardContent className="p-6">
               <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
               
