@@ -61,7 +61,7 @@ const CourseTabs: React.FC = () => {
   };
 
   return (
-    <Tabs defaultValue="todos" value={activeTab} onValueChange={handleTabChange}>
+    <Tabs defaultValue="todos" value={activeTab} onValueChange={handleTabChange} className="mb-8">
       <div className="flex justify-center mb-4">
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="todos">Todos los cursos</TabsTrigger>

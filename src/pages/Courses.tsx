@@ -1,7 +1,8 @@
 
 import CourseTabs from '@/components/courses/CourseTabs';
+import CourseWelcome from '@/components/courses/CourseWelcome';
 import { SearchIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
@@ -11,17 +12,22 @@ import { useUserStats } from '@/hooks/use-user-stats';
 const Courses: React.FC = () => {
   const { user } = useAuth();
   const { userStats } = useUserStats(user?.id);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   
   useEffect(() => {
     document.title = "Cursos - VulnZero";
   }, []);
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
   return (
-    <div className="min-h-screen bg-cybersec-black">
+    <div className="min-h-screen bg-cybersec-black flex flex-col">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`pt-16 pb-8 flex-grow ${user ? 'md:pl-64' : ''}`}>
         <div className="container px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
@@ -39,10 +45,13 @@ const Courses: React.FC = () => {
                 type="text"
                 placeholder="Buscar cursos..."
                 className="w-full py-2 pl-10 pr-4 rounded-md border border-cybersec-darkgray bg-cybersec-black text-white focus:outline-none focus:ring-2 focus:ring-cybersec-neongreen focus:border-transparent"
+                value={searchTerm}
+                onChange={handleSearchChange}
               />
             </div>
           </div>
 
+          <CourseWelcome />
           <CourseTabs />
         </div>
       </main>
