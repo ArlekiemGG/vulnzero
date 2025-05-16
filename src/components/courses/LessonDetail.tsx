@@ -16,7 +16,7 @@ import LessonDetailSkeleton from './components/LessonDetailSkeleton';
 import { useLessonData } from './hooks/useLessonData';
 
 const LessonDetail = () => {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
+  const { courseId, moduleId, lessonId } = useParams<{ courseId: string; moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { markLessonAsCompleted } = useProgressService();
@@ -30,7 +30,7 @@ const LessonDetail = () => {
     nextLesson,
     prevLesson,
     fadeIn
-  } = useLessonData(courseId, lessonId, user?.id);
+  } = useLessonData(courseId, moduleId, lessonId, user?.id);
 
   const handleMarkAsCompleted = async () => {
     if (!user) {
@@ -54,7 +54,7 @@ const LessonDetail = () => {
             description: "¿Quieres continuar con la siguiente lección?",
             action: (
               <button 
-                onClick={() => navigate(`/courses/${courseId}/lessons/${nextLesson.id}`)}
+                onClick={() => navigate(`/courses/${courseId}/learn/${nextLesson.moduleId}/${nextLesson.id}`)}
                 className="bg-primary text-white px-3 py-1 rounded-md text-xs"
               >
                 Continuar
@@ -71,8 +71,8 @@ const LessonDetail = () => {
     }
   };
 
-  const navigateToLesson = (id: string) => {
-    navigate(`/courses/${courseId}/lessons/${id}`);
+  const navigateToLesson = (id: string, targetModuleId: string) => {
+    navigate(`/courses/${courseId}/learn/${targetModuleId}/${id}`);
   };
 
   // Estado de carga
@@ -115,6 +115,7 @@ const LessonDetail = () => {
           
           <LessonNavigation 
             courseId={courseId!} 
+            moduleId={moduleId}
             prevLesson={prevLesson} 
             nextLesson={nextLesson} 
           />
