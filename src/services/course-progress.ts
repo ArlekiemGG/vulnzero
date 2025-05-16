@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { ProgressResult } from '@/types/course-progress';
 
@@ -12,23 +13,25 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Use a simplified approach to avoid deep type instantiation
-  const { data, error } = await supabase
+  // Usar type assertion para evitar problemas de inferencia de tipos profunda
+  const lessonProgressResult = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
     
-  if (error) throw error;
+  if (lessonProgressResult.error) throw lessonProgressResult.error;
 
   // Process and set data
   const progress = progressData?.progress_percentage || 0;
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  // Safely process the lessons data without complex type inference
-  if (data && Array.isArray(data)) {
-    data.forEach(item => {
+  // Usar type assertion para evitar inferencia profunda de tipos
+  const lessonProgressData = lessonProgressResult.data as Array<{lesson_id: string, completed: boolean}>;
+  
+  if (lessonProgressData && Array.isArray(lessonProgressData)) {
+    lessonProgressData.forEach(item => {
       if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;

@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 import { 
   fetchUserProgressData, 
   markLessonComplete, 
-  saveQuizResults, 
-  updateCourseProgressData 
+  saveQuizResults 
 } from '@/services/course-progress';
 import type { 
   CourseProgressHook, 
@@ -21,6 +20,8 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchProgress = async () => {
       if (!courseId || !userId) {
         setIsLoading(false);
@@ -31,18 +32,34 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
         setIsLoading(true);
         
         const result = await fetchUserProgressData(courseId, userId);
-        setProgress(result.progress);
-        setCompletedLessons(result.completedLessons);
-        setCompletedQuizzes(result.completedQuizzes);
+        
+        if (isMounted) {
+          setProgress(result.progress);
+          setCompletedLessons(result.completedLessons);
+          setCompletedQuizzes(result.completedQuizzes);
+        }
       } catch (err) {
         console.error('Error fetching course progress:', err);
-        setError(err instanceof Error ? err : new Error('Unknown error'));
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo cargar el progreso del curso"
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProgress();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [courseId, userId]);
 
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
@@ -56,11 +73,26 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
       if (success) {
         // Update local state
         setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
+        setProgress(prev => {
+          // Simple estimation, will be corrected on next data fetch
+          const newProgress = Math.min(100, prev + 5);
+          return newProgress;
+        });
+        
+        toast({
+          title: "Lección completada",
+          description: "Tu progreso ha sido guardado"
+        });
       }
       
       return success;
     } catch (err) {
       console.error('Error marking lesson as completed:', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo marcar la lección como completada"
+      });
       return false;
     }
   };
@@ -77,25 +109,22 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
         // Update local state
         setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
         setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true }));
+        
+        toast({
+          title: "Quiz completado",
+          description: `Has obtenido ${score}% de respuestas correctas`
+        });
       }
       
       return success;
     } catch (err) {
       console.error('Error saving quiz result:', err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron guardar los resultados del quiz"
+      });
       return false;
-    }
-  };
-
-  const updateCourseProgress = async (): Promise<void> => {
-    try {
-      if (!userId || !courseId) return;
-      
-      const updatedProgress = await updateCourseProgressData(userId, courseId);
-      
-      // Update local state
-      setProgress(updatedProgress);
-    } catch (err) {
-      console.error('Error updating course progress:', err);
     }
   };
 
