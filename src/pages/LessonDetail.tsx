@@ -1,6 +1,6 @@
 
-import LessonDetailComponent from '@/components/courses/LessonDetail';
 import { useEffect } from 'react';
+import LessonDetailComponent from '@/components/courses/LessonDetail';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
@@ -13,6 +13,8 @@ const LessonDetail = () => {
   
   useEffect(() => {
     document.title = "Lección - VulnZero";
+    // Scroll al inicio para evitar posiciones intermedias
+    window.scrollTo(0, 0);
   }, []);
 
   return (

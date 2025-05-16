@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CourseService, Course, Section, Lesson } from './services/CourseService';
 import { useProgressService } from './services/ProgressService';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -24,14 +25,23 @@ interface SectionWithLessons extends Section {
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { getCourseProgress } = useProgressService();
+  const contentRef = useRef<HTMLDivElement>(null);
   
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<SectionWithLessons[]>([]);
   const [progress, setProgress] = useState<number>(0);
   const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fadeIn, setFadeIn] = useState<boolean>(false);
+
+  // Efecto para la animación de entrada
+  useEffect(() => {
+    setFadeIn(true);
+    return () => setFadeIn(false);
+  }, []);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -180,7 +190,10 @@ const CourseDetail = () => {
       : 'bg-red-500';
 
   return (
-    <div className="container px-4 py-8 mx-auto">
+    <div 
+      ref={contentRef} 
+      className={`container px-4 py-8 mx-auto transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+    >
       <div className="flex flex-col md:flex-row gap-8">
         {/* Contenido principal */}
         <div className="w-full md:w-2/3">

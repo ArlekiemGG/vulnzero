@@ -29,8 +29,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
   return (
     <Link 
       to={`/courses/${course.id}`} 
-      className="block transition-opacity"
+      className="block transition-all duration-300"
       state={{ fromCourses: true }}
+      preventScrollReset={false}
     >
       <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
         <div className="h-40 bg-gray-200 overflow-hidden">
@@ -38,6 +39,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
             src={course.image_url} 
             alt={course.title} 
             className="w-full h-full object-cover"
+            loading="lazy"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
