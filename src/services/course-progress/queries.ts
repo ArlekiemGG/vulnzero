@@ -28,29 +28,30 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Usamos una estructura explícita para evitar inferencia profunda
-  const response = await supabase
+  // Usamos tipado explícito para la respuesta
+  const { data, error } = await supabase
     .from('user_lesson_progress')
-    .select('lesson_id, completed')
-    .eq('user_id', userId)
-    .eq('course_id', courseId);
+    .select('lesson_id, completed');
   
-  // Extraemos manualmente los valores para evitar problemas de inferencia
-  const rawData = response.data;
-  const error = response.error;
+  // Filtramos manualmente los resultados para evitar la inferencia profunda
+  let filteredData: SimpleLessonProgress[] = [];
   
-  // Transformamos explícitamente la respuesta para evitar problemas de inferencia de tipos
-  const transformedData = rawData ? 
-    rawData.map((item: {lesson_id: string, completed: boolean}) => ({
-      lesson_id: item.lesson_id,
-      completed: item.completed,
-      course_id: courseId // Añadimos el courseId manualmente ya que estamos filtrando por él
-    })) as SimpleLessonProgress[] : 
-    null;
+  if (data) {
+    filteredData = data
+      .filter((item: any) => {
+        // Aplicamos los filtros manualmente
+        return item && item.lesson_id;
+      })
+      .map((item: any) => ({
+        lesson_id: item.lesson_id,
+        completed: !!item.completed,
+        course_id: courseId // Añadimos el courseId manualmente ya que estamos filtrando por él
+      }));
+  }
   
   // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    data: transformedData,
+    data: filteredData,
     error: error
   };
 }
@@ -98,19 +99,20 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Usamos una estructura explícita para evitar inferencia profunda
-  const response = await supabase
+  // Usamos tipado explícito para la respuesta
+  const { count, error } = await supabase
     .from('course_lessons')
-    .select('*', { count: 'exact', head: true })
-    .eq('course_id', courseId);
+    .select('*', { count: 'exact', head: true });
   
-  // Extraemos manualmente los valores para evitar problemas de inferencia
-  const countValue = response.count || 0;
-  const error = response.error;
+  // Filtramos manualmente los resultados
+  let finalCount = 0;
+  if (count !== null) {
+    finalCount = count;
+  }
   
-  // Retornamos una estructura simplificada con solo lo que necesitamos
+  // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    count: countValue,
+    count: finalCount,
     error: error
   };
 }

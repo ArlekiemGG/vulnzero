@@ -1,5 +1,4 @@
 
-
 // Interfaces para los modelos de datos
 export interface LessonProgressItem {
   id?: string;
@@ -55,4 +54,3 @@ export interface SimpleLessonProgress {
   completed: boolean;
   course_id: string;  // Ahora es requerido para evitar problemas de tipo
 }
-
