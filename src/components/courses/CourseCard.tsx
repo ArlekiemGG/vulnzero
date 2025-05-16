@@ -26,23 +26,14 @@ const getLevelColor = (level: string) => {
 };
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
-  // Calculate proper course ID path for navigation ensuring it's valid
-  const courseDetailPath = course?.id ? `/courses/${course.id}` : '/courses';
-
   return (
-    <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-      <Link to={courseDetailPath} className="block h-full" onClick={(e) => {
-        if (!course?.id) {
-          e.preventDefault();
-          console.error("Invalid course ID for navigation");
-        }
-      }}>
+    <Link to={`/courses/${course.id}`} className="block">
+      <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 
             src={course.image_url} 
             alt={course.title} 
             className="w-full h-full object-cover"
-            loading="lazy"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
@@ -72,25 +63,25 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
             </div>
           </div>
         </CardContent>
-      </Link>
-      
-      <CardFooter className="pt-2">
-        {isCompleted ? (
-          <div className="w-full flex items-center text-emerald-600">
-            <CheckCircle2 className="mr-2 h-5 w-5" />
-            <span className="font-medium">Curso completado</span>
-          </div>
-        ) : (
-          <div className="w-full">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Progreso</span>
-              <span>{progress}%</span>
+        
+        <CardFooter className="pt-2">
+          {isCompleted ? (
+            <div className="w-full flex items-center text-emerald-600">
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              <span className="font-medium">Curso completado</span>
             </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        )}
-      </CardFooter>
-    </Card>
+          ) : (
+            <div className="w-full">
+              <div className="flex justify-between text-sm mb-1">
+                <span>Progreso</span>
+                <span>{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+    </Link>
   );
 };
 

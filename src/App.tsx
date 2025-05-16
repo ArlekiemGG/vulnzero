@@ -15,7 +15,6 @@ import NotFound from './pages/NotFound';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import LessonDetail from './pages/LessonDetail';
-import CreateCourse from './pages/courses/CreateCourse';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
@@ -81,15 +80,10 @@ function App() {
                 
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 
-                {/* Rutas para los cursos */}
+                {/* Nuevas rutas para los cursos */}
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:courseId" element={<CourseDetail />} />
                 <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonDetail />} />
-                <Route path="/courses/create" element={
-                  <ProtectedRoute>
-                    <CreateCourse />
-                  </ProtectedRoute>
-                } />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

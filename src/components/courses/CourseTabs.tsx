@@ -12,39 +12,21 @@ const CourseTabs: React.FC = () => {
   const [intermediateCourses, setIntermediateCourses] = useState<Course[]>([]);
   const [advancedCourses, setAdvancedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
-      setError(null);
       
       try {
-        console.log('CourseTabs: Fetching all courses');
         const allCourses = await CourseService.getCourses();
-        console.log('CourseTabs: Courses fetched:', allCourses);
-        
-        if (allCourses.length === 0) {
-          console.log('CourseTabs: No courses found');
-        }
-        
         setCourses(allCourses);
         
         // Filtrar cursos por nivel
-        const beginners = allCourses.filter(course => course.level === 'principiante');
-        const intermediate = allCourses.filter(course => course.level === 'intermedio');
-        const advanced = allCourses.filter(course => course.level === 'avanzado');
-        
-        console.log('CourseTabs: Beginner courses:', beginners);
-        console.log('CourseTabs: Intermediate courses:', intermediate);
-        console.log('CourseTabs: Advanced courses:', advanced);
-        
-        setBeginnerCourses(beginners);
-        setIntermediateCourses(intermediate);
-        setAdvancedCourses(advanced);
+        setBeginnerCourses(allCourses.filter(course => course.level === 'principiante'));
+        setIntermediateCourses(allCourses.filter(course => course.level === 'intermedio'));
+        setAdvancedCourses(allCourses.filter(course => course.level === 'avanzado'));
       } catch (error) {
         console.error('Error fetching courses:', error);
-        setError('No se pudieron cargar los cursos');
       } finally {
         setLoading(false);
       }
@@ -93,15 +75,13 @@ const CourseTabs: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {renderSkeletons()}
         </div>
-      ) : error ? (
-        <div className="text-center py-8 text-red-500">{error}</div>
       ) : (
         <>
           <TabsContent value="todos">
             {courses.length > 0 ? (
               <CourseGrid courses={courses} />
             ) : (
-              <p className="text-center py-8 text-gray-500">No hay cursos disponibles. Si eres administrador, puedes crear uno desde el botón "Nuevo Curso".</p>
+              <p className="text-center py-8 text-gray-500">No hay cursos disponibles</p>
             )}
           </TabsContent>
           

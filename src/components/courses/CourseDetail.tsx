@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CourseService, Course, Section, Lesson } from './services/CourseService';
 import { useProgressService } from './services/ProgressService';
@@ -32,101 +32,83 @@ const CourseDetail = () => {
   const [progress, setProgress] = useState<number>(0);
   const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isFirstLoad, setIsFirstLoad] = useState<boolean>(true);
 
-  // Use useCallback to prevent infinite render loops
-  const fetchCourseData = useCallback(async () => {
-    if (!courseId) return;
-    
-    // Only show loading state on first load, not on subsequent data refreshes
-    if (isFirstLoad) {
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!courseId) return;
       setIsLoading(true);
-    }
-    
-    try {
-      // Fetch course data
-      const courseData = await CourseService.getCourseById(courseId);
-      if (!courseData) {
-        toast({
-          title: "Curso no encontrado",
-          description: "El curso que buscas no existe",
-          variant: "destructive",
-        });
-        navigate('/courses');
-        return;
-      }
-      setCourse(courseData);
-
-      // Fetch course sections
-      const sectionsData = await CourseService.getCourseSections(courseId);
       
-      // Fetch lessons for each section
-      const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
-        sectionsData.map(async (section) => {
-          const lessons = await CourseService.getSectionLessons(section.id);
-          return {
-            ...section,
-            lessons
-          };
-        })
-      );
-      
-      setSections(sectionsWithLessons);
-      
-      // Get user progress if authenticated
-      if (user) {
-        const progressData = await getCourseProgress(courseId);
-        if (progressData) {
-          setProgress(progressData.progress_percentage);
-        }
-        
-        // Get completed lessons
-        const { data } = await supabase
-          .from('user_lesson_progress')
-          .select('lesson_id, completed')
-          .eq('user_id', user.id)
-          .eq('completed', true);
-        
-        if (data) {
-          const completedMap: Record<string, boolean> = {};
-          data.forEach(item => {
-            completedMap[item.lesson_id] = item.completed;
+      try {
+        // Obtener datos del curso
+        const courseData = await CourseService.getCourseById(courseId);
+        if (!courseData) {
+          toast({
+            title: "Curso no encontrado",
+            description: "El curso que buscas no existe",
+            variant: "destructive",
           });
-          setCompletedLessons(completedMap);
+          navigate('/courses');
+          return;
         }
-      }
-    } catch (error) {
-      console.error('Error fetching course data:', error);
-      // Only show error toast if it's the initial load
-      if (isFirstLoad) {
+        setCourse(courseData);
+
+        // Obtener las secciones del curso
+        const sectionsData = await CourseService.getCourseSections(courseId);
+        
+        // Obtener las lecciones de cada sección
+        const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
+          sectionsData.map(async (section) => {
+            const lessons = await CourseService.getSectionLessons(section.id);
+            return {
+              ...section,
+              lessons
+            };
+          })
+        );
+        
+        setSections(sectionsWithLessons);
+        
+        // Obtener el progreso del curso si el usuario está autenticado
+        if (user) {
+          const progressData = await getCourseProgress(courseId);
+          if (progressData) {
+            setProgress(progressData.progress_percentage);
+          }
+          
+          // Obtener el estado de las lecciones completadas
+          const fetchCompletedLessons = async () => {
+            const { data } = await supabase
+              .from('user_lesson_progress')
+              .select('lesson_id, completed')
+              .eq('user_id', user.id)
+              .eq('completed', true);
+            
+            if (data) {
+              const completedMap: Record<string, boolean> = {};
+              data.forEach(item => {
+                completedMap[item.lesson_id] = item.completed;
+              });
+              setCompletedLessons(completedMap);
+            }
+          };
+          
+          fetchCompletedLessons();
+        }
+      } catch (error) {
+        console.error('Error fetching course data:', error);
         toast({
           title: "Error",
           description: "No se pudo cargar la información del curso",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-      if (isFirstLoad) {
-        setIsFirstLoad(false);
-      }
-    }
-  }, [courseId, user, navigate, getCourseProgress, isFirstLoad]);
-
-  useEffect(() => {
-    // Reset states when courseId changes
-    setIsFirstLoad(true);
-    setIsLoading(true);
-    setCourse(null);
-    setSections([]);
-    setProgress(0);
-    setCompletedLessons({});
+    };
     
-    // Fetch course data
     fetchCourseData();
-  }, [courseId, fetchCourseData]);
+  }, [courseId, user, navigate, getCourseProgress]);
 
-  // Helper functions
   const getTotalLessons = () => {
     return sections.reduce((total, section) => total + section.lessons.length, 0);
   };
@@ -148,7 +130,7 @@ const CourseDetail = () => {
   };
 
   const continueCourse = () => {
-    // Find the first uncompleted lesson
+    // Buscar la última lección completada o la primera no completada
     for (const section of sections) {
       for (const lesson of section.lessons) {
         if (!completedLessons[lesson.id]) {
@@ -158,13 +140,12 @@ const CourseDetail = () => {
       }
     }
     
-    // If all lessons are completed, go to the first lesson
+    // Si todas están completadas, ir a la primera lección
     if (sections.length > 0 && sections[0].lessons.length > 0) {
       navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
     }
   };
 
-  // Prevent rendering until we have data or we're in loading state
   if (isLoading) {
     return (
       <div className="container px-4 py-8 mx-auto">
