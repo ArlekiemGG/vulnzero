@@ -6,11 +6,13 @@ import { Course } from './services/CourseService';
 import { CheckCircle2, Clock, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CourseCardProps {
   course: Course;
   progress?: number;
   isCompleted?: boolean;
+  isLoading?: boolean;
 }
 
 const getLevelColor = (level: string) => {
@@ -27,7 +29,12 @@ const getLevelColor = (level: string) => {
   }
 };
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ 
+  course, 
+  progress = 0, 
+  isCompleted = false,
+  isLoading = false 
+}) => {
   return (
     <Link 
       to={`/courses/${course.id}`} 
@@ -44,7 +51,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
               loading="lazy"
               decoding="async"
               onError={(e) => {
-                console.error(`Failed to load image for course: ${course.title}`);
+                console.error(`Failed to load image for course: ${course.title}, URL: ${course.image_url}`);
                 e.currentTarget.src = '/placeholder.svg';
               }}
             />
@@ -77,7 +84,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
         </CardContent>
         
         <CardFooter className="pt-2">
-          {isCompleted ? (
+          {isLoading ? (
+            <div className="w-full">
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-2 w-full" />
+            </div>
+          ) : isCompleted ? (
             <div className="w-full flex items-center text-emerald-400">
               <CheckCircle2 className="mr-2 h-5 w-5" />
               <span className="font-medium">Curso completado</span>

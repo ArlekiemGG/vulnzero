@@ -14,19 +14,35 @@ interface CourseGridProps {
 const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
   const { user } = useAuth();
   const [progressMap, setProgressMap] = useState<Record<string, { progress: number; completed: boolean }>>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchProgress = async () => {
-      if (!user || courses.length === 0) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      
+      if (courses.length === 0) {
+        setIsLoading(false);
+        return;
+      }
       
       try {
+        console.log(`Fetching progress for user ${user.id} and courses:`, courses.map(c => c.id));
+        
         const { data, error } = await supabase
           .from('user_course_progress')
           .select('course_id, progress_percentage, completed')
           .eq('user_id', user.id)
           .in('course_id', courses.map(course => course.id));
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error details:', error);
+          throw error;
+        }
+        
+        console.log('Received progress data:', data);
         
         const newProgressMap: Record<string, { progress: number; completed: boolean }> = {};
         data?.forEach(item => {
@@ -39,11 +55,16 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
         setProgressMap(newProgressMap);
       } catch (error) {
         console.error('Error fetching course progress:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo cargar el progreso de los cursos",
-          variant: "destructive"
-        });
+        // Don't show the toast if we're not authenticated
+        if (user) {
+          toast({
+            title: "Error",
+            description: "No se pudo cargar el progreso de los cursos",
+            variant: "destructive"
+          });
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -82,6 +103,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
           course={course}
           progress={progressMap[course.id]?.progress || 0}
           isCompleted={progressMap[course.id]?.completed || false}
+          isLoading={isLoading}
         />
       ))}
     </div>
