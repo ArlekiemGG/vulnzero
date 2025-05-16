@@ -16,18 +16,20 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
 
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
- * Utilizando Promise<any> explícitamente y evitando cadenas de tipos complejas
+ * Utilizando una función más simple sin retornar el objeto completo de Supabase
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  // Ejecutamos la consulta sin almacenar el resultado directamente
-  const { data, error } = await supabase
+  const response = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  // Retornamos una estructura simple que evita la inferencia de tipos compleja
-  return { data, error };
+  // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
+  return { 
+    data: response.data || null, 
+    error: response.error || null 
+  };
 }
 
 /**
@@ -64,17 +66,19 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<an
 
 /**
  * Cuenta el total de lecciones en un curso
- * Utilizando Promise<any> explícitamente y evitando cadenas de tipos complejas
+ * Utilizando una función más simple sin retornar el objeto completo de Supabase
  */
 export async function countTotalLessons(courseId: string): Promise<any> {
-  // Ejecutamos la consulta y extraemos solo lo que necesitamos para evitar inferencia de tipos compleja
-  const { count, error } = await supabase
+  const response = await supabase
     .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  // Retornamos una estructura simple que evita la inferencia de tipos compleja
-  return { count, error };
+  // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
+  return { 
+    count: response.count || 0, 
+    error: response.error || null 
+  };
 }
 
 /**
