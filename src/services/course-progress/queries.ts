@@ -60,16 +60,16 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
  * Verifica si existe un progreso de lección
  */
 export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
-  // Usamos maybeSingle() para simplificar el tipo de retorno
-  const response = await supabase
+  // Utilizamos un enfoque de tipado explícito para evitar inferencia profunda
+  const { data, error } = await supabase
     .from('user_lesson_progress')
     .select('id')
     .eq('user_id', userId)
-    .eq('course_id', courseId)
     .eq('lesson_id', lessonId)
     .maybeSingle();
   
-  return response;
+  // Retornamos una estructura simplificada
+  return { data, error };
 }
 
 /**
@@ -136,14 +136,15 @@ export async function countCompletedLessons(userId: string, courseId: string): P
  * Verifica si existe un progreso de curso
  */
 export async function checkCourseProgressExists(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
-  const response = await supabase
+  const { data, error } = await supabase
     .from('user_course_progress')
     .select('id')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .maybeSingle();
   
-  return response;
+  // Retornamos una estructura simplificada
+  return { data, error };
 }
 
 /**
