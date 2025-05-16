@@ -187,15 +187,30 @@ const CourseDetail = () => {
       </div>
     );
   }
+  
+  // Calcular el número total de lecciones
+  const totalLessons = sectionsWithLessons.reduce((total, section) => 
+    total + (section.lessons ? section.lessons.length : 0), 0);
+
+  // Calcular horas y minutos para mostrar en el panel de progreso
+  const durationHours = Math.floor(course.duration_minutes / 60);
+  const durationMinutes = course.duration_minutes % 60;
+
+  // Calcular el número de lecciones completadas
+  const completedLessonsCount = completedLessons ? Object.keys(completedLessons).length : 0;
 
   return (
     <div className="container px-4 py-8 mx-auto">
-      <CourseHeader courseId={courseId || ''} />
+      {/* Pasamos el objeto course completo a CourseHeader */}
+      <CourseHeader 
+        course={course}
+        totalLessons={totalLessons}
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
         {/* Columna principal */}
         <div className="lg:col-span-2 space-y-6">
-          <CourseImage course={course} />
+          <CourseImage src={course.image_url} alt={course.title} />
           
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
@@ -226,8 +241,13 @@ const CourseDetail = () => {
           
           <Separator className="my-6" />
           
-          {/* Contenido del curso */}
-          <CourseContent course={course} />
+          {/* Contenido del curso - Ahora pasamos correctamente las props */}
+          <CourseContent 
+            sections={sectionsWithLessons}
+            courseId={courseId || ''}
+            courseDescription={course.description || ''}
+            completedLessons={completedLessons || {}}
+          />
           
           <Separator className="my-6" />
           
@@ -243,13 +263,14 @@ const CourseDetail = () => {
         
         {/* Barra lateral */}
         <div className="lg:col-span-1">
-          <CourseProgressPanel
-            course={course}
+          <CourseProgressPanel 
             progress={progress}
-            startCourse={startCourse}
-            onValidate={validateContent}
-            validationLoading={validationLoading}
-            validationResult={courseValidation}
+            completedLessonsCount={completedLessonsCount}
+            totalLessons={totalLessons}
+            durationHours={durationHours}
+            durationMinutes={durationMinutes}
+            onContinue={startCourse}
+            onStart={startCourse}
           />
         </div>
       </div>
