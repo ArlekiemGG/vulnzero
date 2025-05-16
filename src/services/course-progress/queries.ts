@@ -16,14 +16,17 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
 
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
+ * Using explicit Promise<any> to avoid deep type instantiation error
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  // Avoid using complex return type to prevent deep type instantiation
-  return supabase
+  // Using explicit Promise<any> return type to prevent deep type instantiation
+  const response = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
+  
+  return response;
 }
 
 /**
@@ -60,13 +63,17 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<an
 
 /**
  * Cuenta el total de lecciones en un curso
+ * Using explicit Promise<any> to avoid deep type instantiation error
  */
 export async function countTotalLessons(courseId: string): Promise<any> {
-  // Avoid using complex return type to prevent deep type instantiation
-  return supabase
+  // Using explicit Promise<any> return type and storing in a variable before returning
+  // This breaks the complex type chain that causes the error
+  const response = await supabase
     .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
+  
+  return response;
 }
 
 /**
