@@ -17,7 +17,7 @@ export async function getCourseProgress(userId: string, courseId: string) {
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
  */
-export async function getLessonProgress(userId: string, courseId: string) {
+export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
   // Using any to avoid deep type instantiation issues
   return supabase
     .from('user_lesson_progress')
@@ -61,10 +61,10 @@ export async function createLessonProgress(data: LessonProgressItem) {
 /**
  * Cuenta el total de lecciones en un curso
  */
-export async function countTotalLessons(courseId: string) {
+export async function countTotalLessons(courseId: string): Promise<any> {
   // Using any to avoid deep type instantiation issues
   return supabase
-    .from('lessons')
+    .from('course_lessons') // Fixed table name from 'lessons' to 'course_lessons'
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
 }
@@ -72,7 +72,7 @@ export async function countTotalLessons(courseId: string) {
 /**
  * Cuenta las lecciones completadas por un usuario en un curso
  */
-export async function countCompletedLessons(userId: string, courseId: string) {
+export async function countCompletedLessons(userId: string, courseId: string): Promise<any> {
   // Using any to avoid deep type instantiation issues
   return supabase
     .from('user_lesson_progress')

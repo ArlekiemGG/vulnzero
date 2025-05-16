@@ -25,7 +25,7 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   if (progressError) throw progressError;
 
   // Use any for the intermediate result to avoid deep type instantiation
-  const lessonProgressResult = await supabase
+  const lessonProgressResult: any = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
@@ -147,16 +147,16 @@ export async function saveQuizResults(
 }
 
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
-  // Use any type to avoid deep type instantiation
+  // Count total lessons in the course
   const totalLessonsResult: any = await supabase
-    .from('user_lesson_progress')
+    .from('course_lessons') // Fixed table name
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
   const totalLessonsCount = totalLessonsResult.count;
   if (totalLessonsResult.error) throw totalLessonsResult.error;
   
-  // Use any type to avoid deep type instantiation
+  // Count completed lessons
   const completedLessonsResult: any = await supabase
     .from('user_lesson_progress')
     .select('*')
