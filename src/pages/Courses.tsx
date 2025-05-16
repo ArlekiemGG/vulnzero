@@ -27,7 +27,7 @@ const Courses: React.FC = () => {
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`content-area pt-16 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area ${user ? 'md:pl-64' : ''} pt-16`}>
         <div className="container px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>

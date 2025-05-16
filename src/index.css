@@ -56,24 +56,26 @@
   }
 
   body {
-    @apply bg-cybersec-black text-cybersec-neongreen font-mono min-h-screen;
+    @apply bg-cybersec-black text-cybersec-neongreen font-mono;
     background-image: radial-gradient(hsla(120, 100%, 50%, 0.1) 1px, transparent 0);
     background-size: 30px 30px;
   }
 
-  /* Updated page wrapper styles for better footer positioning */
+  /* Estructura de página mejorada */
   .page-wrapper {
     @apply flex flex-col min-h-screen;
+    height: auto !important; /* Fuerza altura automática basada en contenido */
   }
   
-  /* Make sure content area takes available space but doesn't force viewport height */
+  /* El área de contenido debe expandirse naturalmente */
   .content-area {
-    @apply flex-1;
+    @apply flex-1 w-full overflow-visible;
   }
 
-  /* Updated styles to ensure footer appears at the bottom after content */
+  /* Estilos para asegurar que el footer aparezca después del contenido */
   .site-footer {
-    @apply w-full mt-auto;
+    @apply w-full;
+    position: relative; /* Evita comportamiento fixed */
   }
 
   /* Terminal text effect */

@@ -45,7 +45,7 @@ const CourseDetailPage = () => {
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`content-area pt-16 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area ${user ? 'md:pl-64' : ''} pt-16`}>
         <div className="container px-4 py-8 mx-auto">
           {!loading && courseId && <CourseDetail />}
         </div>
