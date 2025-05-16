@@ -27,6 +27,8 @@ export interface LessonProgressItem {
   course_id: string;
   completed: boolean;
   completed_at: string | null;
+  quiz_score?: number;
+  quiz_answers?: Record<string, number>;
 }
 
 export interface CourseProgressItem {
@@ -49,6 +51,8 @@ export interface SimpleLessonProgress {
   lesson_id: string;
   completed: boolean;
   course_id: string;
+  quiz_score?: number;
+  quiz_answers?: Record<string, number>;
 }
 
 export interface TotalLessonsResponse {

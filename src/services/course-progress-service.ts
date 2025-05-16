@@ -96,7 +96,9 @@ export const courseProgressService = {
         completedLessons[`${courseId}:${lessonProgress.lesson_id}`] = true;
         
         // También registramos si es un quiz (para futura implementación)
-        if (lessonProgress.quiz_score && lessonProgress.quiz_score > 0) {
+        // Accedemos de forma segura a la propiedad quiz_score que podría no existir
+        const quizScore = (lessonProgress as any).quiz_score;
+        if (quizScore && quizScore > 0) {
           completedQuizzes[lessonProgress.lesson_id] = true;
           completedQuizzes[`${courseId}:${lessonProgress.lesson_id}`] = true;
         }
@@ -134,6 +136,26 @@ export const courseProgressService = {
     } catch (error) {
       console.error('Error in fetchLessonProgressByLessonId:', error);
       return { data: null };
+    }
+  },
+
+  /**
+   * Obtiene el progreso de un curso específico para un usuario
+   */
+  getCourseProgress: async (userId: string, courseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in getCourseProgress:', error);
+      return { data: null, error };
     }
   },
 
@@ -225,17 +247,26 @@ export const courseProgressService = {
       
       if (checkError) throw checkError;
       
+      // Define el objeto quiz_answers con tipo explícito para TypeScript
+      const quizData: {
+        completed: boolean;
+        completed_at: string;
+        course_id: string;
+        quiz_score?: number;
+        quiz_answers?: Record<string, number>;
+      } = {
+        completed: true,
+        completed_at: new Date().toISOString(),
+        course_id: courseId,
+        quiz_score: score,
+        quiz_answers: answers
+      };
+      
       if (existingProgress) {
         // Actualizar el registro existente
         const { error: updateError } = await supabase
           .from('user_lesson_progress')
-          .update({
-            completed: true,
-            completed_at: new Date().toISOString(),
-            course_id: courseId,
-            quiz_score: score,
-            quiz_answers: answers
-          })
+          .update(quizData)
           .eq('id', existingProgress.id);
         
         if (updateError) throw updateError;
@@ -246,11 +277,7 @@ export const courseProgressService = {
           .insert({
             user_id: userId,
             lesson_id: lessonId,
-            course_id: courseId,
-            completed: true,
-            completed_at: new Date().toISOString(),
-            quiz_score: score,
-            quiz_answers: answers
+            ...quizData
           });
         
         if (insertError) throw insertError;
