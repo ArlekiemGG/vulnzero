@@ -61,24 +61,24 @@
     background-size: 30px 30px;
   }
 
-  /* Estructura de página mejorada con flexbox */
-  .page-wrapper {
+  /* Estructura de página global mejorada */
+  #root {
     @apply flex flex-col min-h-screen;
-    /* Eliminamos height: auto !important que podría causar conflictos */
   }
   
-  /* Aseguramos que el área de contenido se expanda para empujar el footer */
+  /* Estructura básica de todas las páginas */
+  .page-wrapper {
+    @apply flex flex-col min-h-screen w-full;
+  }
+  
+  /* Área de contenido principal - debe expandirse para empujar el footer */
   .content-area {
-    @apply flex-grow flex-shrink-0 w-full;
-    /* flex-grow para que ocupe el espacio disponible */
-    /* flex-shrink-0 para que no se comprima */
+    @apply flex-grow w-full;
   }
 
   /* Footer siempre al final del contenido */
   .site-footer {
-    @apply w-full mt-auto flex-shrink-0;
-    /* mt-auto lo empuja hasta el final del contenedor flex */
-    /* flex-shrink-0 para que no se comprima */
+    @apply w-full mt-auto;
   }
 
   /* Terminal text effect */

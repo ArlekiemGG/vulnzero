@@ -24,10 +24,10 @@ const LessonPage = () => {
   // Safety check - if any of the required params are missing, we can't render the lesson
   if (!courseId || !moduleId || !lessonId) {
     return (
-      <div className="min-h-screen bg-cybersec-black">
+      <div className="page-wrapper">
         <Navbar />
         {user && <Sidebar userStats={userStats} />}
-        <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
+        <main className={`content-area pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
           <div className="container px-4 py-8 mx-auto text-center">
             <h1 className="text-2xl font-bold mb-4">Parámetros faltantes</h1>
             <p>No se pueden cargar los detalles de la lección porque faltan parámetros necesarios.</p>
@@ -39,11 +39,11 @@ const LessonPage = () => {
   }
   
   return (
-    <div className="min-h-screen bg-cybersec-black">
+    <div className="page-wrapper">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
         <FileLessonDetail 
           courseId={courseId} 
           moduleId={moduleId} 
