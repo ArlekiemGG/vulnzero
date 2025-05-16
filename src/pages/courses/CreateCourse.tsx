@@ -5,11 +5,22 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import Navbar from '@/components/layout/Navbar';
+import Sidebar from '@/components/layout/Sidebar';
 
 const CreateCourse = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [userStats, setUserStats] = useState({
+    level: 1,
+    points: 0,
+    pointsToNextLevel: 100,
+    progress: 0,
+    rank: 0,
+    solvedMachines: 0,
+    completedChallenges: 0,
+  });
   
   useEffect(() => {
     document.title = "Crear Curso - VulnZero";
@@ -33,8 +44,49 @@ const CreateCourse = () => {
         navigate('/courses');
       }
     };
+
+    // Fetch user stats for sidebar
+    const fetchUserStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Get basic profile data
+        const { data } = await supabase
+          .from('profiles')
+          .select('level, points, rank, completed_challenges')
+          .eq('id', user.id)
+          .single();
+          
+        if (data) {
+          // Calculate points needed for next level (simplified formula)
+          const pointsToNextLevel = data.level * 100;
+          const progress = Math.min(Math.floor((data.points / pointsToNextLevel) * 100), 100);
+          
+          // Get solved machines count
+          const { count: solvedMachines } = await supabase
+            .from('user_machine_progress')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+            
+          setUserStats({
+            level: data.level || 1,
+            points: data.points || 0,
+            pointsToNextLevel,
+            progress,
+            rank: data.rank || 0,
+            solvedMachines: solvedMachines || 0,
+            completedChallenges: data.completed_challenges || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+      }
+    };
     
-    checkAdmin();
+    if (user) {
+      checkAdmin();
+      fetchUserStats();
+    }
   }, [user, navigate]);
   
   const createFundamentalsCourse = async () => {
@@ -43,6 +95,8 @@ const CreateCourse = () => {
     setIsLoading(true);
     
     try {
+      console.log("Starting course creation process");
+      
       // 1. Create the course
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
@@ -58,9 +112,16 @@ const CreateCourse = () => {
         .select()
         .single();
       
-      if (courseError || !courseData) {
-        throw courseError || new Error("No se pudo crear el curso");
+      if (courseError) {
+        console.error("Error creating course:", courseError);
+        throw courseError;
       }
+      
+      if (!courseData) {
+        throw new Error("No se pudo crear el curso - no se devolvieron datos");
+      }
+      
+      console.log("Course created successfully:", courseData);
       
       // 2. Create the section
       const { data: sectionData, error: sectionError } = await supabase
@@ -73,9 +134,16 @@ const CreateCourse = () => {
         .select()
         .single();
       
-      if (sectionError || !sectionData) {
-        throw sectionError || new Error("No se pudo crear la sección del curso");
+      if (sectionError) {
+        console.error("Error creating section:", sectionError);
+        throw sectionError;
       }
+      
+      if (!sectionData) {
+        throw new Error("No se pudo crear la sección del curso - no se devolvieron datos");
+      }
+      
+      console.log("Section created successfully:", sectionData);
       
       // 3. Create the lessons
       const lessons = [
@@ -201,12 +269,15 @@ Objetivo: Conocer hábitos clave para mejorar la seguridad personal y organizaci
       ];
       
       for (const lesson of lessons) {
+        console.log(`Creating lesson: ${lesson.title}`);
         const { error: lessonError } = await supabase
           .from('course_lessons')
           .insert(lesson);
         
         if (lessonError) {
-          console.error("Error al crear lección:", lessonError);
+          console.error(`Error creating lesson "${lesson.title}":`, lessonError);
+        } else {
+          console.log(`Lesson "${lesson.title}" created successfully`);
         }
       }
       
@@ -230,31 +301,38 @@ Objetivo: Conocer hábitos clave para mejorar la seguridad personal y organizaci
   };
   
   return (
-    <div className="container px-4 py-8 mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Crear Curso</h1>
+    <div className="flex min-h-screen bg-background">
+      <Navbar />
+      <Sidebar userStats={userStats} />
       
-      <div className="max-w-2xl mx-auto">
-        <div className="space-y-4">
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Fundamentos de Ciberseguridad</h2>
-            <p className="text-gray-300 mb-4">
-              Curso introductorio que cubre los conceptos básicos de la ciberseguridad,
-              desde tipos de amenazas hasta buenas prácticas de seguridad.
-            </p>
-            <p className="text-sm text-gray-400 mb-6">
-              Nivel: Principiante • 6 lecciones • 3 horas
-            </p>
-            
-            <Button 
-              onClick={createFundamentalsCourse} 
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? 'Creando curso...' : 'Crear curso de Fundamentos de Ciberseguridad'}
-            </Button>
+      <main className="flex-1 pt-16 px-4 md:px-8 md:ml-64">
+        <div className="container py-8 mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Crear Curso</h1>
+          
+          <div className="max-w-2xl mx-auto">
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h2 className="text-xl font-semibold mb-4">Fundamentos de Ciberseguridad</h2>
+                <p className="text-gray-300 mb-4">
+                  Curso introductorio que cubre los conceptos básicos de la ciberseguridad,
+                  desde tipos de amenazas hasta buenas prácticas de seguridad.
+                </p>
+                <p className="text-sm text-gray-400 mb-6">
+                  Nivel: Principiante • 6 lecciones • 3 horas
+                </p>
+                
+                <Button 
+                  onClick={createFundamentalsCourse} 
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading ? 'Creando curso...' : 'Crear curso de Fundamentos de Ciberseguridad'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

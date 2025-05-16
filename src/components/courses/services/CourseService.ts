@@ -58,12 +58,17 @@ export interface LessonProgress {
 export const CourseService = {
   async getCourses(): Promise<Course[]> {
     try {
+      console.log('Fetching all courses');
       const { data, error } = await supabase
         .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching courses:', error);
+        throw error;
+      }
+      
+      console.log('Courses fetched:', data);
       return data || [];
     } catch (error) {
       console.error('Error fetching courses:', error);
