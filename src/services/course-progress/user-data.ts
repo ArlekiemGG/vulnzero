@@ -19,7 +19,7 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
       };
     }
 
-    // Fetch lesson progress data
+    // Fetch lesson progress data with course_id filter
     const { data: lessonProgressData, error: lessonProgressError } = await queries.getLessonProgress(userId, courseId);
     if (lessonProgressError) {
       console.error("Error fetching lesson progress:", lessonProgressError);

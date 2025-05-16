@@ -31,21 +31,19 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
   // Usamos tipado explícito para la respuesta
   const { data, error } = await supabase
     .from('user_lesson_progress')
-    .select('lesson_id, completed');
+    .select('lesson_id, completed')
+    .eq('user_id', userId)
+    .eq('course_id', courseId); // Ahora filtramos por course_id
   
   // Filtramos manualmente los resultados para evitar la inferencia profunda
   let filteredData: SimpleLessonProgress[] = [];
   
   if (data) {
     filteredData = data
-      .filter((item: any) => {
-        // Aplicamos los filtros manualmente
-        return item && item.lesson_id;
-      })
       .map((item: any) => ({
         lesson_id: item.lesson_id,
         completed: !!item.completed,
-        course_id: courseId // Añadimos el courseId manualmente ya que estamos filtrando por él
+        course_id: courseId
       }));
   }
   
@@ -65,6 +63,7 @@ export async function checkLessonProgressExists(userId: string, courseId: string
     .from('user_lesson_progress')
     .select('id')
     .eq('user_id', userId)
+    .eq('course_id', courseId) // Ahora filtramos también por course_id
     .eq('lesson_id', lessonId)
     .maybeSingle();
   
@@ -100,20 +99,16 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Extraemos solo las propiedades necesarias para evitar inferencia profunda
-  const countQuery = await supabase
-    .from('course_lessons')
-    .select('*', { count: 'exact', head: true })
-    .eq('id', courseId);
-  
-  // Extraemos explícitamente solo lo que necesitamos
-  const extractedCount = countQuery.count || 0;
-  const extractedError = countQuery.error;
+  // Consulta simplificada para evitar problemas de inferencia profunda
+  const { count, error } = await supabase
+    .from('course_sections')
+    .select('course_lessons(*)', { count: 'exact' })
+    .eq('course_id', courseId);
   
   // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    count: extractedCount,
-    error: extractedError
+    count: count !== null ? count : 0,
+    error: error
   };
 }
 

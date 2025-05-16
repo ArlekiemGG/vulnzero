@@ -26,7 +26,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
       // Create new record with all required fields
       const { error } = await queries.createLessonProgress({
         user_id: userId,
-        course_id: courseId,
+        course_id: courseId, // Aseguramos que course_id siempre se incluya
         lesson_id: lessonId,
         completed: true,
         completed_at: new Date().toISOString()
@@ -76,7 +76,7 @@ export async function saveQuizResults(
       // Create new lesson progress record with all required fields
       const { error } = await queries.createLessonProgress({
         user_id: userId,
-        course_id: courseId,
+        course_id: courseId, // Aseguramos que course_id siempre se incluya
         lesson_id: lessonId,
         ...lessonData
       });

@@ -551,6 +551,7 @@ export type Database = {
         Row: {
           completed: boolean
           completed_at: string | null
+          course_id: string | null
           id: string
           lesson_id: string
           user_id: string
@@ -558,6 +559,7 @@ export type Database = {
         Insert: {
           completed?: boolean
           completed_at?: string | null
+          course_id?: string | null
           id?: string
           lesson_id: string
           user_id: string
@@ -565,11 +567,19 @@ export type Database = {
         Update: {
           completed?: boolean
           completed_at?: string | null
+          course_id?: string | null
           id?: string
           lesson_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_lesson_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_lesson_progress_lesson_id_fkey"
             columns: ["lesson_id"]
@@ -636,6 +646,10 @@ export type Database = {
           p_points?: number
         }
         Returns: string
+      }
+      update_lesson_progress_course_id: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
