@@ -25,7 +25,7 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   if (progressError) throw progressError;
 
   // Use any for the intermediate result to avoid deep type instantiation
-  const lessonProgressResult: any = await supabase
+  const lessonProgressResult = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)

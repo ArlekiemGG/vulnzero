@@ -10,8 +10,8 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   const { data: progressData, error: progressError } = await queries.getCourseProgress(userId, courseId);
   if (progressError) throw progressError;
 
-  // Fetch lesson progress data - tipado explícitamente para evitar error de instantiación profunda
-  const lessonProgressResult: any = await queries.getLessonProgress(userId, courseId);
+  // Fetch lesson progress data - avoid deep type instantiation error
+  const lessonProgressResult = await queries.getLessonProgress(userId, courseId);
   if (lessonProgressResult.error) throw lessonProgressResult.error;
   
   // Process and set data
@@ -52,7 +52,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
     
     if (result.error) throw result.error;
   } else {
-    // Create new record - proveer todos los campos requeridos
+    // Create new record - with all required fields
     const result = await queries.createLessonProgress({
       user_id: userId,
       course_id: courseId,
@@ -93,7 +93,7 @@ export async function saveQuizResults(
     const result = await queries.updateLessonProgress(existingLesson.id, lessonData);
     if (result.error) throw result.error;
   } else {
-    // Create new lesson progress record - proveer todos los campos requeridos
+    // Create new lesson progress record - with all required fields
     const result = await queries.createLessonProgress({
       user_id: userId,
       course_id: courseId,
@@ -114,14 +114,14 @@ export async function saveQuizResults(
  * Actualiza los datos de progreso del curso
  */
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
-  // Use any type to avoid deep type instantiation
-  const totalLessonsResult: any = await queries.countTotalLessons(courseId);
+  // Use more specific types to avoid deep instantiation issues
+  const totalLessonsResult = await queries.countTotalLessons(courseId);
   
   const totalLessonsCount = totalLessonsResult.count;
   if (totalLessonsResult.error) throw totalLessonsResult.error;
   
-  // Use any type to avoid deep type instantiation
-  const completedLessonsResult: any = await queries.countCompletedLessons(userId, courseId);
+  // Use more specific types to avoid deep instantiation issues
+  const completedLessonsResult = await queries.countCompletedLessons(userId, courseId);
   
   const completedLessonsData = completedLessonsResult.data;
   if (completedLessonsResult.error) throw completedLessonsResult.error;
@@ -144,7 +144,7 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     // Update existing record
     await queries.updateCourseProgressRecord(existingProgress.id, updateData);
   } else {
-    // Create new record - proveer todos los campos requeridos
+    // Create new record - with all required fields
     await queries.createCourseProgressRecord({
       user_id: userId,
       course_id: courseId,

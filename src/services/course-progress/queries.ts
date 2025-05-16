@@ -18,14 +18,12 @@ export async function getCourseProgress(userId: string, courseId: string) {
  * Obtiene el progreso de las lecciones de un curso para un usuario
  */
 export async function getLessonProgress(userId: string, courseId: string) {
-  // Usamos un tipado más explícito para evitar problemas de tipo
-  const result = await supabase
+  // Using any to avoid deep type instantiation issues
+  return supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
-  
-  return result;
 }
 
 /**
@@ -57,35 +55,31 @@ export async function updateLessonProgress(id: string, data: Partial<LessonProgr
 export async function createLessonProgress(data: LessonProgressItem) {
   return supabase
     .from('user_lesson_progress')
-    .insert(data);
+    .insert([data]); // Wrapping in array to fix type issue
 }
 
 /**
  * Cuenta el total de lecciones en un curso
  */
 export async function countTotalLessons(courseId: string) {
-  // Usamos un tipado más específico para evitar problemas
-  const result = await supabase
-    .from('user_lesson_progress')
+  // Using any to avoid deep type instantiation issues
+  return supabase
+    .from('lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
-  
-  return result;
 }
 
 /**
  * Cuenta las lecciones completadas por un usuario en un curso
  */
 export async function countCompletedLessons(userId: string, courseId: string) {
-  // Usamos un tipado más específico para evitar problemas
-  const result = await supabase
+  // Using any to avoid deep type instantiation issues
+  return supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .eq('completed', true);
-  
-  return result;
 }
 
 /**
@@ -116,5 +110,5 @@ export async function updateCourseProgressRecord(id: string, data: Partial<Cours
 export async function createCourseProgressRecord(data: CourseProgressItem) {
   return supabase
     .from('user_course_progress')
-    .insert(data);
+    .insert([data]); // Wrapping in array to fix type issue
 }
