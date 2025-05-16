@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { ProgressResult } from '@/types/course-progress';
 
@@ -13,20 +12,19 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fetch completed lessons - using stronger type assertion to avoid deep type instantiation
-  const lessonsResponse = await supabase
+  // Fetch completed lessons - explicitly cast the response type to avoid deep type instantiation
+  const { data, error: lessonsError } = await supabase
     .from('user_lesson_progress')
-    .select('*')
+    .select('lesson_id, completed, quiz_completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
     
-  // Use explicit type assertion for the response
-  const lessonsData = lessonsResponse.data as Array<{
+  // Use a simple type for the data to avoid deep type inference
+  const lessonsData = data as Array<{
     lesson_id: string;
     completed: boolean;
     quiz_completed?: boolean;
-  }>;
-  const lessonsError = lessonsResponse.error;
+  }> | null;
 
   if (lessonsError) throw lessonsError;
 
