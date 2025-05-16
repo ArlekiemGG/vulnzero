@@ -2,6 +2,17 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { ProgressResult } from '@/types/course-progress';
 
+// Define explicit interfaces to avoid deep type instantiation issues
+interface LessonProgressItem {
+  lesson_id: string;
+  completed: boolean;
+}
+
+interface ProgressData {
+  progress_percentage: number;
+  completed: boolean;
+}
+
 export async function fetchUserProgressData(courseId: string, userId: string): Promise<ProgressResult> {
   // Fetch course progress data
   const { data: progressData, error: progressError } = await supabase
@@ -13,36 +24,22 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Define explicit interfaces to avoid deep type instantiation issues
-  interface LessonProgressItem {
-    lesson_id: string;
-    completed: boolean;
-  }
-
-  interface LessonProgressResult {
-    data: LessonProgressItem[] | null;
-    error: Error | null;
-  }
-
-  // Use the explicit interface for the query result
-  const lessonProgressResult = await supabase
+  // Use any for the intermediate result to avoid deep type instantiation
+  const lessonProgressResult: any = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
-    
-  // Cast the result to our explicit interface to solve the deep instantiation error
-  const typedResult = lessonProgressResult as unknown as LessonProgressResult;
   
-  if (typedResult.error) throw typedResult.error;
+  if (lessonProgressResult.error) throw lessonProgressResult.error;
 
   // Process and set data
   const progress = progressData?.progress_percentage || 0;
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  if (typedResult.data && Array.isArray(typedResult.data)) {
-    typedResult.data.forEach(item => {
+  if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
+    lessonProgressResult.data.forEach((item: LessonProgressItem) => {
       if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
@@ -116,15 +113,10 @@ export async function saveQuizResults(
     .eq('lesson_id', lessonId)
     .maybeSingle();
   
-  // Since quiz_completed doesn't exist in the schema, we'll modify our approach
   const lessonData = {
     completed: true,
     completed_at: new Date().toISOString()
-    // Remove quiz fields that don't exist in the database
   };
-  
-  // Store quiz data separately if needed
-  // Consider creating a separate table for quiz results
   
   if (existingLesson) {
     // Update existing record
@@ -155,8 +147,8 @@ export async function saveQuizResults(
 }
 
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
-  // Count total lessons in the course based on user_lesson_progress records
-  const totalLessonsResult = await supabase
+  // Use any type to avoid deep type instantiation
+  const totalLessonsResult: any = await supabase
     .from('user_lesson_progress')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
@@ -164,8 +156,8 @@ export async function updateCourseProgressData(userId: string, courseId: string)
   const totalLessonsCount = totalLessonsResult.count;
   if (totalLessonsResult.error) throw totalLessonsResult.error;
   
-  // Calculate completed lessons
-  const completedLessonsResult = await supabase
+  // Use any type to avoid deep type instantiation
+  const completedLessonsResult: any = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
