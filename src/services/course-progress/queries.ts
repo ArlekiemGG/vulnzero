@@ -17,8 +17,8 @@ export async function getCourseProgress(userId: string, courseId: string) {
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
  */
-export async function getLessonProgress(userId: string, courseId: string) {
-  // Use a generic type parameter to avoid deep type instantiation
+export async function getLessonProgress(userId: string, courseId: string): ReturnType<typeof supabase.from> {
+  // Avoid using select return type directly to prevent deep type instantiation
   return supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
@@ -61,8 +61,8 @@ export async function createLessonProgress(data: LessonProgressItem) {
 /**
  * Cuenta el total de lecciones en un curso
  */
-export async function countTotalLessons(courseId: string) {
-  // Use a simple return type annotation to avoid deep type instantiation
+export async function countTotalLessons(courseId: string): ReturnType<typeof supabase.from> {
+  // Avoid using select return type directly to prevent deep type instantiation
   return supabase
     .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
