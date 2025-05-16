@@ -13,14 +13,19 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fetch completed lessons - using type assertion to avoid deep type instantiation
+  // Fetch completed lessons - using stronger type assertion to avoid deep type instantiation
   const lessonsResponse = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId);
     
-  const lessonsData = lessonsResponse.data;
+  // Use explicit type assertion for the response
+  const lessonsData = lessonsResponse.data as Array<{
+    lesson_id: string;
+    completed: boolean;
+    quiz_completed?: boolean;
+  }>;
   const lessonsError = lessonsResponse.error;
 
   if (lessonsError) throw lessonsError;
@@ -37,9 +42,8 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
         const lessonKey = `${courseId}:${item.lesson_id}`;
         completedLessonsMap[lessonKey] = true;
         
-        // Check for quiz completion using a simple type assertion
-        const lessonWithQuizData = item as { quiz_completed?: boolean };
-        if (lessonWithQuizData.quiz_completed) {
+        // Check for quiz completion
+        if (item.quiz_completed) {
           completedQuizzesMap[lessonKey] = true;
         }
       }
