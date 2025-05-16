@@ -61,21 +61,24 @@
     background-size: 30px 30px;
   }
 
-  /* Estructura de página mejorada */
+  /* Estructura de página mejorada con flexbox */
   .page-wrapper {
     @apply flex flex-col min-h-screen;
-    height: auto !important; /* Fuerza altura automática basada en contenido */
+    /* Eliminamos height: auto !important que podría causar conflictos */
   }
   
-  /* El área de contenido debe expandirse naturalmente */
+  /* Aseguramos que el área de contenido se expanda para empujar el footer */
   .content-area {
-    @apply flex-1 w-full overflow-visible;
+    @apply flex-grow flex-shrink-0 w-full;
+    /* flex-grow para que ocupe el espacio disponible */
+    /* flex-shrink-0 para que no se comprima */
   }
 
-  /* Estilos para asegurar que el footer aparezca después del contenido */
+  /* Footer siempre al final del contenido */
   .site-footer {
-    @apply w-full;
-    position: relative; /* Evita comportamiento fixed */
+    @apply w-full mt-auto flex-shrink-0;
+    /* mt-auto lo empuja hasta el final del contenedor flex */
+    /* flex-shrink-0 para que no se comprima */
   }
 
   /* Terminal text effect */
