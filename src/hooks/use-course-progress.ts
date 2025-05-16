@@ -50,12 +50,14 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
           lessonsData.forEach(item => {
             if (item.completed) {
               // Create lesson key using courseId and lessonId
-              // We're adapting to the existing schema without module_id
               const lessonKey = `${courseId}:${item.lesson_id}`;
               completedLessonsMap[lessonKey] = true;
               
-              // If quiz data exists, mark it as completed
-              if (item.quiz_completed) {
+              // Check for quiz completion using a type-safe property access
+              // We need to use type assertion since the database schema might have this field
+              // but TypeScript doesn't know about it
+              const lessonWithQuizData = item as any;
+              if (lessonWithQuizData.quiz_completed) {
                 completedQuizzesMap[lessonKey] = true;
               }
             }
@@ -108,8 +110,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
             course_id: courseId,
             lesson_id: lessonId,
             completed: true,
-            completed_at: new Date().toISOString(),
-            quiz_completed: false
+            completed_at: new Date().toISOString()
           });
         
         if (error) throw error;
@@ -119,7 +120,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
       
       // Update course progress
-      await updateCourseProgress(courseId, userId);
+      await updateCourseProgress();
       
       return true;
     } catch (err) {
@@ -144,35 +145,39 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         .maybeSingle();
       
       if (existingLesson) {
-        // Update existing record with quiz results
+        // Update existing record with quiz results using the column might not be defined in type
+        const updateData: Record<string, any> = { 
+          completed: true,
+          completed_at: new Date().toISOString(),
+          quiz_completed: true,
+          quiz_score: score,
+          quiz_answers: answers,
+          quiz_completed_at: new Date().toISOString()
+        };
+        
         const { error } = await supabase
           .from('user_lesson_progress')
-          .update({ 
-            quiz_completed: true,
-            quiz_score: score,
-            quiz_answers: answers,
-            quiz_completed_at: new Date().toISOString(),
-            completed: true,
-            completed_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', existingLesson.id);
         
         if (error) throw error;
       } else {
         // Create new lesson progress record with quiz results
+        const insertData: Record<string, any> = {
+          user_id: userId,
+          course_id: courseId,
+          lesson_id: lessonId,
+          completed: true,
+          completed_at: new Date().toISOString(),
+          quiz_completed: true,
+          quiz_score: score,
+          quiz_answers: answers,
+          quiz_completed_at: new Date().toISOString()
+        };
+        
         const { error } = await supabase
           .from('user_lesson_progress')
-          .insert({
-            user_id: userId,
-            course_id: courseId,
-            lesson_id: lessonId,
-            completed: true,
-            completed_at: new Date().toISOString(),
-            quiz_completed: true,
-            quiz_score: score,
-            quiz_answers: answers,
-            quiz_completed_at: new Date().toISOString()
-          });
+          .insert(insertData);
         
         if (error) throw error;
       }
@@ -182,7 +187,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true }));
       
       // Update course progress
-      await updateCourseProgress(courseId, userId);
+      await updateCourseProgress();
       
       return true;
     } catch (err) {
@@ -191,8 +196,10 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
     }
   };
 
-  const updateCourseProgress = async (courseId: string, userId: string): Promise<void> => {
+  const updateCourseProgress = async (): Promise<void> => {
     try {
+      if (!userId || !courseId) return;
+      
       // Count total lessons in the course based on user_lesson_progress records
       const { count: totalLessonsCount, error: countError } = await supabase
         .from('user_lesson_progress')
