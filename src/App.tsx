@@ -17,7 +17,7 @@ import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Security from "./pages/Security";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { Index } from "./pages/Index";
+import Index from "./pages/Index";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "./contexts/AuthContext";
 import Labs from "./pages/Labs";
