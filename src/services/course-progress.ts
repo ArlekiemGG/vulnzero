@@ -24,8 +24,13 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Use any for the intermediate result to avoid deep type instantiation
-  const lessonProgressResult: any = await supabase
+  // Use explicit typing with PostgrestResponse interface to avoid deep type instantiation
+  interface PostgrestResponse {
+    data: LessonProgressItem[] | null;
+    error: any;
+  }
+  
+  const lessonProgressResult: PostgrestResponse = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
@@ -147,8 +152,15 @@ export async function saveQuizResults(
 }
 
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
+  // Define interfaces for response types to avoid deep instantiation
+  interface CountResult {
+    count?: number;
+    data: any[] | null;
+    error: any;
+  }
+  
   // Count total lessons in the course
-  const totalLessonsResult: any = await supabase
+  const totalLessonsResult: CountResult = await supabase
     .from('course_lessons') // Fixed table name
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
@@ -157,7 +169,7 @@ export async function updateCourseProgressData(userId: string, courseId: string)
   if (totalLessonsResult.error) throw totalLessonsResult.error;
   
   // Count completed lessons
-  const completedLessonsResult: any = await supabase
+  const completedLessonsResult: CountResult = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
