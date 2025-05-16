@@ -17,7 +17,7 @@ export async function getCourseProgress(userId: string, courseId: string) {
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
  */
-export async function getLessonProgress(userId: string, courseId: string) {
+export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
   // Avoid using complex return type to prevent deep type instantiation
   return supabase
     .from('user_lesson_progress')
@@ -61,7 +61,7 @@ export async function createLessonProgress(data: LessonProgressItem) {
 /**
  * Cuenta el total de lecciones en un curso
  */
-export async function countTotalLessons(courseId: string) {
+export async function countTotalLessons(courseId: string): Promise<any> {
   // Avoid using complex return type to prevent deep type instantiation
   return supabase
     .from('course_lessons') 
