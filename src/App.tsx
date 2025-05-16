@@ -80,7 +80,6 @@ function App() {
                 
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 
-                {/* Nuevas rutas para los cursos */}
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:courseId" element={<CourseDetail />} />
                 <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonDetail />} />
