@@ -8,9 +8,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserStats } from '@/hooks/use-user-stats';
 import { toast } from '@/components/ui/use-toast';
 import { findCourseById } from '@/data/courses';
-import FileCourseDetail from '@/components/courses/FileCourseDetail';
+import CourseDetail from '@/components/courses/CourseDetail';
 
-const CourseDetail = () => {
+const CourseDetailPage = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const { user } = useAuth();
   const { userStats } = useUserStats(user?.id);
@@ -44,7 +44,7 @@ const CourseDetail = () => {
       {user && <Sidebar userStats={userStats} />}
       
       <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
-        {!loading && courseId && <FileCourseDetail courseId={courseId} />}
+        {!loading && courseId && <CourseDetail />}
       </main>
       
       <Footer />
@@ -52,4 +52,4 @@ const CourseDetail = () => {
   );
 };
 
-export default CourseDetail;
+export default CourseDetailPage;

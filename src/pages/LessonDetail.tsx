@@ -1,4 +1,4 @@
-// Importaciones
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -30,6 +30,8 @@ const LessonDetail = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [fadeIn, setFadeIn] = useState(false);
+  const [prevLessonData, setPrevLessonData] = useState(null);
+  const [nextLessonData, setNextLessonData] = useState(null);
 
   useEffect(() => {
     if (!isLoading) {
@@ -82,6 +84,9 @@ const LessonDetail = () => {
         setIsCompleted(progress?.completed || false);
       }
       
+      // Configurar navegación entre lecciones
+      await setupNavigation(courseId, moduleId, lessonId);
+      
       // Para evitar errores de tipado, verificamos si hay datos de quiz de forma segura
       try {
         const quizPath = `/courses/${courseId}/${moduleId}/${lessonId}-quiz.json`;
@@ -110,6 +115,68 @@ const LessonDetail = () => {
     }
   }, [courseId, lessonId, moduleId, user, navigate]);
 
+  const setupNavigation = async (courseId, moduleId, lessonId) => {
+    try {
+      // Obtener secciones del curso
+      const sections = await HybridCourseService.getCourseSections(courseId);
+      
+      // Obtener lecciones de la sección actual
+      const lessons = await HybridCourseService.getSectionLessons(moduleId);
+      
+      // Encontrar el índice de la lección actual
+      const currentIndex = lessons.findIndex(l => l.id === lessonId);
+      
+      // Configurar navegación a lección anterior
+      if (currentIndex > 0) {
+        setPrevLessonData({
+          id: lessons[currentIndex - 1].id,
+          title: lessons[currentIndex - 1].title,
+          moduleId: moduleId
+        });
+      } else {
+        // Buscar la última lección de la sección anterior
+        const currentSectionIndex = sections.findIndex(s => s.id === moduleId);
+        if (currentSectionIndex > 0) {
+          const prevSectionId = sections[currentSectionIndex - 1].id;
+          const prevSectionLessons = await HybridCourseService.getSectionLessons(prevSectionId);
+          if (prevSectionLessons.length > 0) {
+            const lastLesson = prevSectionLessons[prevSectionLessons.length - 1];
+            setPrevLessonData({
+              id: lastLesson.id,
+              title: lastLesson.title,
+              moduleId: prevSectionId
+            });
+          }
+        }
+      }
+      
+      // Configurar navegación a siguiente lección
+      if (currentIndex < lessons.length - 1) {
+        setNextLessonData({
+          id: lessons[currentIndex + 1].id,
+          title: lessons[currentIndex + 1].title,
+          moduleId: moduleId
+        });
+      } else {
+        // Buscar la primera lección de la siguiente sección
+        const currentSectionIndex = sections.findIndex(s => s.id === moduleId);
+        if (currentSectionIndex < sections.length - 1) {
+          const nextSectionId = sections[currentSectionIndex + 1].id;
+          const nextSectionLessons = await HybridCourseService.getSectionLessons(nextSectionId);
+          if (nextSectionLessons.length > 0) {
+            setNextLessonData({
+              id: nextSectionLessons[0].id,
+              title: nextSectionLessons[0].title,
+              moduleId: nextSectionId
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error setting up navigation:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLessonData();
   }, [fetchLessonData]);
@@ -137,7 +204,6 @@ const LessonDetail = () => {
     
     try {
       // Lógica para guardar los resultados del quiz y marcar la lección como completada
-      // Esto dependerá de tu implementación específica
       setIsCompleted(true);
       toast({
         title: "Quiz completado",
@@ -154,21 +220,25 @@ const LessonDetail = () => {
   };
 
   const goToNextLesson = () => {
-    // Lógica para navegar a la siguiente lección
-    toast({
-      title: "Siguiente lección",
-      description: "Te estamos redirigiendo a la siguiente lección del curso"
-    });
-    navigate(`/courses/${courseId}/learn/${moduleId}/${nextLesson?.id || ''}`);
+    if (nextLessonData) {
+      // Lógica para navegar a la siguiente lección
+      toast({
+        title: "Siguiente lección",
+        description: "Te estamos redirigiendo a la siguiente lección del curso"
+      });
+      navigate(`/courses/${courseId}/learn/${nextLessonData.moduleId}/${nextLessonData.id}`);
+    }
   };
 
   const goToPreviousLesson = () => {
-    // Lógica para navegar a la lección anterior
-    toast({
-      title: "Lección anterior",
-      description: "Te estamos redirigiendo a la lección anterior del curso"
-    });
-    navigate(`/courses/${courseId}/learn/${moduleId}/${prevLesson?.id || ''}`);
+    if (prevLessonData) {
+      // Lógica para navegar a la lección anterior
+      toast({
+        title: "Lección anterior",
+        description: "Te estamos redirigiendo a la lección anterior del curso"
+      });
+      navigate(`/courses/${courseId}/learn/${prevLessonData.moduleId}/${prevLessonData.id}`);
+    }
   };
 
   if (isLoading) {
@@ -230,7 +300,7 @@ const LessonDetail = () => {
               {quizData ? (
                 <LessonQuiz 
                   courseId={courseId}
-                  moduleId={lesson.module_id || "default"}
+                  moduleId={moduleId || "default"}
                   lessonId={lessonId}
                   onComplete={handleQuizComplete}
                   completed={isCompleted}
@@ -245,11 +315,19 @@ const LessonDetail = () => {
               )}
               
               <div className="flex justify-between mt-8">
-                <Button variant="outline" onClick={goToPreviousLesson}>
+                <Button 
+                  variant="outline" 
+                  onClick={goToPreviousLesson}
+                  disabled={!prevLessonData}
+                >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Lección anterior
                 </Button>
-                <Button variant="outline" onClick={goToNextLesson}>
+                <Button 
+                  variant="outline" 
+                  onClick={goToNextLesson}
+                  disabled={!nextLessonData}
+                >
                   Siguiente lección
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>

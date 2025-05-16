@@ -229,6 +229,17 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   const navigateToLesson = (moduleId: string, lessonId: string) => {
     navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
   };
+  
+  const continueCourse = () => {
+    // If we have a next lesson, navigate to it
+    if (nextLesson) {
+      navigateToLesson(nextLesson.moduleId, nextLesson.lessonId);
+      return;
+    }
+    
+    // Otherwise, return to course page
+    navigate(`/courses/${courseId}`);
+  };
 
   if (isLoading) {
     return (
@@ -286,24 +297,6 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
       </div>
     );
   }
-
-  const continueCourse = () => {
-    // Buscar la última lección completada o la primera no completada
-    for (const section of sections) {
-      for (const lesson of section.lessons) {
-        if (!completedLessons[lesson.id]) {
-          console.log(`Continuing course at: /courses/${courseId}/learn/${section.id}/${lesson.id}`);
-          navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`);
-          return;
-        }
-      }
-    }
-  
-    // Si todas están completadas, ir a la primera lección
-    if (sections.length > 0 && sections[0].lessons.length > 0) {
-      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
-    }
-  };
 
   return (
     <ErrorBoundary>

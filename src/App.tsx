@@ -1,71 +1,64 @@
 
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/contexts/AuthContext';
-import Index from '@/pages/Index';
-import Dashboard from '@/pages/Dashboard';
-import Auth from '@/pages/Auth';
-import Machines from '@/pages/Machines';
-import MachineDetail from '@/pages/MachineDetail';
-import Labs from '@/pages/Labs';
-import Challenges from '@/pages/Challenges';
-import CTFs from '@/pages/CTFs';
-import Courses from '@/pages/Courses';
-import CourseDetail from '@/pages/CourseDetail';
-import LessonDetail from '@/pages/LessonDetail';
-import MachineSessionDetail from '@/pages/MachineSessionDetail';
-import NotFound from '@/pages/NotFound';
-import Security from '@/pages/Security';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import Leaderboard from '@/pages/Leaderboard';
-import './App.css';
-import CourseOnboarding from './pages/CourseOnboarding';
+import { useEffect } from "react";
+import "./App.css";
+import { HashRouter, Routes, Route, useNavigate } from "react-router-dom";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import LessonDetail from "./pages/LessonDetail";
+import CourseOnboarding from "./pages/CourseOnboarding";
+import Machines from "./pages/Machines";
+import MachineDetail from "./pages/MachineDetail";
+import MachineSessionDetail from "./pages/MachineSessionDetail";
+import CTFs from "./pages/CTFs";
+import Challenges from "./pages/Challenges";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Leaderboard from "./pages/Leaderboard";
+import NotFound from "./pages/NotFound";
+import Security from "./pages/Security";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { Index } from "./pages/Index";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "./contexts/AuthContext";
+import Labs from "./pages/Labs";
 
-const ScrollToTop = () => {
-  const { pathname } = useLocation();
+// Import the middleware
+import { RouteMiddleware } from "./middleware";
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
-};
+// Import the new course page component
+import LessonPage from "./pages/courses/[courseId]/learn/[moduleId]/[lessonId]/page";
 
 function App() {
   return (
-    <Router>
+    <HashRouter>
       <AuthProvider>
-        <ScrollToTop />
+        <RouteMiddleware />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          
-          <Route path="/machines" element={<Machines />} />
-          <Route path="/machines/:machineId" element={<MachineDetail />} />
-          <Route 
-            path="/machines/:machineId/session/:sessionId" 
-            element={<ProtectedRoute><MachineSessionDetail /></ProtectedRoute>} 
-          />
-          
-          <Route path="/labs" element={<Labs />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/ctfs" element={<CTFs />} />
-          <Route path="/security" element={<Security />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          
           <Route path="/courses" element={<Courses />} />
-          <Route path="/courses/onboarding" element={<CourseOnboarding />} />
           <Route path="/courses/:courseId" element={<CourseDetail />} />
-          <Route path="/courses/:courseId/learn/:moduleId/:lessonId" element={<LessonDetail />} />
+          <Route path="/courses/:courseId/learn/:moduleId/:lessonId" element={<LessonPage />} />
+          <Route path="/courses/onboarding" element={<CourseOnboarding />} />
+          <Route path="/courses/:courseId/onboarding" element={<CourseOnboarding />} />
           
+          {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/machines" element={<ProtectedRoute><Machines /></ProtectedRoute>} />
+          <Route path="/machines/:machineId" element={<ProtectedRoute><MachineDetail /></ProtectedRoute>} />
+          <Route path="/machines/:machineId/session/:sessionId" element={<ProtectedRoute><MachineSessionDetail /></ProtectedRoute>} />
+          <Route path="/ctfs" element={<ProtectedRoute><CTFs /></ProtectedRoute>} />
+          <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+          <Route path="/labs" element={<ProtectedRoute><Labs /></ProtectedRoute>} />
+          <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+          
+          {/* Fallback route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
       </AuthProvider>
-    </Router>
+    </HashRouter>
   );
 }
 

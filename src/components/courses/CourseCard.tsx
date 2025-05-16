@@ -38,9 +38,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
 }) => {
   const [imgError, setImgError] = useState<boolean>(false);
 
+  // Generate the courseUrl using the new format with /courses/courseId
+  const courseUrl = `/courses/${course.id}`;
+
   return (
     <Link 
-      to={`/courses/${course.id}`} 
+      to={courseUrl} 
       className="block transition-all duration-300 hover:no-underline"
       state={{ fromCourses: true, courseId: course.id }}
     >

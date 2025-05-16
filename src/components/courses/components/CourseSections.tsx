@@ -13,6 +13,11 @@ interface CourseSectionsProps {
 const CourseSections = ({ sections, courseId, completedLessons }: CourseSectionsProps) => {
   const navigate = useNavigate();
 
+  const navigateToLesson = (moduleId: string, lessonId: string) => {
+    console.log(`Navigating to: /courses/${courseId}/learn/${moduleId}/${lessonId}`);
+    navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
+  };
+
   return (
     <>
       {sections.length > 0 ? (
@@ -35,7 +40,7 @@ const CourseSections = ({ sections, courseId, completedLessons }: CourseSections
                     <div 
                       key={lesson.id} 
                       className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`)}
+                      onClick={() => navigateToLesson(section.id, lesson.id)}
                     >
                       <div className="mr-3">
                         {completedLessons[lesson.id] ? (
