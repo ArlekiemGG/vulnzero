@@ -1,4 +1,3 @@
-
 import { ProgressResult, QuizResult } from './types';
 import * as queries from './queries';
 

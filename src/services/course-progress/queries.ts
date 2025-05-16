@@ -16,21 +16,18 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
 
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
- * Using explicit Promise<any> to avoid deep type instantiation error
+ * Utilizando Promise<any> explícitamente y evitando cadenas de tipos complejas
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  // Usando tipos primitivos directamente para evitar la inferencia de tipos complejos
-  const result = await supabase
+  // Ejecutamos la consulta sin almacenar el resultado directamente
+  const { data, error } = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  // Extraer manualmente los campos necesarios para romper la cadena de tipos
-  return {
-    data: result.data,
-    error: result.error
-  };
+  // Retornamos una estructura simple que evita la inferencia de tipos compleja
+  return { data, error };
 }
 
 /**
@@ -67,20 +64,17 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<an
 
 /**
  * Cuenta el total de lecciones en un curso
- * Using explicit Promise<any> to avoid deep type instantiation error
+ * Utilizando Promise<any> explícitamente y evitando cadenas de tipos complejas
  */
 export async function countTotalLessons(courseId: string): Promise<any> {
-  // Usando tipos primitivos y descomponiendo la respuesta para evitar la inferencia de tipos profundos
-  const result = await supabase
+  // Ejecutamos la consulta y extraemos solo lo que necesitamos para evitar inferencia de tipos compleja
+  const { count, error } = await supabase
     .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  // Extraer manualmente los campos necesarios para romper la cadena de tipos
-  return {
-    count: result.count,
-    error: result.error
-  };
+  // Retornamos una estructura simple que evita la inferencia de tipos compleja
+  return { count, error };
 }
 
 /**
