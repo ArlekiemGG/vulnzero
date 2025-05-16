@@ -56,19 +56,34 @@ export const useUserStats = (userId?: string) => {
         if (machinesError) throw machinesError;
         
         // Fetch completed challenges count
+        // Note: Using user_activities table instead of non-existent challenges_progress
         const { count: completedChallenges, error: challengesError } = await supabase
-          .from('challenges_progress')
+          .from('user_activities')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', userId)
-          .eq('completed', true);
+          .eq('type', 'challenge')
+          .eq('title', 'completed');
           
         if (challengesError) throw challengesError;
         
-        // Fetch user rank (assuming there's a function for this)
-        const { data: rankData, error: rankError } = await supabase
-          .rpc('get_user_ranking', { user_id: userId });
+        // Calculate user rank based on points
+        // Note: Since get_user_ranking function doesn't exist, we'll use a simple approach
+        let rank = 0;
+        try {
+          const { data: usersWithHigherPoints, error: rankError } = await supabase
+            .from('profiles')
+            .select('id')
+            .gt('points', profileData?.points || 0)
+            .order('points', { ascending: false });
+            
+          if (rankError) throw rankError;
           
-        if (rankError) throw rankError;
+          // Rank is number of users with higher points + 1
+          rank = (usersWithHigherPoints?.length || 0) + 1;
+        } catch (rankErr) {
+          console.error('Error calculating rank:', rankErr);
+          // Continue with default rank
+        }
         
         const points = profileData?.points || 0;
         const level = profileData?.level || 1;
@@ -80,7 +95,7 @@ export const useUserStats = (userId?: string) => {
           points,
           pointsToNextLevel,
           progress,
-          rank: rankData || 0,
+          rank,
           solvedMachines: solvedMachines || 0,
           completedChallenges: completedChallenges || 0,
         });
