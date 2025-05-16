@@ -37,8 +37,12 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
     if (lessonProgressData && Array.isArray(lessonProgressData)) {
       lessonProgressData.forEach((item) => {
         if (item && item.completed) {
-          // Create standardized key: courseId:lessonId
-          completedLessonsMap[`${courseId}:${item.lesson_id}`] = true;
+          // Crear clave estandarizada: courseId:lessonId  
+          const lessonKey = `${courseId}:${item.lesson_id}`;
+          completedLessonsMap[lessonKey] = true;
+
+          // Para compatibilidad también mantenemos el formato más general
+          completedLessonsMap[item.lesson_id] = true;
         }
       });
     }

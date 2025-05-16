@@ -1,48 +1,71 @@
 
+import { LessonProgressItem } from './types';
 import * as queries from './queries';
 import { updateCourseProgressData } from './course-progress';
 
 /**
- * Marks a lesson as completed
+ * Marca una lección como completa y actualiza el progreso del curso
  */
 export async function markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
   try {
-    // Check if lesson progress already exists
+    // Verificar si ya existe un registro para esta lección
     const { data: existingProgress, error: checkError } = await queries.checkLessonProgressExists(
       userId, 
       courseId, 
       lessonId
     );
-    
+
     if (checkError) {
-      throw new Error(`Error checking lesson progress: ${checkError.message}`);
+      console.error("Error checking lesson progress:", checkError);
+      return false;
     }
-    
-    const completionData = {
-      completed: true,
-      completed_at: new Date().toISOString()
-    };
-    
-    if (existingProgress) {
-      // Update existing record
-      const { error } = await queries.updateLessonProgress(existingProgress.id, completionData);
-      if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
+
+    const now = new Date().toISOString();
+    let success = false;
+
+    if (existingProgress?.id) {
+      // Actualizar registro existente
+      const { error: updateError } = await queries.updateLessonProgress(
+        existingProgress.id, 
+        {
+          completed: true,
+          completed_at: now
+        }
+      );
+
+      if (updateError) {
+        console.error("Error updating lesson progress:", updateError);
+        return false;
+      }
+
+      success = true;
     } else {
-      // Create new record
-      const { error } = await queries.createLessonProgress({
+      // Crear nuevo registro
+      const newProgress: LessonProgressItem = {
+        id: '', // Generado por Supabase
         user_id: userId,
-        course_id: courseId,
         lesson_id: lessonId,
-        ...completionData
-      });
+        course_id: courseId,
+        completed: true,
+        completed_at: now
+      };
+
+      const { error: insertError } = await queries.createLessonProgress(newProgress);
+
+      if (insertError) {
+        console.error("Error creating lesson progress:", insertError);
+        return false;
+      }
       
-      if (error) throw new Error(`Error creating lesson progress: ${error.message}`);
+      success = true;
     }
-    
-    // Update overall course progress
-    await updateCourseProgressData(userId, courseId);
-    
-    return true;
+
+    // Actualizar el progreso del curso
+    if (success) {
+      await updateCourseProgressData(userId, courseId);
+    }
+
+    return success;
   } catch (error) {
     console.error("Error in markLessonComplete:", error);
     return false;
@@ -50,7 +73,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
 }
 
 /**
- * Saves quiz results and marks the lesson as completed
+ * Guarda los resultados de un quiz y marca la lección como completa
  */
 export async function saveQuizResults(
   userId: string, 
@@ -60,42 +83,19 @@ export async function saveQuizResults(
   answers: Record<string, number>
 ): Promise<boolean> {
   try {
-    // Check if lesson progress already exists
-    const { data: existingLesson, error: checkError } = await queries.checkLessonProgressExists(
-      userId, 
-      courseId, 
-      lessonId
-    );
+    // Primero marcamos la lección como completa
+    const success = await markLessonComplete(userId, courseId, lessonId);
     
-    if (checkError) {
-      throw new Error(`Error checking lesson progress: ${checkError.message}`);
-    }
-    
-    const lessonData = {
-      completed: true,
-      completed_at: new Date().toISOString()
-    };
-    
-    if (existingLesson) {
-      // Update existing record
-      const { error } = await queries.updateLessonProgress(existingLesson.id, lessonData);
-      if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
-    } else {
-      // Create new record
-      const { error } = await queries.createLessonProgress({
-        user_id: userId,
-        course_id: courseId,
-        lesson_id: lessonId,
-        ...lessonData
-      });
+    if (success) {
+      // TODO: Si se necesita almacenar los resultados del quiz en una tabla separada
+      console.log(`Quiz results for user ${userId}, lesson ${lessonId}: Score ${score}`);
       
-      if (error) throw new Error(`Error creating lesson progress: ${error.message}`);
+      // Aquí podríamos guardar los resultados del quiz en una tabla específica
+      
+      return true;
     }
     
-    // Update course progress
-    await updateCourseProgressData(userId, courseId);
-    
-    return true;
+    return false;
   } catch (error) {
     console.error("Error in saveQuizResults:", error);
     return false;

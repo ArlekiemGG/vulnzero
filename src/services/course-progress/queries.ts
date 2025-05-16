@@ -10,7 +10,7 @@ import {
 } from './types';
 
 /**
- * Retrieves course progress for a specific user and course
+ * Recupera el progreso del curso para un usuario y curso específico
  */
 export async function getCourseProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
   return await supabase
@@ -22,7 +22,7 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
 }
 
 /**
- * Retrieves lesson progress for a specific user and course
+ * Recupera el progreso de las lecciones para un usuario y curso específico
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
   const { data, error } = await supabase
@@ -31,7 +31,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  // Transform response to simplify type handling
+  // Transformamos la respuesta para simplificar el manejo de tipos
   let filteredData: SimpleLessonProgress[] = [];
   
   if (data) {
@@ -46,7 +46,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
 }
 
 /**
- * Checks if a lesson progress record exists
+ * Verifica si existe un registro de progreso para una lección
  */
 export async function checkLessonProgressExists(
   userId: string, 
@@ -63,7 +63,7 @@ export async function checkLessonProgressExists(
 }
 
 /**
- * Updates an existing lesson progress record
+ * Actualiza un registro existente de progreso de lección
  */
 export async function updateLessonProgress(
   id: string, 
@@ -76,7 +76,7 @@ export async function updateLessonProgress(
 }
 
 /**
- * Creates a new lesson progress record
+ * Crea un nuevo registro de progreso de lección
  */
 export async function createLessonProgress(data: LessonProgressItem): Promise<SupabaseSimpleResponse> {
   return await supabase
@@ -85,7 +85,7 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
 }
 
 /**
- * Counts total lessons in a course
+ * Cuenta el total de lecciones en un curso
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
   const { count, error } = await supabase
@@ -97,7 +97,7 @@ export async function countTotalLessons(courseId: string): Promise<TotalLessonsR
 }
 
 /**
- * Counts completed lessons for a user in a course
+ * Cuenta las lecciones completadas por un usuario en un curso
  */
 export async function countCompletedLessons(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
   return await supabase
@@ -109,7 +109,7 @@ export async function countCompletedLessons(userId: string, courseId: string): P
 }
 
 /**
- * Checks if a course progress record exists
+ * Verifica si existe un registro de progreso para un curso
  */
 export async function checkCourseProgressExists(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
   return await supabase
@@ -121,7 +121,7 @@ export async function checkCourseProgressExists(userId: string, courseId: string
 }
 
 /**
- * Updates an existing course progress record
+ * Actualiza un registro existente de progreso de curso
  */
 export async function updateCourseProgressRecord(
   id: string, 
@@ -134,7 +134,7 @@ export async function updateCourseProgressRecord(
 }
 
 /**
- * Creates a new course progress record
+ * Crea un nuevo registro de progreso de curso
  */
 export async function createCourseProgressRecord(data: CourseProgressItem): Promise<SupabaseSimpleResponse> {
   return await supabase

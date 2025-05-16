@@ -13,7 +13,7 @@ import type {
 } from '@/types/course-progress';
 
 /**
- * Hook for managing course progress
+ * Hook para gestionar el progreso del curso
  */
 export const useUserCourseProgress = (courseId: string, userId?: string): CourseProgressHook => {
   const [progress, setProgress] = useState<number>(0);
@@ -33,10 +33,12 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
 
       try {
         setIsLoading(true);
+        console.log(`Fetching progress for course ${courseId} and user ${userId}`);
         
         const result = await fetchUserProgressData(courseId, userId);
         
         if (isMounted) {
+          console.log('Progress data loaded:', result);
           setProgress(result.progress);
           setCompletedLessons(result.completedLessons);
           setCompletedQuizzes(result.completedQuizzes);
@@ -66,22 +68,23 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   }, [courseId, userId]);
 
   /**
-   * Marks a lesson as completed
+   * Marca una lección como completada
    */
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    // Use consistent key structure: courseId:lessonId
+    // Usamos una estructura de clave consistente: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
     
     try {
+      console.log(`Marking lesson ${lessonId} as completed for course ${courseId} and user ${userId}`);
       const success = await markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
-        // Update local state
-        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
+        // Actualizamos el estado local
+        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
         setProgress(prev => {
-          // Simple estimation until next data fetch
+          // Estimación simple hasta la próxima carga de datos
           const newProgress = Math.min(100, prev + 5);
           return newProgress;
         });
@@ -105,7 +108,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   };
 
   /**
-   * Saves quiz results and marks lesson as completed
+   * Guarda los resultados del quiz y marca la lección como completada
    */
   const saveQuizResult = async (
     moduleId: string, 
@@ -115,16 +118,17 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   ): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    // Use consistent key structure: courseId:lessonId
+    // Usamos una estructura de clave consistente: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
     
     try {
+      console.log(`Saving quiz result for lesson ${lessonId}, course ${courseId}, user ${userId}`);
       const success = await saveQuizResults(userId, courseId, lessonId, score, answers);
       
       if (success) {
-        // Update local state
-        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
-        setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true }));
+        // Actualizamos el estado local
+        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
+        setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
         
         toast({
           title: "Quiz completado",

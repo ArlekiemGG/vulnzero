@@ -1,62 +1,83 @@
 
+import { CourseProgressItem } from './types';
 import * as queries from './queries';
 
 /**
- * Updates course progress data based on completed lessons
+ * Actualiza los datos de progreso del curso basados en lecciones completadas
  */
-export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
+export async function updateCourseProgressData(userId: string, courseId: string): Promise<boolean> {
   try {
-    // Get total lessons count
-    const { count: totalLessonsCount, error: totalLessonsError } = await queries.countTotalLessons(courseId);
-    
-    if (totalLessonsError) {
-      throw new Error(`Error counting total lessons: ${totalLessonsError.message}`);
+    // Contar lecciones totales y completadas
+    const { data: totalLessonsData, error: countError } = await queries.countTotalLessons(courseId);
+    if (countError) {
+      console.error("Error counting total lessons:", countError);
+      return false;
     }
-    
-    // Get completed lessons count
-    const { data: completedLessonsData, error: completedLessonsError } = await queries.countCompletedLessons(userId, courseId);
-    
-    if (completedLessonsError) {
-      throw new Error(`Error counting completed lessons: ${completedLessonsError.message}`);
+
+    const { data: completedLessonsData, error: completedError } = await queries.countCompletedLessons(userId, courseId);
+    if (completedError) {
+      console.error("Error counting completed lessons:", completedError);
+      return false;
     }
-    
-    // Calculate progress percentage
-    const totalLessons = totalLessonsCount || 0;
-    const completedCount = completedLessonsData?.length || 0;
-    const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-    const completed = progressPercentage === 100;
-    
-    // Check if course progress record exists
+
+    const totalLessons = totalLessonsData?.count || 0;
+    const completedLessons = completedLessonsData?.length || 0;
+
+    // Calcular porcentaje de progreso
+    const progressPercentage = totalLessons > 0 
+      ? Math.round((completedLessons / totalLessons) * 100)
+      : 0;
+
+    // Determinar si el curso está completo
+    const isCompleted = totalLessons > 0 && completedLessons >= totalLessons;
+    const now = new Date().toISOString();
+
+    // Verificar si ya existe un registro para este curso
     const { data: existingProgress, error: checkError } = await queries.checkCourseProgressExists(userId, courseId);
-    
     if (checkError) {
-      throw new Error(`Error checking course progress: ${checkError.message}`);
+      console.error("Error checking course progress:", checkError);
+      return false;
     }
-    
-    const progressData = {
-      progress_percentage: progressPercentage,
-      completed,
-      completed_at: completed ? new Date().toISOString() : null
-    };
-    
-    if (existingProgress) {
-      // Update existing record
-      const { error } = await queries.updateCourseProgressRecord(existingProgress.id, progressData);
-      if (error) throw new Error(`Error updating course progress: ${error.message}`);
+
+    if (existingProgress?.id) {
+      // Actualizar registro existente
+      const { error: updateError } = await queries.updateCourseProgressRecord(
+        existingProgress.id,
+        {
+          progress_percentage: progressPercentage,
+          completed: isCompleted,
+          completed_at: isCompleted ? now : null,
+          // No actualizamos started_at para mantener la fecha original
+        }
+      );
+
+      if (updateError) {
+        console.error("Error updating course progress:", updateError);
+        return false;
+      }
     } else {
-      // Create new record
-      const { error } = await queries.createCourseProgressRecord({
+      // Crear nuevo registro
+      const newProgress: CourseProgressItem = {
         user_id: userId,
         course_id: courseId,
-        ...progressData,
-        started_at: new Date().toISOString()
-      });
-      if (error) throw new Error(`Error creating course progress: ${error.message}`);
+        progress_percentage: progressPercentage,
+        started_at: now,
+        completed: isCompleted,
+        completed_at: isCompleted ? now : null
+      };
+
+      const { error: insertError } = await queries.createCourseProgressRecord(newProgress);
+
+      if (insertError) {
+        console.error("Error creating course progress:", insertError);
+        return false;
+      }
     }
-    
-    return progressPercentage;
+
+    console.log(`Course progress updated: ${courseId}, User: ${userId}, Progress: ${progressPercentage}%, Completed: ${isCompleted}`);
+    return true;
   } catch (error) {
     console.error("Error in updateCourseProgressData:", error);
-    return 0;
+    return false;
   }
 }
