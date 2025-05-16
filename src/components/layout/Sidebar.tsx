@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgressSummary } from './ProgressSummary';

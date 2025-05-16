@@ -211,7 +211,15 @@ const CTFs = () => {
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
       <div className="flex pt-16">
-        <Sidebar userStats={userStats} />
+        <Sidebar userStats={{
+          level: userStats.level,
+          points: userStats.points,
+          pointsToNextLevel: userStats.pointsToNextLevel || 0,
+          progress: userStats.progress || 0,
+          rank: userStats.rank,
+          solvedMachines: userStats.solvedMachines || userStats.solved_machines || 0,
+          completedChallenges: userStats.completedChallenges || userStats.completed_courses || 0
+        }} />
         <main className="flex-1 md:ml-64 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <header className="mb-6">

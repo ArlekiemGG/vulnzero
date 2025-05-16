@@ -13,6 +13,12 @@ export interface UserStats {
   completed_courses: number;
   completed_lessons: number;
   earned_badges: number;
+  
+  // Propiedades adicionales para compatibilidad con el código existente
+  pointsToNextLevel?: number;
+  progress?: number;
+  solvedMachines?: number;
+  completedChallenges?: number;
 }
 
 export interface DetailedProgress {
@@ -129,8 +135,10 @@ export const useUserProgress = () => {
         }
       } else if (data) {
         console.log('Progreso del usuario recibido correctamente:', data);
-        setUserProgress(data as UserProgress);
-        saveToCache(data as UserProgress);
+        // Necesitamos convertir el tipo de datos
+        const progress = data as unknown as UserProgress;
+        setUserProgress(progress);
+        saveToCache(progress);
       }
     } catch (err) {
       console.error('Error en fetchUserProgress:', err);
