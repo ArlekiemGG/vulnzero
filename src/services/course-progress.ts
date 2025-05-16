@@ -12,8 +12,14 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fix for TS2589: Use explicit type annotation and avoid deep inference
-  const lessonProgressResult = await supabase
+  // Define the return type explicitly to avoid type inference issues
+  type LessonProgressQueryResult = {
+    data: Array<{lesson_id: string; completed: boolean}> | null;
+    error: Error | null;
+  };
+
+  // Use explicit typing to avoid deep inference
+  const lessonProgressResult: LessonProgressQueryResult = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
@@ -26,16 +32,8 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  // Use explicit typing for the lesson progress data
-  type LessonProgressItem = {
-    lesson_id: string;
-    completed: boolean;
-  };
-  
-  const lessonProgressData = lessonProgressResult.data as LessonProgressItem[];
-  
-  if (lessonProgressData && Array.isArray(lessonProgressData)) {
-    lessonProgressData.forEach(item => {
+  if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
+    lessonProgressResult.data.forEach(item => {
       if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
