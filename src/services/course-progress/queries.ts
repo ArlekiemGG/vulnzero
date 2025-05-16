@@ -19,11 +19,14 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Utilizando una función más simple sin retornar el objeto completo de Supabase
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  const response = await supabase
-    .from('user_lesson_progress')
-    .select('lesson_id, completed')
+  // Separamos la consulta en pasos para evitar la inferencia de tipos profunda
+  const client = supabase.from('user_lesson_progress');
+  const query = client.select('lesson_id, completed');
+  const filtered = query
     .eq('user_id', userId)
     .eq('course_id', courseId);
+  
+  const response = await filtered;
   
   // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
   return { 
@@ -69,10 +72,12 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<an
  * Utilizando una función más simple sin retornar el objeto completo de Supabase
  */
 export async function countTotalLessons(courseId: string): Promise<any> {
-  const response = await supabase
-    .from('course_lessons') 
-    .select('*', { count: 'exact', head: true })
-    .eq('course_id', courseId);
+  // Separamos la consulta en pasos para evitar la inferencia de tipos profunda
+  const client = supabase.from('course_lessons');
+  const query = client.select('*', { count: 'exact', head: true });
+  const filtered = query.eq('course_id', courseId);
+  
+  const response = await filtered;
   
   // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
   return { 
