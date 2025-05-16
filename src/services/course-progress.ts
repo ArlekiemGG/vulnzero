@@ -13,12 +13,15 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fetch completed lessons
-  const { data: lessonsData, error: lessonsError } = await supabase
+  // Fetch completed lessons - using type assertion to avoid deep type instantiation
+  const lessonsResponse = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId);
+    
+  const lessonsData = lessonsResponse.data;
+  const lessonsError = lessonsResponse.error;
 
   if (lessonsError) throw lessonsError;
 
@@ -62,7 +65,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
   
   if (existingProgress) {
     // Update existing record
-    const { error } = await supabase
+    const result = await supabase
       .from('user_lesson_progress')
       .update({
         completed: true,
@@ -70,10 +73,10 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
       })
       .eq('id', existingProgress.id);
     
-    if (error) throw error;
+    if (result.error) throw result.error;
   } else {
     // Create new record
-    const { error } = await supabase
+    const result = await supabase
       .from('user_lesson_progress')
       .insert({
         user_id: userId,
@@ -83,7 +86,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
         completed_at: new Date().toISOString()
       });
     
-    if (error) throw error;
+    if (result.error) throw result.error;
   }
   
   // Update course progress
@@ -119,15 +122,15 @@ export async function saveQuizResults(
   
   if (existingLesson) {
     // Update existing record with quiz results
-    const { error } = await supabase
+    const result = await supabase
       .from('user_lesson_progress')
       .update(quizData)
       .eq('id', existingLesson.id);
     
-    if (error) throw error;
+    if (result.error) throw result.error;
   } else {
     // Create new lesson progress record with quiz results
-    const { error } = await supabase
+    const result = await supabase
       .from('user_lesson_progress')
       .insert({
         user_id: userId,
@@ -136,7 +139,7 @@ export async function saveQuizResults(
         ...quizData
       });
     
-    if (error) throw error;
+    if (result.error) throw result.error;
   }
   
   // Update course progress
@@ -147,22 +150,24 @@ export async function saveQuizResults(
 
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
   // Count total lessons in the course based on user_lesson_progress records
-  const { count: totalLessonsCount, error: countError } = await supabase
+  const totalLessonsResult = await supabase
     .from('user_lesson_progress')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  if (countError) throw countError;
+  const totalLessonsCount = totalLessonsResult.count;
+  if (totalLessonsResult.error) throw totalLessonsResult.error;
   
   // Calculate completed lessons
-  const { data: completedLessonsData, error: completedError } = await supabase
+  const completedLessonsResult = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .eq('completed', true);
   
-  if (completedError) throw completedError;
+  const completedLessonsData = completedLessonsResult.data;
+  if (completedLessonsResult.error) throw completedLessonsResult.error;
   
   const totalLessons = totalLessonsCount || 0;
   const completedCount = completedLessonsData?.length || 0;
