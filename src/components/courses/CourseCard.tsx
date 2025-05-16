@@ -38,8 +38,10 @@ const CourseCard: React.FC<CourseCardProps> = ({
 }) => {
   const [imgError, setImgError] = useState<boolean>(false);
 
-  // Generate the courseUrl using the new format with /courses/courseId
+  // Ensure we have a valid course ID for routing
   const courseUrl = `/courses/${course.id}`;
+  
+  console.log(`CourseCard: Creating link for course ${course.id} - ${course.title} with URL: ${courseUrl}`);
 
   return (
     <Link 

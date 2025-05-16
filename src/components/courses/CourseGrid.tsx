@@ -73,10 +73,17 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
 
   // Ensure all courses have valid image URLs before rendering
   const sanitizeCourses = (courseList: Course[]): Course[] => {
-    return courseList.map(course => ({
-      ...course,
-      image_url: course.image_url || `/courses/${course.id}/cover.jpg` || '/placeholder.svg'
-    }));
+    return courseList.map(course => {
+      // Make sure the course has a valid ID
+      if (!course.id) {
+        console.error('Course is missing ID:', course);
+      }
+      
+      return {
+        ...course,
+        image_url: course.image_url || `/courses/${course.id}/cover.jpg` || '/placeholder.svg'
+      };
+    });
   };
 
   // Si no hay cursos proporcionados, usamos los del catálogo estático

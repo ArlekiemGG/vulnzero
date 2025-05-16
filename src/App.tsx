@@ -32,6 +32,11 @@ import LessonPage from "./pages/courses/[courseId]/learn/[moduleId]/[lessonId]/p
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    // Log available routes for debugging
+    console.log("App initialized with routes including /courses/:courseId");
+  }, []);
+  
   return (
     <HashRouter>
       <QueryClientProvider client={queryClient}>

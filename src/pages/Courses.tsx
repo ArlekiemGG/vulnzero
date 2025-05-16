@@ -16,6 +16,10 @@ const Courses: React.FC = () => {
   
   useEffect(() => {
     document.title = "Cursos - VulnZero";
+    
+    // Debug to check the current routes
+    console.log("Current routes available in the application:", 
+                window.location.pathname, window.location.hash);
   }, []);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
