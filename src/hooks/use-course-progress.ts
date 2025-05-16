@@ -11,52 +11,53 @@ import type {
 /**
  * Hook para gestionar el progreso del curso
  */
-export const useUserCourseProgress = (courseId: string, userId?: string): CourseProgressHook => {
+export const useUserCourseProgress = (courseId?: string, userId?: string): CourseProgressHook => {
   const [progress, setProgress] = useState<number>(0);
   const [completedLessons, setCompletedLessons] = useState<CompletedLessonsMap>({});
   const [completedQuizzes, setCompletedQuizzes] = useState<CompletedQuizzesMap>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Función para cargar el progreso del usuario
+  const loadUserProgress = async () => {
+    if (!courseId || !userId) {
+      console.log("useUserCourseProgress: Missing courseId or userId, skipping fetch");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log(`useUserCourseProgress: Fetching progress for course ${courseId} and user ${userId}`);
+      
+      const result = await courseProgressService.fetchUserProgressData(courseId, userId);
+      
+      console.log('useUserCourseProgress: Progress data loaded:', result);
+      console.log('useUserCourseProgress: Progress percentage:', result.progress);
+      console.log('useUserCourseProgress: Completed lessons:', result.completedLessons);
+      
+      setProgress(result.progress);
+      setCompletedLessons(result.completedLessons);
+      setCompletedQuizzes(result.completedQuizzes);
+    } catch (err) {
+      console.error('useUserCourseProgress: Error fetching course progress:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cargar el progreso del curso"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     
     const fetchProgress = async () => {
-      if (!courseId || !userId) {
-        console.log("useUserCourseProgress: Missing courseId or userId, skipping fetch");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        console.log(`useUserCourseProgress: Fetching progress for course ${courseId} and user ${userId}`);
-        
-        const result = await courseProgressService.fetchUserProgressData(courseId, userId);
-        
-        if (isMounted) {
-          console.log('useUserCourseProgress: Progress data loaded:', result);
-          console.log('useUserCourseProgress: Progress percentage:', result.progress);
-          console.log('useUserCourseProgress: Completed lessons:', result.completedLessons);
-          setProgress(result.progress);
-          setCompletedLessons(result.completedLessons);
-          setCompletedQuizzes(result.completedQuizzes);
-        }
-      } catch (err) {
-        console.error('useUserCourseProgress: Error fetching course progress:', err);
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Unknown error'));
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo cargar el progreso del curso"
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+      if (!isMounted) return;
+      await loadUserProgress();
     };
 
     fetchProgress();
@@ -87,6 +88,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
       
       if (success) {
         console.log("useUserCourseProgress: Lesson marked as completed successfully in backend");
+        
         // Actualizamos el estado local para múltiples formatos de clave
         setCompletedLessons(prev => {
           const newState = { 
@@ -174,6 +176,11 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
       return false;
     }
   };
+  
+  // Método para forzar la recarga del progreso
+  const refreshProgress = async (): Promise<void> => {
+    await loadUserProgress();
+  };
 
   return {
     progress,
@@ -182,6 +189,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     isLoading,
     error,
     markLessonAsCompleted,
-    saveQuizResult
+    saveQuizResult,
+    refreshProgress
   };
 };

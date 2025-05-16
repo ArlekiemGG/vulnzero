@@ -16,6 +16,7 @@ export interface CourseProgressHook {
   error: Error | null;
   markLessonAsCompleted: (moduleId: string, lessonId: string) => Promise<boolean>;
   saveQuizResult: (moduleId: string, lessonId: string, score: number, answers: Record<string, number>) => Promise<boolean>;
+  refreshProgress: () => Promise<void>;
 }
 
 // Tipos utilizados para la interacción con la base de datos

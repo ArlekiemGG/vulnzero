@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   CourseProgressItem, 
@@ -16,6 +17,7 @@ class CourseProgressService {
    * Recupera el progreso del curso para un usuario y curso específico
    */
   async getCourseProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Getting course progress for user ${userId} and course ${courseId}`);
     return await supabase
       .from('user_course_progress')
       .select('progress_percentage, completed')
@@ -28,6 +30,7 @@ class CourseProgressService {
    * Recupera el progreso de las lecciones para un usuario y curso específico
    */
   async getLessonProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Getting lesson progress for user ${userId} and course ${courseId}`);
     return await supabase
       .from('user_lesson_progress')
       .select('lesson_id, completed, course_id')
@@ -39,6 +42,7 @@ class CourseProgressService {
    * Obtener información del curso al que pertenece una lección
    */
   async getLessonCourseInfo(lessonId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Getting course info for lesson ${lessonId}`);
     return await supabase
       .from('course_lessons')
       .select(`
@@ -55,6 +59,7 @@ class CourseProgressService {
    * Obtener el progreso de una lección por su ID sin conocer el curso
    */
   async fetchLessonProgressByLessonId(userId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Fetching lesson progress by lessonId for user ${userId} and lesson ${lessonId}`);
     return await supabase
       .from('user_lesson_progress')
       .select('*')
@@ -71,9 +76,10 @@ class CourseProgressService {
     courseId: string, 
     lessonId: string
   ): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Checking if lesson progress exists for user ${userId}, course ${courseId}, lesson ${lessonId}`);
     return await supabase
       .from('user_lesson_progress')
-      .select('id')
+      .select('id, completed')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .eq('lesson_id', lessonId)
@@ -87,6 +93,7 @@ class CourseProgressService {
     id: string, 
     data: Partial<LessonProgressItem>
   ): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Updating lesson progress with ID ${id}`, data);
     return await supabase
       .from('user_lesson_progress')
       .update(data)
@@ -97,6 +104,7 @@ class CourseProgressService {
    * Crea un nuevo registro de progreso de lección
    */
   async createLessonProgress(data: LessonProgressItem): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Creating new lesson progress entry`, data);
     return await supabase
       .from('user_lesson_progress')
       .insert([data]);
@@ -106,18 +114,50 @@ class CourseProgressService {
    * Cuenta el total de lecciones en un curso
    */
   async countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
+    console.log(`CourseProgressService: Counting total lessons for course ${courseId}`);
     const { count, error } = await supabase
-      .from('course_sections')
-      .select('course_lessons(*)', { count: 'exact' })
-      .eq('course_id', courseId);
+      .from('course_lessons')
+      .select('*', { count: 'exact' })
+      .eq('section_id', (
+        supabase
+        .from('course_sections')
+        .select('id')
+        .eq('course_id', courseId)
+      ));
     
-    return { count: count !== null ? count : 0, error };
+    if (error) {
+      console.error(`CourseProgressService: Error counting total lessons:`, error);
+      // Fallback usando una consulta diferente
+      const { data: sections, error: sectionsError } = await supabase
+        .from('course_sections')
+        .select('id')
+        .eq('course_id', courseId);
+      
+      if (sectionsError || !sections || sections.length === 0) {
+        console.error(`CourseProgressService: Error in fallback count:`, sectionsError);
+        return { count: 0, error: sectionsError || new Error('No sections found') };
+      }
+      
+      // Obtener IDs de secciones
+      const sectionIds = sections.map(s => s.id);
+      
+      // Contar lecciones por secciones
+      const { count: lessonsCount, error: lessonsError } = await supabase
+        .from('course_lessons')
+        .select('*', { count: 'exact' })
+        .in('section_id', sectionIds);
+      
+      return { count: lessonsCount || 0, error: lessonsError };
+    }
+    
+    return { count: count || 0, error };
   }
 
   /**
    * Cuenta las lecciones completadas por un usuario en un curso
    */
   async countCompletedLessons(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Counting completed lessons for user ${userId} and course ${courseId}`);
     return await supabase
       .from('user_lesson_progress')
       .select('*')
@@ -130,6 +170,7 @@ class CourseProgressService {
    * Verifica si existe un registro de progreso para un curso
    */
   async checkCourseProgressExists(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Checking if course progress exists for user ${userId} and course ${courseId}`);
     return await supabase
       .from('user_course_progress')
       .select('id')
@@ -145,6 +186,7 @@ class CourseProgressService {
     id: string, 
     data: Partial<CourseProgressItem>
   ): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Updating course progress record ${id}`, data);
     return await supabase
       .from('user_course_progress')
       .update(data)
@@ -155,6 +197,7 @@ class CourseProgressService {
    * Crea un nuevo registro de progreso de curso
    */
   async createCourseProgressRecord(data: CourseProgressItem): Promise<SupabaseSimpleResponse> {
+    console.log(`CourseProgressService: Creating new course progress record`, data);
     return await supabase
       .from('user_course_progress')
       .insert([data]);
@@ -165,10 +208,11 @@ class CourseProgressService {
    */
   async fetchUserProgressData(courseId: string, userId: string): Promise<ProgressResult> {
     try {
+      console.log(`CourseProgressService: Fetching user progress data for course ${courseId} and user ${userId}`);
       // Get course progress data
       const { data: progressData, error: progressError } = await this.getCourseProgress(userId, courseId);
       if (progressError) {
-        console.error("Error fetching course progress:", progressError);
+        console.error("CourseProgressService: Error fetching course progress:", progressError);
         return {
           progress: 0,
           completedLessons: {},
@@ -179,7 +223,7 @@ class CourseProgressService {
       // Get lesson progress data with course_id filter
       const { data: lessonProgressData, error: lessonProgressError } = await this.getLessonProgress(userId, courseId);
       if (lessonProgressError) {
-        console.error("Error fetching lesson progress:", lessonProgressError);
+        console.error("CourseProgressService: Error fetching lesson progress:", lessonProgressError);
         return {
           progress: progressData?.progress_percentage || 0,
           completedLessons: {},
@@ -205,13 +249,16 @@ class CourseProgressService {
         });
       }
 
+      console.log(`CourseProgressService: Progress data retrieved: ${progress}%, completed lessons: `, 
+        Object.keys(completedLessonsMap).length);
+      
       return {
         progress,
         completedLessons: completedLessonsMap,
         completedQuizzes: completedQuizzesMap
       };
     } catch (error) {
-      console.error("Error in fetchUserProgressData:", error);
+      console.error("CourseProgressService: Error in fetchUserProgressData:", error);
       return {
         progress: 0,
         completedLessons: {},
@@ -225,6 +272,7 @@ class CourseProgressService {
    */
   async markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
     try {
+      console.log(`CourseProgressService: Marking lesson ${lessonId} as completed for user ${userId} in course ${courseId}`);
       // Verificar si ya existe un registro para esta lección
       const { data: existingProgress, error: checkError } = await this.checkLessonProgressExists(
         userId, 
@@ -233,7 +281,7 @@ class CourseProgressService {
       );
 
       if (checkError) {
-        console.error("Error checking lesson progress:", checkError);
+        console.error("CourseProgressService: Error checking lesson progress:", checkError);
         return false;
       }
 
@@ -251,7 +299,7 @@ class CourseProgressService {
         );
 
         if (updateError) {
-          console.error("Error updating lesson progress:", updateError);
+          console.error("CourseProgressService: Error updating lesson progress:", updateError);
           return false;
         }
 
@@ -270,7 +318,7 @@ class CourseProgressService {
         const { error: insertError } = await this.createLessonProgress(newProgress);
 
         if (insertError) {
-          console.error("Error creating lesson progress:", insertError);
+          console.error("CourseProgressService: Error creating lesson progress:", insertError);
           return false;
         }
         
@@ -279,12 +327,13 @@ class CourseProgressService {
 
       // Actualizar el progreso del curso
       if (success) {
-        await this.updateCourseProgressData(userId, courseId);
+        const updateResult = await this.updateCourseProgressData(userId, courseId);
+        console.log(`CourseProgressService: Course progress updated after marking lesson: ${updateResult}`);
       }
 
       return success;
     } catch (error) {
-      console.error("Error in markLessonComplete:", error);
+      console.error("CourseProgressService: Error in markLessonComplete:", error);
       return false;
     }
   }
@@ -300,17 +349,18 @@ class CourseProgressService {
     answers: Record<string, number>
   ): Promise<boolean> {
     try {
+      console.log(`CourseProgressService: Saving quiz results for user ${userId}, lesson ${lessonId}, score ${score}`);
       // Primero marcamos la lección como completa
       const success = await this.markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
-        console.log(`Quiz results for user ${userId}, lesson ${lessonId}: Score ${score}`);
+        console.log(`CourseProgressService: Quiz results saved for user ${userId}, lesson ${lessonId}: Score ${score}`);
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error("Error in saveQuizResults:", error);
+      console.error("CourseProgressService: Error in saveQuizResults:", error);
       return false;
     }
   }
@@ -320,26 +370,28 @@ class CourseProgressService {
    */
   async updateCourseProgressData(userId: string, courseId: string): Promise<boolean> {
     try {
+      console.log(`CourseProgressService: Updating course progress data for user ${userId} and course ${courseId}`);
       // Contar lecciones totales y completadas
-      const { count, error: countError } = await this.countTotalLessons(courseId);
+      const { count: totalLessons, error: countError } = await this.countTotalLessons(courseId);
       if (countError) {
-        console.error("Error counting total lessons:", countError);
+        console.error("CourseProgressService: Error counting total lessons:", countError);
         return false;
       }
 
       const { data: completedLessonsData, error: completedError } = await this.countCompletedLessons(userId, courseId);
       if (completedError) {
-        console.error("Error counting completed lessons:", completedError);
+        console.error("CourseProgressService: Error counting completed lessons:", completedError);
         return false;
       }
 
-      const totalLessons = count || 0;
       const completedLessons = completedLessonsData?.length || 0;
 
       // Calcular porcentaje de progreso
       const progressPercentage = totalLessons > 0 
         ? Math.round((completedLessons / totalLessons) * 100)
         : 0;
+
+      console.log(`CourseProgressService: Course progress calculated: ${completedLessons}/${totalLessons} = ${progressPercentage}%`);
 
       // Determinar si el curso está completo
       const isCompleted = totalLessons > 0 && completedLessons >= totalLessons;
@@ -348,7 +400,7 @@ class CourseProgressService {
       // Verificar si ya existe un registro para este curso
       const { data: existingProgress, error: checkError } = await this.checkCourseProgressExists(userId, courseId);
       if (checkError) {
-        console.error("Error checking course progress:", checkError);
+        console.error("CourseProgressService: Error checking course progress:", checkError);
         return false;
       }
 
@@ -365,7 +417,7 @@ class CourseProgressService {
         );
 
         if (updateError) {
-          console.error("Error updating course progress:", updateError);
+          console.error("CourseProgressService: Error updating course progress:", updateError);
           return false;
         }
       } else {
@@ -382,15 +434,15 @@ class CourseProgressService {
         const { error: insertError } = await this.createCourseProgressRecord(newProgress);
 
         if (insertError) {
-          console.error("Error creating course progress:", insertError);
+          console.error("CourseProgressService: Error creating course progress:", insertError);
           return false;
         }
       }
 
-      console.log(`Course progress updated: ${courseId}, User: ${userId}, Progress: ${progressPercentage}%, Completed: ${isCompleted}`);
+      console.log(`CourseProgressService: Course progress updated: ${courseId}, User: ${userId}, Progress: ${progressPercentage}%, Completed: ${isCompleted}`);
       return true;
     } catch (error) {
-      console.error("Error in updateCourseProgressData:", error);
+      console.error("CourseProgressService: Error in updateCourseProgressData:", error);
       return false;
     }
   }
