@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -38,10 +37,10 @@ const CourseOnboarding = () => {
         .single();
       
       if (!error && profile) {
-        // Safely check if properties exist before accessing them
-        setCompletedAssessment('completed_assessment' in profile ? !!profile.completed_assessment : false);
-        setLevel('preferred_level' in profile ? profile.preferred_level || '' : '');
-        setRecommendedCourseId('recommended_course' in profile ? profile.recommended_course || '' : '');
+        // Safely handle potential missing fields
+        setCompletedAssessment(profile.completed_assessment || false);
+        setLevel(profile.preferred_level || '');
+        setRecommendedCourseId(profile.recommended_course || '');
       }
     } catch (error) {
       console.error('Error checking user assessment:', error);
@@ -56,32 +55,20 @@ const CourseOnboarding = () => {
     // Update user profile with assessment results
     if (user) {
       try {
-        // Check if columns exist in profiles table before updating
-        const { data: columns } = await supabase
-          .from('information_schema.columns')
-          .select('column_name')
-          .eq('table_name', 'profiles')
-          .eq('table_schema', 'public');
+        // Intentamos actualizar directamente los campos y manejamos posibles errores
+        const updateObject = {
+          preferred_level: level,
+          recommended_course: courseId,
+          completed_assessment: true
+        };
         
-        const columnNames = columns?.map(c => c.column_name) || [];
-        const updateObj: Record<string, any> = {};
+        const { error } = await supabase
+          .from('profiles')
+          .update(updateObject)
+          .eq('id', user.id);
         
-        // Only add fields if they exist in the database
-        if (columnNames.includes('preferred_level')) {
-          updateObj.preferred_level = level;
-        }
-        if (columnNames.includes('recommended_course')) {
-          updateObj.recommended_course = courseId;
-        }
-        if (columnNames.includes('completed_assessment')) {
-          updateObj.completed_assessment = true;
-        }
-        
-        if (Object.keys(updateObj).length > 0) {
-          await supabase
-            .from('profiles')
-            .update(updateObj)
-            .eq('id', user.id);
+        if (error) {
+          console.error('Error updating user profile:', error);
         }
       } catch (error) {
         console.error('Error updating user profile with assessment results:', error);

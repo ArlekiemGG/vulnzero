@@ -16,6 +16,12 @@ import LessonQuiz from '@/components/courses/components/LessonQuiz';
 import { useUserCourseProgress } from '@/hooks/use-course-progress';
 import { ChevronLeft, ChevronRight, AlertCircle, BookOpen, CheckCircle, Unlock } from 'lucide-react';
 
+// Definimos las props esperadas para LessonQuiz
+interface LessonQuizProps {
+  quizData: any;
+  onComplete: (score: number, answers: Record<string, number>) => Promise<void>;
+}
+
 const LessonDetail = () => {
   const { courseId, moduleId, lessonId } = useParams<{ courseId: string, moduleId: string, lessonId: string }>();
   const { user } = useAuth();

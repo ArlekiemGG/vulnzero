@@ -30,10 +30,11 @@ const CourseWelcome = () => {
         .eq('id', user.id)
         .single();
       
-      // Safely access the property only if it exists
-      setCompletedAssessment(profile && 'completed_assessment' in profile ? !!profile.completed_assessment : false);
+      // Safely handle the case where the field might not exist
+      setCompletedAssessment(profile ? !!profile.completed_assessment : false);
     } catch (error) {
       console.error('Error checking assessment status:', error);
+      setCompletedAssessment(false);
     } finally {
       setLoading(false);
     }
