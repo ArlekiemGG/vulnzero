@@ -41,11 +41,11 @@ const CourseDetailPage = () => {
   console.log("CourseDetailPage: courseId recibido:", courseId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-cybersec-black">
+    <div className="page-wrapper">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`flex-grow pt-16 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area pt-16 ${user ? 'md:pl-64' : ''}`}>
         <div className="container px-4 py-8 mx-auto">
           {!loading && courseId && <CourseDetail />}
         </div>

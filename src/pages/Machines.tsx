@@ -97,11 +97,11 @@ const Machines = () => {
   }, [machines, osFilter, difficultyFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-cybersec-black">
+    <div className="page-wrapper">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`flex-grow pt-20 pb-10 px-4 sm:px-6 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area pt-20 pb-10 px-4 sm:px-6 ${user ? 'md:pl-64' : ''}`}>
         <div className="max-w-7xl mx-auto">
           {/* Encabezado y filtros */}
           <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">

@@ -23,11 +23,11 @@ const Courses: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-cybersec-black">
+    <div className="page-wrapper">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`flex-grow pt-16 ${user ? 'md:pl-64' : ''}`}>
+      <main className={`content-area pt-16 ${user ? 'md:pl-64' : ''}`}>
         <div className="container px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>

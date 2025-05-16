@@ -56,24 +56,24 @@
   }
 
   body {
-    @apply bg-cybersec-black text-cybersec-neongreen font-mono flex flex-col min-h-screen;
+    @apply bg-cybersec-black text-cybersec-neongreen font-mono min-h-screen;
     background-image: radial-gradient(hsla(120, 100%, 50%, 0.1) 1px, transparent 0);
     background-size: 30px 30px;
   }
 
-  /* Page wrapper styles for consistent footer positioning */
+  /* Updated page wrapper styles for better footer positioning */
   .page-wrapper {
     @apply flex flex-col min-h-screen;
   }
   
-  /* Create a flex column layout for all page containers */
-  .min-h-screen {
-    @apply flex flex-col;
+  /* Make sure content area takes available space but doesn't force viewport height */
+  .content-area {
+    @apply flex-1;
   }
 
-  /* Make sure the main content area grows to push the footer down */
-  .flex-grow {
-    @apply flex-1;
+  /* Updated styles to ensure footer appears at the bottom after content */
+  .site-footer {
+    @apply w-full mt-auto;
   }
 
   /* Terminal text effect */
