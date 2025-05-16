@@ -120,23 +120,25 @@ export const courseProgressService = {
       const completedLessons: Record<string, boolean> = {};
       const completedQuizzes: Record<string, boolean> = {};
       
-      userLessonProgress?.forEach(lessonProgress => {
-        // Creamos múltiples formatos de clave para compatibilidad
-        const originalLessonId = lessonProgress.lesson_id;
-        
-        // Usamos múltiples formatos de clave para compatibilidad con diferentes partes del código
-        completedLessons[originalLessonId] = true;
-        completedLessons[`${courseId}:${originalLessonId}`] = true;
-        completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
-        
-        // También registramos si es un quiz
-        const quizScore = (lessonProgress as any).quiz_score;
-        if (quizScore && quizScore > 0) {
-          completedQuizzes[originalLessonId] = true;
-          completedQuizzes[`${courseId}:${originalLessonId}`] = true;
-          completedQuizzes[`${normalizedCourseId}:${originalLessonId}`] = true;
-        }
-      });
+      if (userLessonProgress) {
+        userLessonProgress.forEach(lessonProgress => {
+          // Creamos múltiples formatos de clave para compatibilidad
+          const originalLessonId = lessonProgress.lesson_id;
+          
+          // Usamos múltiples formatos de clave para compatibilidad con diferentes partes del código
+          completedLessons[originalLessonId] = true;
+          completedLessons[`${courseId}:${originalLessonId}`] = true;
+          completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
+          
+          // También registramos si es un quiz
+          const quizScore = lessonProgress.quiz_score;
+          if (quizScore && quizScore > 0) {
+            completedQuizzes[originalLessonId] = true;
+            completedQuizzes[`${courseId}:${originalLessonId}`] = true;
+            completedQuizzes[`${normalizedCourseId}:${originalLessonId}`] = true;
+          }
+        });
+      }
       
       return {
         progress,
@@ -334,15 +336,16 @@ export const courseProgressService = {
       }
       
       // 2. Contar lecciones totales para el curso
+      // Corregido: Primero construimos el subquery correctamente
+      const sectionsSubquery = supabase
+        .from('course_sections')
+        .select('id')
+        .eq('course_id', normalizedCourseId);
+      
       const { count, error: countError } = await supabase
         .from('course_lessons')
         .select('id', { count: 'exact', head: true })
-        .in('section_id', 
-          supabase
-            .from('course_sections')
-            .select('id')
-            .eq('course_id', normalizedCourseId)
-        );
+        .in('section_id', sectionsSubquery.select('id'));
       
       if (countError) {
         console.error("courseProgressService: Error counting total lessons:", countError);
