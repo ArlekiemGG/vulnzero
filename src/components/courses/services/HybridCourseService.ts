@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Course, Section, Lesson } from './CourseService';
 import { StaticContentService } from './StaticContentService';
@@ -210,5 +209,27 @@ export const HybridCourseService = {
         updated_at: new Date().toISOString()
       }));
     }
-  }
+  },
+  
+  // Nuevo método para obtener el progreso de lección por usuario
+  getLessonProgressByUserId: async (lessonId: string, userId: string): Promise<any> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('lesson_id', lessonId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching lesson progress:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in getLessonProgressByUserId:', error);
+      return null;
+    }
+  },
 };

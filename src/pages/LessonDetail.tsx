@@ -1,3 +1,4 @@
+
 // Importaciones
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -16,12 +17,6 @@ import { useProgressService } from '@/components/courses/services/ProgressServic
 
 // Importación del componente LessonQuiz
 import LessonQuiz from '@/components/courses/components/LessonQuiz';
-
-// Definición de la interfaz LessonQuizProps
-interface LessonQuizProps {
-  quizData: any;
-  onComplete: (score: number, answers: Record<string, number>) => Promise<void>;
-}
 
 const LessonDetail = () => {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -83,14 +78,14 @@ const LessonDetail = () => {
       
       // Verificar si la lección está completada
       if (user) {
-        const isLessonCompleted = await HybridCourseService.isLessonCompleted(lessonId, user.id);
-        setIsCompleted(isLessonCompleted);
+        // Verificación del estado de completado usando el servicio de progreso
+        const progress = await HybridCourseService.getLessonProgressByUserId(lessonId, user.id);
+        setIsCompleted(progress?.completed || false);
       }
       
-      // Cargar datos del quiz si existen
-      if (lessonData.quiz_id) {
-        const quiz = await HybridCourseService.getQuizById(lessonData.quiz_id);
-        setQuizData(quiz);
+      // Verificar si la lección tiene un quiz asociado
+      if (lessonData.quizData) {
+        setQuizData(lessonData.quizData);
       }
     } catch (error) {
       console.error('Error fetching lesson data:', error);
@@ -113,7 +108,7 @@ const LessonDetail = () => {
     if (!lessonId) return;
     
     try {
-      const success = await markLessonAsCompleted(lesson.module_id, lessonId);
+      const success = await markLessonAsCompleted(lessonId);
       if (success) {
         setIsCompleted(true);
       }
@@ -223,7 +218,13 @@ const LessonDetail = () => {
               </div>
               
               {quizData ? (
-                <LessonQuiz quizData={quizData} onComplete={handleQuizComplete} />
+                <LessonQuiz 
+                  courseId={courseId}
+                  moduleId={lesson.module_id || "default"}
+                  lessonId={lessonId}
+                  onComplete={handleQuizComplete}
+                  completed={isCompleted}
+                />
               ) : (
                 <Button 
                   onClick={handleLessonComplete} 
