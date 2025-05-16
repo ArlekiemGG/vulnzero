@@ -384,6 +384,7 @@ const Dashboard = () => {
           </div>
         </main>
       </div>
+      {/* Footer removed as requested */}
     </div>
   );
 };

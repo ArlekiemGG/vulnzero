@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
+import Footer from '@/components/layout/Footer';
 
 // Import the refactored components
 import CTFService from '@/components/ctf/CTFService';
@@ -246,6 +246,7 @@ const CTFs = () => {
           </div>
         </main>
       </div>
+      <Footer />
     </div>
   );
 };
