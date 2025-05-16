@@ -13,24 +13,25 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fetch completed lessons without complex type inference
-  const { data: lessonsData, error: lessonsError } = await supabase
+  // Use a more explicit approach to avoid deep type instantiation
+  const lessonsResult = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
     
-  if (lessonsError) throw lessonsError;
+  if (lessonsResult.error) throw lessonsResult.error;
 
   // Process and set data
   const progress = progressData?.progress_percentage || 0;
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  if (lessonsData) {
-    // Safely iterate through the data with explicit any[] casting to avoid deep type inference
-    (lessonsData as any[]).forEach(item => {
-      if (item.completed) {
+  // Safely process the lessons data without complex type inference
+  const lessonsData = lessonsResult.data;
+  if (lessonsData && Array.isArray(lessonsData)) {
+    lessonsData.forEach(item => {
+      if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
         completedLessonsMap[lessonKey] = true;
