@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -305,7 +305,10 @@ const LessonDetail = () => {
                   )}
 
                   {showQuiz && quizData ? (
-                    <LessonQuiz quizData={quizData} onComplete={handleQuizComplete} />
+                    <LessonQuiz 
+                      quizData={quizData} 
+                      onComplete={handleQuizComplete}
+                    />
                   ) : (
                     <EnhancedContentRenderer content={content} />
                   )}

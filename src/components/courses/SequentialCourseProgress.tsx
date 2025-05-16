@@ -193,7 +193,7 @@ export function SequentialCourseProgress({ courseId, modules }: SequentialCourse
                                 <BookOpenIcon className="h-3 w-3 mr-1" />
                                 {lesson.duration_minutes} min
                                 {lesson.has_quiz && (
-                                  <Badge variant="outline" size="sm" className="ml-2 text-xs">Quiz</Badge>
+                                  <Badge variant="outline" className="ml-2 text-xs">Quiz</Badge>
                                 )}
                               </div>
                             </div>

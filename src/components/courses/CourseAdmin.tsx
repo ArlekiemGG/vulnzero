@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -123,7 +122,7 @@ export function CourseAdmin() {
                         </p>
                       </div>
                       
-                      <Badge variant={course.validLessons === course.lessonsCount ? "success" : "destructive"}>
+                      <Badge variant={course.validLessons === course.lessonsCount ? "default" : "destructive"}>
                         {course.validLessons}/{course.lessonsCount} lecciones válidas
                       </Badge>
                     </div>

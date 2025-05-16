@@ -74,3 +74,9 @@ export interface UserPreferences {
   completed_assessment?: boolean;
   learning_path_id?: string; 
 }
+
+export interface QuizResult {
+  completed: boolean;
+  score: number;
+  answers: Record<string, number>;
+}

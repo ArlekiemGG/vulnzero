@@ -1,4 +1,3 @@
-
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -44,7 +43,8 @@ export const useProgressService = () => {
         course_id: courseId,
         progress_percentage: progressResult.progress,
         completed: progressResult.progress === 100,
-        completed_at: progressResult.progress === 100 ? new Date().toISOString() : null
+        completed_at: progressResult.progress === 100 ? new Date().toISOString() : null,
+        started_at: new Date().toISOString() // Agregado el campo faltante
       };
     } catch (error) {
       console.error('Error fetching course progress:', error);

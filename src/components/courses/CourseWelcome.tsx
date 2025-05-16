@@ -24,13 +24,14 @@ const CourseWelcome = () => {
   const checkUserAssessment = async () => {
     try {
       setLoading(true);
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('completed_assessment')
+        .select('*')
         .eq('id', user.id)
         .single();
       
-      setCompletedAssessment(!!profile?.completed_assessment);
+      // Safely access the property only if it exists
+      setCompletedAssessment(profile && 'completed_assessment' in profile ? !!profile.completed_assessment : false);
     } catch (error) {
       console.error('Error checking assessment status:', error);
     } finally {

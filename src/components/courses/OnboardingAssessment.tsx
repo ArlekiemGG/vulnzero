@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,13 +102,35 @@ export function OnboardingAssessment({ onComplete }: OnboardingAssessmentProps) 
   
   const saveUserPreferences = async (level: string, recommendedCourseId: string) => {
     try {
-      await supabase
-        .from('profiles')
-        .update({
-          preferred_level: level,
-          recommended_course: recommendedCourseId
-        })
-        .eq('id', user.id);
+      // Check if columns exist in profiles table and only update with them if they do
+      const { data: columns } = await supabase
+        .from('information_schema.columns')
+        .select('column_name')
+        .eq('table_name', 'profiles')
+        .eq('table_schema', 'public');
+      
+      const columnNames = columns?.map(c => c.column_name) || [];
+      const updateObj: Record<string, any> = {};
+      
+      // Only add fields if they exist in the database
+      if (columnNames.includes('preferred_level')) {
+        updateObj.preferred_level = level;
+      }
+      if (columnNames.includes('recommended_course')) {
+        updateObj.recommended_course = recommendedCourseId;
+      }
+      if (columnNames.includes('completed_assessment')) {
+        updateObj.completed_assessment = true;
+      }
+      
+      if (Object.keys(updateObj).length > 0) {
+        await supabase
+          .from('profiles')
+          .update(updateObj)
+          .eq('id', user.id);
+      } else {
+        console.warn('Profile table does not have required columns for learning preferences');
+      }
     } catch (error) {
       console.error('Error saving user preferences:', error);
     }
