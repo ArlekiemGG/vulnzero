@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, HardDrive, Network, AlertTriangle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +15,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MachineService } from '@/components/machines/MachineService';
 import { MachineType } from '@/components/machines/MachineData';
 import { useToast } from '@/components/ui/use-toast';
+import Sidebar from '@/components/layout/Sidebar';
+import { useUserStats } from '@/hooks/use-user-stats';
 
 const Machines = () => {
   const { user } = useAuth();
+  const { userStats } = useUserStats(user?.id);
   const [searchQuery, setSearchQuery] = useState('');
   const [osFilter, setOsFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -94,8 +99,9 @@ const Machines = () => {
   return (
     <div className="min-h-screen bg-cybersec-black">
       <Navbar />
+      {user && <Sidebar userStats={userStats} />}
       
-      <main className="pt-20 pb-10 px-4 sm:px-6">
+      <main className={`pt-20 pb-10 px-4 sm:px-6 ${user ? 'md:pl-64' : ''}`}>
         <div className="max-w-7xl mx-auto">
           {/* Encabezado y filtros */}
           <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -225,6 +231,8 @@ const Machines = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };
