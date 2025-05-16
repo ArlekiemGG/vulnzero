@@ -3,15 +3,14 @@ import { ProgressResult } from './types';
 import * as queries from './queries';
 
 /**
- * Obtiene los datos de progreso del usuario para un curso específico
+ * Retrieves user progress data for a specific course
  */
 export async function fetchUserProgressData(courseId: string, userId: string): Promise<ProgressResult> {
   try {
-    // Fetch course progress data
+    // Get course progress data
     const { data: progressData, error: progressError } = await queries.getCourseProgress(userId, courseId);
     if (progressError) {
       console.error("Error fetching course progress:", progressError);
-      // Fallback para evitar errores si no hay progreso
       return {
         progress: 0,
         completedLessons: {},
@@ -19,11 +18,10 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
       };
     }
 
-    // Fetch lesson progress data with course_id filter
+    // Get lesson progress data with course_id filter
     const { data: lessonProgressData, error: lessonProgressError } = await queries.getLessonProgress(userId, courseId);
     if (lessonProgressError) {
       console.error("Error fetching lesson progress:", lessonProgressError);
-      // Fallback para evitar errores si no hay progreso de lecciones
       return {
         progress: progressData?.progress_percentage || 0,
         completedLessons: {},
@@ -31,15 +29,15 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
       };
     }
     
-    // Process and set data
+    // Process response data
     const progress = progressData?.progress_percentage || 0;
     const completedLessonsMap: Record<string, boolean> = {};
     const completedQuizzesMap: Record<string, boolean> = {};
     
     if (lessonProgressData && Array.isArray(lessonProgressData)) {
-      lessonProgressData.forEach((item: { lesson_id: string; completed: boolean }) => {
+      lessonProgressData.forEach((item) => {
         if (item && item.completed) {
-          // Crear clave estandarizada: courseId:lessonId
+          // Create standardized key: courseId:lessonId
           completedLessonsMap[`${courseId}:${item.lesson_id}`] = true;
         }
       });
@@ -52,7 +50,6 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
     };
   } catch (error) {
     console.error("Error in fetchUserProgressData:", error);
-    // Fallback para cualquier error no controlado
     return {
       progress: 0,
       completedLessons: {},

@@ -3,39 +3,43 @@ import * as queries from './queries';
 import { updateCourseProgressData } from './course-progress';
 
 /**
- * Marca una lección como completada
+ * Marks a lesson as completed
  */
 export async function markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
   try {
-    // Check if the lesson is already marked as completed
-    const { data: existingProgress, error: checkError } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    // Check if lesson progress already exists
+    const { data: existingProgress, error: checkError } = await queries.checkLessonProgressExists(
+      userId, 
+      courseId, 
+      lessonId
+    );
     
     if (checkError) {
       throw new Error(`Error checking lesson progress: ${checkError.message}`);
     }
     
+    const completionData = {
+      completed: true,
+      completed_at: new Date().toISOString()
+    };
+    
     if (existingProgress) {
       // Update existing record
-      const { error } = await queries.updateLessonProgress(existingProgress.id, {
-        completed: true,
-        completed_at: new Date().toISOString()
-      });
-      
+      const { error } = await queries.updateLessonProgress(existingProgress.id, completionData);
       if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
     } else {
-      // Create new record with all required fields
+      // Create new record
       const { error } = await queries.createLessonProgress({
         user_id: userId,
-        course_id: courseId, // Aseguramos que course_id siempre se incluya
+        course_id: courseId,
         lesson_id: lessonId,
-        completed: true,
-        completed_at: new Date().toISOString()
+        ...completionData
       });
       
       if (error) throw new Error(`Error creating lesson progress: ${error.message}`);
     }
     
-    // Update course progress
+    // Update overall course progress
     await updateCourseProgressData(userId, courseId);
     
     return true;
@@ -46,7 +50,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
 }
 
 /**
- * Guarda los resultados de un quiz y marca la lección como completada
+ * Saves quiz results and marks the lesson as completed
  */
 export async function saveQuizResults(
   userId: string, 
@@ -57,7 +61,11 @@ export async function saveQuizResults(
 ): Promise<boolean> {
   try {
     // Check if lesson progress already exists
-    const { data: existingLesson, error: checkError } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    const { data: existingLesson, error: checkError } = await queries.checkLessonProgressExists(
+      userId, 
+      courseId, 
+      lessonId
+    );
     
     if (checkError) {
       throw new Error(`Error checking lesson progress: ${checkError.message}`);
@@ -73,10 +81,10 @@ export async function saveQuizResults(
       const { error } = await queries.updateLessonProgress(existingLesson.id, lessonData);
       if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
     } else {
-      // Create new lesson progress record with all required fields
+      // Create new record
       const { error } = await queries.createLessonProgress({
         user_id: userId,
-        course_id: courseId, // Aseguramos que course_id siempre se incluya
+        course_id: courseId,
         lesson_id: lessonId,
         ...lessonData
       });

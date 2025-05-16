@@ -1,10 +1,12 @@
 
-// Importar y reexportar todas las funciones desde los módulos específicos
+// Main module for course progress functionality
+// Exports all necessary functions and types from submodules
+
 import { fetchUserProgressData } from './user-data';
 import { markLessonComplete, saveQuizResults } from './lesson-progress';
 import { updateCourseProgressData } from './course-progress';
 
-// Exportar funciones principales
+// Export main functions
 export {
   fetchUserProgressData,
   markLessonComplete,
@@ -12,5 +14,5 @@ export {
   updateCourseProgressData
 };
 
-// Re-exportar los tipos para facilitar su uso
+// Re-export types
 export * from './types';

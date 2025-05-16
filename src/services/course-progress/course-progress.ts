@@ -2,7 +2,7 @@
 import * as queries from './queries';
 
 /**
- * Actualiza los datos de progreso del curso
+ * Updates course progress data based on completed lessons
  */
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
   try {
@@ -20,6 +20,7 @@ export async function updateCourseProgressData(userId: string, courseId: string)
       throw new Error(`Error counting completed lessons: ${completedLessonsError.message}`);
     }
     
+    // Calculate progress percentage
     const totalLessons = totalLessonsCount || 0;
     const completedCount = completedLessonsData?.length || 0;
     const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -32,7 +33,7 @@ export async function updateCourseProgressData(userId: string, courseId: string)
       throw new Error(`Error checking course progress: ${checkError.message}`);
     }
     
-    const updateData = {
+    const progressData = {
       progress_percentage: progressPercentage,
       completed,
       completed_at: completed ? new Date().toISOString() : null
@@ -40,16 +41,15 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     
     if (existingProgress) {
       // Update existing record
-      const { error } = await queries.updateCourseProgressRecord(existingProgress.id, updateData);
+      const { error } = await queries.updateCourseProgressRecord(existingProgress.id, progressData);
       if (error) throw new Error(`Error updating course progress: ${error.message}`);
     } else {
-      // Create new record with all required fields
+      // Create new record
       const { error } = await queries.createCourseProgressRecord({
         user_id: userId,
         course_id: courseId,
-        ...updateData,
-        started_at: new Date().toISOString(),
-        progress_percentage: progressPercentage
+        ...progressData,
+        started_at: new Date().toISOString()
       });
       if (error) throw new Error(`Error creating course progress: ${error.message}`);
     }

@@ -1,5 +1,7 @@
 
-// Interfaces para los modelos de datos
+// Type definitions for course progress module
+
+// Data model interfaces
 export interface LessonProgressItem {
   id?: string;
   lesson_id: string;
@@ -25,14 +27,14 @@ export interface QuizResult {
   answers: Record<string, number>;
 }
 
-// Tipo de retorno para la función fetchUserProgressData
+// Return types for functions
 export interface ProgressResult {
   progress: number;
   completedLessons: Record<string, boolean>;
   completedQuizzes: Record<string, boolean>;
 }
 
-// Interfaces para las respuestas de Supabase
+// Database response types
 export interface LessonProgressResponse {
   data: SimpleLessonProgress[] | null;
   error: any | null;
@@ -48,9 +50,9 @@ export interface SupabaseSimpleResponse {
   error: any | null;
 }
 
-// Tipos adicionales para resolver problemas de inferencia
+// Helper types
 export interface SimpleLessonProgress {
   lesson_id: string;
   completed: boolean;
-  course_id: string;  // Requerido para evitar problemas de tipo
+  course_id: string;
 }

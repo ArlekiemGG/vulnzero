@@ -9,7 +9,7 @@ import {
   updateCourseProgressData
 } from './course-progress/index';
 
-// Re-exportamos las funciones para mantener compatibilidad
+// Re-export functions for backward compatibility
 export { 
   fetchUserProgressData,
   markLessonComplete, 
@@ -17,7 +17,7 @@ export {
   updateCourseProgressData 
 };
 
-// También re-exportamos los tipos para mantener compatibilidad
+// Re-export types for backward compatibility
 export type { 
   ProgressResult, 
   QuizResult,
@@ -27,4 +27,3 @@ export type {
   TotalLessonsResponse,
   SupabaseSimpleResponse
 } from './course-progress/types';
-

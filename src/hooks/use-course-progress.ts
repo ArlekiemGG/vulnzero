@@ -12,6 +12,9 @@ import type {
   CompletedQuizzesMap 
 } from '@/types/course-progress';
 
+/**
+ * Hook for managing course progress
+ */
 export const useUserCourseProgress = (courseId: string, userId?: string): CourseProgressHook => {
   const [progress, setProgress] = useState<number>(0);
   const [completedLessons, setCompletedLessons] = useState<CompletedLessonsMap>({});
@@ -62,10 +65,13 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     };
   }, [courseId, userId]);
 
+  /**
+   * Marks a lesson as completed
+   */
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    // Usamos una estructura de clave consistente: courseId:lessonId
+    // Use consistent key structure: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
     
     try {
@@ -75,7 +81,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
         // Update local state
         setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
         setProgress(prev => {
-          // Simple estimation, will be corrected on next data fetch
+          // Simple estimation until next data fetch
           const newProgress = Math.min(100, prev + 5);
           return newProgress;
         });
@@ -98,10 +104,18 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     }
   };
 
-  const saveQuizResult = async (moduleId: string, lessonId: string, score: number, answers: Record<string, number>): Promise<boolean> => {
+  /**
+   * Saves quiz results and marks lesson as completed
+   */
+  const saveQuizResult = async (
+    moduleId: string, 
+    lessonId: string, 
+    score: number, 
+    answers: Record<string, number>
+  ): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    // Usamos una estructura de clave consistente: courseId:lessonId
+    // Use consistent key structure: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
     
     try {
