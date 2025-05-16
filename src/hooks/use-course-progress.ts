@@ -119,12 +119,21 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
         });
         
         // Actualizamos inmediatamente el estado local, pero también recuperamos el progreso actualizado
-        const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
-        setProgress(updatedProgressData.progress);
-        console.log(`useUserCourseProgress: Updated progress from backend: ${updatedProgressData.progress}%`);
+        try {
+          const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
+          setProgress(updatedProgressData.progress);
+          console.log(`useUserCourseProgress: Updated progress from backend: ${updatedProgressData.progress}%`);
+        } catch (error) {
+          console.error("Failed to fetch updated progress:", error);
+        }
         
         // Actualizar el progreso global del usuario
-        await refreshUserStats();
+        try {
+          await refreshUserStats();
+          console.log("useUserCourseProgress: Global user stats refreshed");
+        } catch (error) {
+          console.error("Failed to refresh user stats:", error);
+        }
         
         return true;
       } else {
@@ -183,12 +192,21 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
         });
         
         // Actualizamos el progreso desde el backend
-        const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
-        setProgress(updatedProgressData.progress);
-        console.log(`useUserCourseProgress: Updated progress after quiz: ${updatedProgressData.progress}%`);
+        try {
+          const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
+          setProgress(updatedProgressData.progress);
+          console.log(`useUserCourseProgress: Updated progress after quiz: ${updatedProgressData.progress}%`);
+        } catch (error) {
+          console.error("Failed to fetch updated progress after quiz:", error);
+        }
         
         // Actualizar el progreso global del usuario
-        await refreshUserStats();
+        try {
+          await refreshUserStats();
+          console.log("useUserCourseProgress: Global user stats refreshed after quiz");
+        } catch (error) {
+          console.error("Failed to refresh user stats after quiz:", error);
+        }
         
         toast({
           title: "Quiz completado",
@@ -213,6 +231,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
   
   // Método para forzar la recarga del progreso
   const refreshProgress = async (): Promise<void> => {
+    console.log("useUserCourseProgress: Manually refreshing progress");
     await loadUserProgress();
     await refreshUserStats();
   };

@@ -8,6 +8,8 @@ import { updateCourseProgressData } from './course-progress';
  */
 export async function markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
   try {
+    console.log(`markLessonComplete: Processing lesson ${lessonId} for course ${courseId} and user ${userId}`);
+    
     // Verificar si ya existe un registro para esta lección
     const { data: existingProgress, error: checkError } = await queries.checkLessonProgressExists(
       userId, 
@@ -24,6 +26,8 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
     let success = false;
 
     if (existingProgress?.id) {
+      console.log(`markLessonComplete: Updating existing progress record ${existingProgress.id}`);
+      
       // Actualizar registro existente
       const { error: updateError } = await queries.updateLessonProgress(
         existingProgress.id, 
@@ -40,6 +44,8 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
 
       success = true;
     } else {
+      console.log(`markLessonComplete: Creating new progress record for lesson ${lessonId}`);
+      
       // Crear nuevo registro
       const newProgress: LessonProgressItem = {
         id: '', // Generado por Supabase
@@ -62,7 +68,9 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
 
     // Actualizar el progreso del curso
     if (success) {
-      await updateCourseProgressData(userId, courseId);
+      console.log(`markLessonComplete: Updating course progress data for course ${courseId}`);
+      const courseUpdateResult = await updateCourseProgressData(userId, courseId);
+      console.log(`markLessonComplete: Course progress update result: ${courseUpdateResult}`);
     }
 
     return success;
@@ -83,6 +91,8 @@ export async function saveQuizResults(
   answers: Record<string, number>
 ): Promise<boolean> {
   try {
+    console.log(`saveQuizResults: Processing quiz for lesson ${lessonId}, course ${courseId}, user ${userId}`);
+    
     // Primero marcamos la lección como completa
     const success = await markLessonComplete(userId, courseId, lessonId);
     
