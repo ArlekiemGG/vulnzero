@@ -15,6 +15,7 @@ export const validateLessonContent = async (
 ): Promise<boolean> => {
   try {
     const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
+    console.log(`Validando existencia de archivo: ${contentPath}`);
     const response = await fetch(contentPath, { method: 'HEAD' });
     return response.ok;
   } catch (error) {
@@ -24,22 +25,30 @@ export const validateLessonContent = async (
 };
 
 /**
+ * Interface for course content validation results
+ */
+interface ContentValidationResult {
+  valid: boolean;
+  courseId: string;
+  modulesChecked: number;
+  lessonsChecked: number;
+  missingLessons: { moduleId: string; lessonId: string }[];
+  error?: string;
+}
+
+/**
  * Checks the existence of a course's lesson content files
  * @param courseId - The course ID
  * @returns Promise that resolves to an object with validation results
  */
-export const validateCourseContent = async (courseId: string) => {
+export const validateCourseContent = async (courseId: string): Promise<ContentValidationResult | { valid: boolean; error: string }> => {
   const course = findCourseById(courseId);
   if (!course) {
     return { valid: false, error: `Curso no encontrado: ${courseId}` };
   }
   
-  const results: {
-    courseId: string;
-    modulesChecked: number;
-    lessonsChecked: number;
-    missingLessons: { moduleId: string; lessonId: string }[];
-  } = {
+  const results: ContentValidationResult = {
+    valid: true,
     courseId,
     modulesChecked: 0,
     lessonsChecked: 0,
@@ -62,10 +71,8 @@ export const validateCourseContent = async (courseId: string) => {
     }
   }
   
-  return {
-    valid: results.missingLessons.length === 0,
-    ...results
-  };
+  results.valid = results.missingLessons.length === 0;
+  return results;
 };
 
 /**
@@ -76,7 +83,7 @@ export const debugCourseStructure = async (courseId: string) => {
   const result = await validateCourseContent(courseId);
   console.log('Course content validation results:', result);
   
-  if (!result.valid) {
+  if (!result.valid && 'missingLessons' in result) {
     console.warn('Missing lesson files detected:', result.missingLessons);
     
     // More detailed information about missing files

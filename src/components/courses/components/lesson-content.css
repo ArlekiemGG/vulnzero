@@ -83,6 +83,27 @@
   @apply mb-6;
 }
 
+/* Code line numbers */
+[data-line] {
+  counter-reset: line;
+}
+
+[data-line] code[class*="language-"]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  opacity: 0.5;
+  padding: 0 0.5em;
+  width: 1.5em;
+  text-align: right;
+  user-select: none;
+}
+
+/* Keyboard shortcuts */
+.keyboard-shortcut {
+  @apply px-2 py-1 rounded bg-gray-700 text-white text-xs font-mono border border-gray-600;
+}
+
 /* Images */
 .lesson-content img {
   @apply rounded-lg max-w-full my-8 border border-gray-700;
@@ -121,7 +142,7 @@
 
 /* Custom content blocks */
 .lesson-content .enhanced-block {
-  @apply rounded-lg p-5 my-6;
+  @apply rounded-lg p-5 my-6 relative;
 }
 
 .lesson-content .enhanced-block-blue {
@@ -142,6 +163,15 @@
 
 .lesson-content .enhanced-block-gray {
   @apply bg-gray-700/80 border border-gray-600 text-gray-200;
+}
+
+/* Info and Warning blocks */
+.info-block, .warning-block {
+  @apply pl-10;
+}
+
+.info-block-icon, .warning-block-icon {
+  @apply absolute left-4 top-5 text-lg;
 }
 
 /* Quote blocks */

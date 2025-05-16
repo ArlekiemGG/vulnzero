@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { toast } from '@/components/ui/use-toast';
+import { validateLessonContent } from '@/utils/course-content-validator';
 
 const LessonDetail = () => {
   const { user } = useAuth();
@@ -23,7 +24,10 @@ const LessonDetail = () => {
   }>();
   
   const [validRoute, setValidRoute] = useState(true);
+  const [contentExists, setContentExists] = useState<boolean | null>(null);
+  const [isCheckingContent, setIsCheckingContent] = useState<boolean>(false);
   
+  // Validate route parameters
   useEffect(() => {
     document.title = `Lección - VulnZero`;
     // Scroll to top to avoid intermediate positions
@@ -47,6 +51,32 @@ const LessonDetail = () => {
     }
   }, [courseId, moduleId, lessonId]);
 
+  // Verify if content file exists
+  useEffect(() => {
+    const checkContentExists = async () => {
+      if (!courseId || !moduleId || !lessonId) return;
+      
+      setIsCheckingContent(true);
+      try {
+        const exists = await validateLessonContent(courseId, moduleId, lessonId);
+        setContentExists(exists);
+        
+        if (!exists) {
+          console.warn(`El archivo de contenido no existe para la lección: ${courseId}/${moduleId}/${lessonId}`);
+        }
+      } catch (error) {
+        console.error('Error verificando existencia de contenido:', error);
+        setContentExists(false);
+      } finally {
+        setIsCheckingContent(false);
+      }
+    };
+    
+    if (validRoute) {
+      checkContentExists();
+    }
+  }, [courseId, moduleId, lessonId, validRoute]);
+
   const missingParams = !courseId || !moduleId || !lessonId;
 
   return (
@@ -66,11 +96,37 @@ const LessonDetail = () => {
                 </AlertDescription>
               </Alert>
             </div>
+          ) : isCheckingContent ? (
+            <div className="container mx-auto px-4 flex justify-center">
+              <div className="animate-pulse text-center">
+                <p className="text-gray-400">Verificando disponibilidad del contenido...</p>
+              </div>
+            </div>
+          ) : contentExists === false ? (
+            <div className="container mx-auto px-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error de contenido</AlertTitle>
+                <AlertDescription>
+                  No se encontró el archivo de contenido para esta lección. 
+                  Ruta esperada: <code className="bg-gray-800 px-1 py-0.5 rounded text-xs">/courses/{courseId}/{moduleId}/{lessonId}.html</code>
+                </AlertDescription>
+              </Alert>
+              <div className="mt-4 text-center">
+                <p className="text-gray-400 mb-2">Esta lección podría estar en desarrollo o no estar disponible todavía.</p>
+                <button 
+                  onClick={() => navigate(`/courses/${courseId}`)}
+                  className="text-blue-500 hover:underline"
+                >
+                  Volver al curso
+                </button>
+              </div>
+            </div>
           ) : (
             <FileLessonDetail 
-              courseId={courseId} 
-              moduleId={moduleId} 
-              lessonId={lessonId} 
+              courseId={courseId!} 
+              moduleId={moduleId!} 
+              lessonId={lessonId!} 
             />
           )}
         </ErrorBoundary>

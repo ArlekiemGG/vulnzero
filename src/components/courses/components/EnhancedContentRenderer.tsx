@@ -57,6 +57,29 @@ const EnhancedContentRenderer = ({ content }: EnhancedContentRendererProps) => {
           '<a href="$1" target="_blank" rel="noopener noreferrer">'
         );
 
+        // Add data-line attribute to code blocks for line numbers
+        enhancedContent = enhancedContent.replace(
+          /<pre><code class="language-(\w+)">/g,
+          '<pre data-line><code class="language-$1">'
+        );
+
+        // Add keyboard shortcuts styling
+        enhancedContent = enhancedContent.replace(
+          /<kbd>(.*?)<\/kbd>/g,
+          '<kbd class="keyboard-shortcut">$1</kbd>'
+        );
+        
+        // Add info/warning blocks
+        enhancedContent = enhancedContent.replace(
+          /<div class="info-block">([\s\S]*?)<\/div>/g,
+          '<div class="enhanced-block enhanced-block-blue info-block"><div class="info-block-icon">ℹ️</div>$1</div>'
+        );
+        
+        enhancedContent = enhancedContent.replace(
+          /<div class="warning-block">([\s\S]*?)<\/div>/g,
+          '<div class="enhanced-block enhanced-block-yellow warning-block"><div class="warning-block-icon">⚠️</div>$1</div>'
+        );
+
         setProcessedContent(enhancedContent);
         setIsLoading(false);
       }, 300);

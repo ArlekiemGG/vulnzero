@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CheckCircle, BookOpen, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
@@ -27,6 +27,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   const { user } = useAuth();
   const [content, setContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadAttempts, setLoadAttempts] = useState<number>(0);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
   const [quizVisible, setQuizVisible] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,17 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
   const isCompleted = completedLessons ? !!completedLessons[lessonKey] : false;
   const quizCompleted = completedQuizzes ? !!completedQuizzes[lessonKey] : false;
+
+  // Handle synchronizing course content
+  const handleSyncContent = () => {
+    setLoadAttempts(prev => prev + 1);
+    setIsLoading(true);
+    setError(null);
+    toast({
+      title: "Sincronizando contenido",
+      description: "Intentando cargar el contenido de la lección de nuevo..."
+    });
+  };
 
   useEffect(() => {
     const setup = async () => {
@@ -100,7 +112,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
     };
 
     setup();
-  }, [courseId, moduleId, lessonId, navigate, course, currentModule, lesson]);
+  }, [courseId, moduleId, lessonId, navigate, course, currentModule, lesson, loadAttempts]);
 
   const setupNavigation = () => {
     if (!course || !currentModule) return;
@@ -257,10 +269,20 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
             <code className="px-2 py-1 bg-gray-800 rounded text-xs">
               /courses/{courseId}/{moduleId}/{lessonId}.html
             </code>
+            <div className="mt-4">
+              <Button 
+                variant="outline"
+                onClick={handleSyncContent} 
+                className="mr-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sincronizar contenido
+              </Button>
+              <Button onClick={() => navigate(`/courses/${courseId}`)}>
+                Volver al curso
+              </Button>
+            </div>
           </div>
-          <Button className="mt-4" onClick={() => navigate(`/courses/${courseId}`)}>
-            Volver al curso
-          </Button>
         </div>
       </div>
     );
@@ -272,7 +294,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
         <div className="flex flex-col md:flex-row gap-8">
           {/* Main content */}
           <div className="w-full md:w-3/4">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center justify-between mb-4">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate(`/courses/${courseId}`)}
@@ -280,6 +302,16 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 <span>Volver al curso</span>
+              </Button>
+              
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={handleSyncContent}
+                className="text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Sincronizar
               </Button>
             </div>
             
