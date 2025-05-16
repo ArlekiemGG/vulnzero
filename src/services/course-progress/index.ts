@@ -20,9 +20,9 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
     }
 
     // Fetch lesson progress data
-    const lessonProgressResult = await queries.getLessonProgress(userId, courseId);
-    if (lessonProgressResult.error) {
-      console.error("Error fetching lesson progress:", lessonProgressResult.error);
+    const { data: lessonProgressData, error: lessonProgressError } = await queries.getLessonProgress(userId, courseId);
+    if (lessonProgressError) {
+      console.error("Error fetching lesson progress:", lessonProgressError);
       // Fallback para evitar errores si no hay progreso de lecciones
       return {
         progress: progressData?.progress_percentage || 0,
@@ -36,8 +36,8 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
     const completedLessonsMap: Record<string, boolean> = {};
     const completedQuizzesMap: Record<string, boolean> = {};
     
-    if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
-      lessonProgressResult.data.forEach((item: { lesson_id: string; completed: boolean }) => {
+    if (lessonProgressData && Array.isArray(lessonProgressData)) {
+      lessonProgressData.forEach((item: { lesson_id: string; completed: boolean }) => {
         if (item && item.completed) {
           // Crear clave combinada para completedLessons usando courseId y lessonId
           const lessonKey = `${courseId}:${item.lesson_id}`;
@@ -152,20 +152,18 @@ export async function saveQuizResults(
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
   try {
     // Get total lessons count
-    const totalLessonsResult = await queries.countTotalLessons(courseId);
+    const { count: totalLessonsCount, error: totalLessonsError } = await queries.countTotalLessons(courseId);
     
-    const totalLessonsCount = totalLessonsResult.count;
-    if (totalLessonsResult.error) {
-      console.error("Error counting total lessons:", totalLessonsResult.error);
+    if (totalLessonsError) {
+      console.error("Error counting total lessons:", totalLessonsError);
       return 0;
     }
     
     // Get completed lessons count
-    const completedLessonsResult = await queries.countCompletedLessons(userId, courseId);
+    const { data: completedLessonsData, error: completedLessonsError } = await queries.countCompletedLessons(userId, courseId);
     
-    const completedLessonsData = completedLessonsResult.data;
-    if (completedLessonsResult.error) {
-      console.error("Error counting completed lessons:", completedLessonsResult.error);
+    if (completedLessonsError) {
+      console.error("Error counting completed lessons:", completedLessonsError);
       return 0;
     }
     
