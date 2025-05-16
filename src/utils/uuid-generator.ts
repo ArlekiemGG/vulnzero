@@ -21,8 +21,11 @@ export function generateUUID(input: string): string {
     return '';
   }
   
+  // Normalizar el input para mayor consistencia
+  const normalizedInput = String(input).trim().toLowerCase();
+  
   // Añadir logging para debug
-  const result = uuidv5(input, NAMESPACE);
+  const result = uuidv5(normalizedInput, NAMESPACE);
   console.log(`generateUUID: Converting "${input}" to UUID: ${result}`);
   return result;
 }
