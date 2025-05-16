@@ -10,15 +10,19 @@ export const HybridCourseService = {
    * Obtiene información de curso combinando datos estáticos con dinámicos
    */
   getCourseById: async (courseId: string): Promise<Course | null> => {
-    if (!courseId) return null;
+    if (!courseId) {
+      console.error('Error: courseId es undefined o null');
+      return null;
+    }
     
     // Aseguramos que courseId es un string
-    const courseIdStr = String(courseId);
+    const courseIdStr = String(courseId).trim();
+    console.log(`HybridCourseService: Buscando curso con ID: "${courseIdStr}"`);
     
     // Obtenemos el contenido estático
     const staticCourse = StaticContentService.getCourseContent(courseIdStr);
     if (!staticCourse) {
-      console.error(`No se encontró el curso estático con ID: ${courseIdStr}`);
+      console.error(`HybridCourseService: No se encontró el curso estático con ID: "${courseIdStr}"`);
       return null;
     }
     
@@ -29,6 +33,8 @@ export const HybridCourseService = {
         .select('*')
         .eq('id', courseIdStr)
         .maybeSingle();
+      
+      console.log('HybridCourseService: Datos dinámicos recibidos:', dynamicCourse);
       
       // Si existe metadata en Supabase, la combinamos con el contenido estático
       if (dynamicCourse) {
@@ -53,7 +59,7 @@ export const HybridCourseService = {
         updated_at: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error fetching dynamic course data:', error);
+      console.error('HybridCourseService: Error fetching dynamic course data:', error);
       return null;
     }
   },

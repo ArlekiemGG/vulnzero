@@ -45,6 +45,7 @@ const CourseDetail = () => {
 
   const fetchCourseData = useCallback(async () => {
     if (!courseId) {
+      console.error("Error: No se especificó un ID de curso");
       toast({
         title: "Error",
         description: "No se especificó un ID de curso",

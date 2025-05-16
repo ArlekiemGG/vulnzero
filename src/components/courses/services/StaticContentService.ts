@@ -143,8 +143,16 @@ export const StaticContentService = {
    * @returns Contenido estático del curso o null si no existe
    */
   getCourseContent: (courseId: string): StaticCourseContent | null => {
+    if (!courseId) {
+      console.error('Error: courseId es undefined o null');
+      return null;
+    }
+    
+    console.log(`Buscando curso con ID: "${courseId}"`);
+    
     // Comprobamos si el courseId existe exactamente como está
     if (courseContentMap[courseId]) {
+      console.log(`Curso encontrado con ID exacto: ${courseId}`);
       return courseContentMap[courseId];
     }
     
@@ -152,7 +160,14 @@ export const StaticContentService = {
     const courseIds = Object.keys(courseContentMap);
     const matchedId = courseIds.find(id => id.toLowerCase() === courseId.toLowerCase());
     
-    return matchedId ? courseContentMap[matchedId] : null;
+    if (matchedId) {
+      console.log(`Curso encontrado con coincidencia flexible: ${matchedId} para búsqueda: ${courseId}`);
+      return courseContentMap[matchedId];
+    }
+    
+    // Si sigue sin encontrarse, mostramos todos los IDs disponibles para depuración
+    console.error(`Curso no encontrado con ID: "${courseId}". IDs disponibles: ${courseIds.join(', ')}`);
+    return null;
   },
 
   /**
@@ -163,7 +178,10 @@ export const StaticContentService = {
    */
   getLessonContent: (courseId: string, lessonId: string): StaticLesson | null => {
     const course = StaticContentService.getCourseContent(courseId);
-    if (!course) return null;
+    if (!course) {
+      console.error(`No se pudo obtener la lección porque el curso ${courseId} no existe`);
+      return null;
+    }
 
     for (const section of course.sections) {
       for (const lesson of section.lessons) {
@@ -173,6 +191,7 @@ export const StaticContentService = {
       }
     }
 
+    console.error(`Lección ${lessonId} no encontrada en curso ${courseId}`);
     return null;
   },
 
