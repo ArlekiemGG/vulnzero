@@ -5,15 +5,15 @@ import { HybridCourseService } from '../services/HybridCourseService';
 import { useProgressService } from '../services/ProgressService';
 import { useNavigate } from 'react-router-dom';
 
-export const useLessonData = (courseId: string | undefined, lessonId: string | undefined, userId?: string) => {
+export const useLessonData = (courseId: string | undefined, moduleId: string | undefined, lessonId: string | undefined, userId?: string) => {
   const navigate = useNavigate();
   const { getLessonProgress } = useProgressService();
   
   const [lesson, setLesson] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [completed, setCompleted] = useState<boolean>(false);
-  const [nextLesson, setNextLesson] = useState<{id: string; title: string} | null>(null);
-  const [prevLesson, setPrevLesson] = useState<{id: string; title: string} | null>(null);
+  const [nextLesson, setNextLesson] = useState<{id: string; title: string; moduleId?: string} | null>(null);
+  const [prevLesson, setPrevLesson] = useState<{id: string; title: string; moduleId?: string} | null>(null);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
 
   useEffect(() => {
     const fetchLessonData = async () => {
-      if (!lessonId || !courseId) return;
+      if (!lessonId || !courseId || !moduleId) return;
       setIsLoading(true);
       
       try {
@@ -50,7 +50,9 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
         
         // Obtener sección a la que pertenece la lección
         const sectionsData = await HybridCourseService.getCourseSections(courseId);
-        const currentSectionId = lessonData.section_id;
+        
+        // Si no se proporciona el moduleId, usamos sección de la lección
+        const currentSectionId = moduleId || lessonData.section_id;
         const currentSection = sectionsData.find(s => s.id === currentSectionId);
         
         if (!currentSection) {
@@ -88,7 +90,7 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
     };
     
     fetchLessonData();
-  }, [courseId, lessonId, userId, navigate, getLessonProgress]);
+  }, [courseId, moduleId, lessonId, userId, navigate, getLessonProgress]);
 
   const setupNavigation = async (
     sectionsData: any[], 
@@ -101,7 +103,8 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
     if (currentIndex > 0) {
       setPrevLesson({
         id: sectionLessons[currentIndex - 1].id,
-        title: sectionLessons[currentIndex - 1].title
+        title: sectionLessons[currentIndex - 1].title,
+        moduleId: currentSectionId
       });
     } else {
       // Buscar la última lección de la sección anterior
@@ -113,7 +116,8 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
           const lastLesson = prevSectionLessons[prevSectionLessons.length - 1];
           setPrevLesson({
             id: lastLesson.id,
-            title: lastLesson.title
+            title: lastLesson.title,
+            moduleId: prevSectionId
           });
         } else {
           setPrevLesson(null);
@@ -127,7 +131,8 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
     if (currentIndex < sectionLessons.length - 1) {
       setNextLesson({
         id: sectionLessons[currentIndex + 1].id,
-        title: sectionLessons[currentIndex + 1].title
+        title: sectionLessons[currentIndex + 1].title,
+        moduleId: currentSectionId
       });
     } else {
       // Buscar la primera lección de la siguiente sección
@@ -138,7 +143,8 @@ export const useLessonData = (courseId: string | undefined, lessonId: string | u
         if (nextSectionLessons.length > 0) {
           setNextLesson({
             id: nextSectionLessons[0].id,
-            title: nextSectionLessons[0].title
+            title: nextSectionLessons[0].title,
+            moduleId: nextSectionId
           });
         } else {
           setNextLesson(null);

@@ -1,54 +1,69 @@
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface SidebarProps {
-  currentLesson: { title: string };
-  prevLesson: { id: string; title: string } | null;
-  nextLesson: { id: string; title: string } | null;
-  onNavigate: (id: string) => void;
+interface LessonSidebarProps {
+  currentLesson: {
+    id: string;
+    title: string;
+    content?: string;
+    duration_minutes?: number;
+  };
+  prevLesson: {id: string; title: string; moduleId?: string} | null;
+  nextLesson: {id: string; title: string; moduleId?: string} | null;
+  onNavigate: (id: string, moduleId: string) => void;
 }
 
-const LessonSidebar = ({ currentLesson, prevLesson, nextLesson, onNavigate }: SidebarProps) => {
+const LessonSidebar = ({
+  currentLesson,
+  prevLesson,
+  nextLesson,
+  onNavigate,
+}: LessonSidebarProps) => {
   return (
-    <Card className="sticky top-24">
+    <Card className="sticky top-4">
       <CardContent className="p-6">
-        <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
-        
-        {prevLesson && (
+        <h3 className="text-lg font-semibold mb-4">Navegación de lecciones</h3>
+
+        {prevLesson ? (
           <>
-            <div className="mb-3">
-              <div className="text-sm text-gray-500">Anterior</div>
-              <button 
-                onClick={() => onNavigate(prevLesson.id)}
-                className="text-left font-medium hover:text-primary transition-colors"
+            <div className="mb-4">
+              <div className="text-sm text-gray-500 mb-1">Lección anterior</div>
+              <button
+                onClick={() => onNavigate(prevLesson.id, prevLesson.moduleId || '')}
+                className="flex items-center text-left hover:text-primary transition-colors"
               >
-                {prevLesson.title}
+                <ChevronLeft className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="text-sm font-medium">{prevLesson.title}</span>
               </button>
             </div>
-            <Separator className="my-3" />
+            <Separator className="my-4" />
           </>
-        )}
-        
-        <div className="mb-3">
-          <div className="text-sm text-gray-500">Actual</div>
-          <div className="font-medium text-primary">{currentLesson.title}</div>
+        ) : null}
+
+        <div className="mb-4">
+          <div className="text-sm text-gray-500 mb-1">Lección actual</div>
+          <div className="text-sm font-medium text-primary">
+            {currentLesson.title}
+          </div>
         </div>
-        
-        {nextLesson && (
+
+        {nextLesson ? (
           <>
-            <Separator className="my-3" />
+            <Separator className="my-4" />
             <div>
-              <div className="text-sm text-gray-500">Siguiente</div>
-              <button 
-                onClick={() => onNavigate(nextLesson.id)}
-                className="text-left font-medium hover:text-primary transition-colors"
+              <div className="text-sm text-gray-500 mb-1">Siguiente lección</div>
+              <button
+                onClick={() => onNavigate(nextLesson.id, nextLesson.moduleId || '')}
+                className="flex items-center justify-between text-left hover:text-primary transition-colors w-full"
               >
-                {nextLesson.title}
+                <span className="text-sm font-medium">{nextLesson.title}</span>
+                <ChevronRight className="h-4 w-4 ml-1 flex-shrink-0" />
               </button>
             </div>
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

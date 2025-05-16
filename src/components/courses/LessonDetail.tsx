@@ -72,7 +72,7 @@ const LessonDetail = () => {
   };
 
   const navigateToLesson = (id: string, targetModuleId: string) => {
-    navigate(`/courses/${courseId}/learn/${targetModuleId}/${id}`);
+    navigate(`/courses/${courseId}/learn/${targetModuleId || moduleId}/${id}`);
   };
 
   // Estado de carga
