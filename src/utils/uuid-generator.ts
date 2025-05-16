@@ -24,9 +24,9 @@ export function generateUUID(input: string): string {
   // Normalizar el input para mayor consistencia
   const normalizedInput = String(input).trim().toLowerCase();
   
-  // Añadir logging para debug
+  // Generar UUID y devolver
   const result = uuidv5(normalizedInput, NAMESPACE);
-  console.log(`generateUUID: Converting "${input}" to UUID: ${result}`);
+  console.log(`generateUUID: "${input}" → UUID: ${result}`);
   return result;
 }
 
@@ -52,7 +52,13 @@ export function normalizeId(id: string): string {
     return '';
   }
   
-  const normalizedId = isValidUUID(id) ? id : generateUUID(id);
-  console.log(`normalizeId: Normalized "${id}" to "${normalizedId}"`);
+  // Si ya es un UUID válido, lo devolvemos como está
+  if (isValidUUID(id)) {
+    return id;
+  }
+  
+  // Caso contrario, generamos un UUID determinista basado en el string
+  const normalizedId = generateUUID(id);
+  console.log(`normalizeId: "${id}" → "${normalizedId}"`);
   return normalizedId;
 }

@@ -1,6 +1,6 @@
 
 import { HybridCourseService } from './HybridCourseService';
-import { normalizeId, isValidUUID, generateUUID } from '@/utils/uuid-generator';
+import { normalizeId, isValidUUID } from '@/utils/uuid-generator';
 
 /**
  * Servicio especializado en resolver IDs de cursos a partir de IDs de lecciones
@@ -26,13 +26,20 @@ export const CourseIdResolver = {
 
       // 2. Si tenemos el ID de la sección, obtener el curso
       if (lessonData.section_id) {
+        console.log(`CourseIdResolver: Found section_id ${lessonData.section_id} for lesson ${lessonId}`);
         const courseId = await CourseIdResolver.getCourseIdFromSection(lessonData.section_id);
-        if (courseId) return courseId;
+        if (courseId) {
+          console.log(`CourseIdResolver: Found course_id ${courseId} for section ${lessonData.section_id}`);
+          return courseId;
+        }
       }
 
       // 3. Extraer de la URL actual si es posible
       const urlCourseId = CourseIdResolver.extractCourseIdFromUrl();
-      if (urlCourseId) return urlCourseId;
+      if (urlCourseId) {
+        console.log(`CourseIdResolver: Extracted course_id ${urlCourseId} from URL`);
+        return urlCourseId;
+      }
 
       console.warn(`CourseIdResolver: Could not determine course ID for lesson ${lessonId}`);
       return null;
@@ -58,7 +65,6 @@ export const CourseIdResolver = {
       for (const course of allCourses) {
         const courseId = course.id;
         const normalizedCourseId = normalizeId(courseId);
-        console.log(`CourseIdResolver: Checking course ${courseId} (normalized: ${normalizedCourseId})`);
         
         const sections = await HybridCourseService.getCourseSections(courseId);
         const matchingSection = sections.find(section => {
@@ -107,9 +113,11 @@ export const CourseIdResolver = {
       if (courseIdFromUrl) {
         console.log(`CourseIdResolver: Extracted course ID from URL: ${courseIdFromUrl}`);
         const normalizedUrlCourseId = normalizeId(courseIdFromUrl);
+        console.log(`CourseIdResolver: Normalized course ID from URL: ${normalizedUrlCourseId}`);
         return normalizedUrlCourseId;
       }
       
+      console.log("CourseIdResolver: No course ID found in URL");
       return null;
     } catch (error) {
       console.error("CourseIdResolver: Error extracting course ID from URL:", error);

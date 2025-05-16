@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 interface CompletionButtonProps {
@@ -9,18 +9,18 @@ interface CompletionButtonProps {
   onComplete: () => Promise<void>;
 }
 
-const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonProps) => {
+const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: CompletionButtonProps) => {
   // Usamos estado interno para mostrar el estado correcto de UI incluso si el prop no se actualiza
   const [isLoading, setIsLoading] = useState(false);
-  const [completed, setCompleted] = useState(isCompleted);
+  const [completed, setCompleted] = useState(initialCompleted);
   
   // Actualizamos el estado interno cuando cambia el prop
   useEffect(() => {
-    console.log("LessonCompletionButton: isCompleted prop changed:", isCompleted);
-    setCompleted(isCompleted);
-  }, [isCompleted]);
+    console.log("LessonCompletionButton: isCompleted prop changed:", initialCompleted);
+    setCompleted(initialCompleted);
+  }, [initialCompleted]);
   
-  const handleComplete = async () => {
+  const handleComplete = useCallback(async () => {
     // No hacemos nada si ya está cargando o completado
     if (isLoading || completed) return;
     
@@ -35,12 +35,6 @@ const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonPro
       // Actualizamos nuestro estado interno para mostrar como completado
       // incluso si el prop no se actualiza inmediatamente
       setCompleted(true);
-      
-      toast({
-        title: "Lección completada",
-        description: "Se ha guardado tu progreso correctamente",
-        variant: "default",
-      });
     } catch (error) {
       console.error('Error marking lesson as completed:', error);
       toast({
@@ -52,7 +46,7 @@ const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonPro
       setIsLoading(false);
       console.log("LessonCompletionButton: Completion process finished, completed state:", completed);
     }
-  };
+  }, [completed, isLoading, onComplete]);
   
   return (
     <>

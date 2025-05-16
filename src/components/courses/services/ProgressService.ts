@@ -3,7 +3,6 @@ import { courseProgressService } from '@/services/course-progress-service';
 import { useUser } from '@/contexts/UserContext';
 import { useState, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { HybridCourseService } from './HybridCourseService';
 import { normalizeId } from '@/utils/uuid-generator';
 import { CourseIdResolver } from './CourseIdResolver';
 
@@ -24,6 +23,7 @@ export function useProgressService() {
       console.log(`ProgressService: Checking progress for lesson ${lessonId} (normalized: ${normalizedLessonId})`);
       
       const response = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, normalizedLessonId);
+      console.log(`ProgressService: Lesson progress response:`, response);
       return response.data;
     } catch (error) {
       console.error("ProgressService: Error getting lesson progress:", error);
@@ -55,6 +55,7 @@ export function useProgressService() {
       const courseId = await CourseIdResolver.getCourseIdFromLesson(lessonId);
       
       if (!courseId) {
+        console.error(`ProgressService: Could not determine course ID for lesson ${lessonId}`);
         toast({
           variant: "destructive",
           title: "Error",
@@ -79,6 +80,7 @@ export function useProgressService() {
         
         // 3. Actualizar el progreso global del usuario
         await refreshUserStats();
+        console.log("ProgressService: User stats refreshed");
         
         toast({
           title: "Lección completada",
