@@ -29,7 +29,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
 /**
  * Verifica si existe un progreso de lección
  */
-export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string) {
+export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string): Promise<any> {
   return supabase
     .from('user_lesson_progress')
     .select('id')
@@ -72,7 +72,7 @@ export async function countTotalLessons(courseId: string): Promise<any> {
 /**
  * Cuenta las lecciones completadas por un usuario en un curso
  */
-export async function countCompletedLessons(userId: string, courseId: string) {
+export async function countCompletedLessons(userId: string, courseId: string): Promise<any> {
   return supabase
     .from('user_lesson_progress')
     .select('*')
