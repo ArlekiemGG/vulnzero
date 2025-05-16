@@ -60,6 +60,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
  * Verifica si existe un progreso de lección
  */
 export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
+  // Usamos maybeSingle() para simplificar el tipo de retorno
   const response = await supabase
     .from('user_lesson_progress')
     .select('id')
