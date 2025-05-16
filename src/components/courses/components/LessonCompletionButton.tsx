@@ -15,15 +15,19 @@ const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonPro
   
   // Update internal state when prop changes
   useEffect(() => {
+    console.log("LessonCompletionButton: isCompleted prop changed:", isCompleted);
     setCompleted(isCompleted);
   }, [isCompleted]);
   
   const handleComplete = async () => {
     if (isLoading || completed) return;
     
+    console.log("LessonCompletionButton: Starting completion process");
     setIsLoading(true);
     try {
+      console.log("LessonCompletionButton: Calling onComplete callback");
       await onComplete();
+      console.log("LessonCompletionButton: Completion callback executed successfully");
       setCompleted(true);
       toast({
         title: "Lección completada",
@@ -39,6 +43,7 @@ const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonPro
       });
     } finally {
       setIsLoading(false);
+      console.log("LessonCompletionButton: Completion process finished, completed state:", completed);
     }
   };
   

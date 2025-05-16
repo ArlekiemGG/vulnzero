@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { courseProgressService } from '@/services/course-progress-service';
@@ -22,25 +23,27 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     
     const fetchProgress = async () => {
       if (!courseId || !userId) {
+        console.log("useUserCourseProgress: Missing courseId or userId, skipping fetch");
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        console.log(`Fetching progress for course ${courseId} and user ${userId}`);
+        console.log(`useUserCourseProgress: Fetching progress for course ${courseId} and user ${userId}`);
         
         const result = await courseProgressService.fetchUserProgressData(courseId, userId);
         
         if (isMounted) {
-          console.log('Progress data loaded:', result);
-          console.log('Completed lessons:', result.completedLessons);
+          console.log('useUserCourseProgress: Progress data loaded:', result);
+          console.log('useUserCourseProgress: Progress percentage:', result.progress);
+          console.log('useUserCourseProgress: Completed lessons:', result.completedLessons);
           setProgress(result.progress);
           setCompletedLessons(result.completedLessons);
           setCompletedQuizzes(result.completedQuizzes);
         }
       } catch (err) {
-        console.error('Error fetching course progress:', err);
+        console.error('useUserCourseProgress: Error fetching course progress:', err);
         if (isMounted) {
           setError(err instanceof Error ? err : new Error('Unknown error'));
           toast({
@@ -68,7 +71,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
    */
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
     if (!userId || !courseId) {
-      console.log("Cannot mark lesson as completed: no user ID or course ID");
+      console.log("useUserCourseProgress: Cannot mark lesson as completed: no user ID or course ID");
       return false;
     }
     
@@ -77,35 +80,37 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     const extendedLessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
-      console.log(`Marking lesson ${lessonId} as completed for course ${courseId} and user ${userId}`);
-      console.log(`Using lesson keys: ${lessonKey} and ${extendedLessonKey}`);
+      console.log(`useUserCourseProgress: Marking lesson ${lessonId} as completed for course ${courseId} and user ${userId}`);
+      console.log(`useUserCourseProgress: Using lesson keys: ${lessonKey} and ${extendedLessonKey}`);
       
       const success = await courseProgressService.markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
-        console.log("Lesson marked as completed successfully in backend");
+        console.log("useUserCourseProgress: Lesson marked as completed successfully in backend");
         // Actualizamos el estado local para múltiples formatos de clave
-        setCompletedLessons(prev => ({ 
-          ...prev, 
-          [lessonKey]: true, 
-          [extendedLessonKey]: true, 
-          [lessonId]: true 
-        }));
-        
-        setProgress(prev => {
-          // Estimación simple hasta la próxima carga de datos
-          const newProgress = Math.min(100, prev + 5);
-          console.log(`Updated progress: ${newProgress}%`);
-          return newProgress;
+        setCompletedLessons(prev => {
+          const newState = { 
+            ...prev, 
+            [lessonKey]: true, 
+            [extendedLessonKey]: true, 
+            [lessonId]: true 
+          };
+          console.log("useUserCourseProgress: Updated completedLessons state:", newState);
+          return newState;
         });
+        
+        // Actualizamos inmediatamente el estado local, pero también recuperamos el progreso actualizado
+        const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
+        setProgress(updatedProgressData.progress);
+        console.log(`useUserCourseProgress: Updated progress from backend: ${updatedProgressData.progress}%`);
         
         return true;
       } else {
-        console.log("Failed to mark lesson as completed in backend");
+        console.log("useUserCourseProgress: Failed to mark lesson as completed in backend");
         return false;
       }
     } catch (err) {
-      console.error('Error marking lesson as completed:', err);
+      console.error('useUserCourseProgress: Error marking lesson as completed:', err);
       return false;
     }
   };
@@ -119,29 +124,48 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     score: number, 
     answers: Record<string, number>
   ): Promise<boolean> => {
-    if (!userId || !courseId) return false;
+    if (!userId || !courseId) {
+      console.log("useUserCourseProgress: Cannot save quiz result: no user ID or course ID");
+      return false;
+    }
     
     // Usamos una estructura de clave consistente: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
     
     try {
-      console.log(`Saving quiz result for lesson ${lessonId}, course ${courseId}, user ${userId}`);
+      console.log(`useUserCourseProgress: Saving quiz result for lesson ${lessonId}, course ${courseId}, user ${userId}`);
       const success = await courseProgressService.saveQuizResults(userId, courseId, lessonId, score, answers);
       
       if (success) {
         // Actualizamos el estado local
-        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
-        setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
+        setCompletedLessons(prev => {
+          const newState = { ...prev, [lessonKey]: true, [lessonId]: true };
+          console.log("useUserCourseProgress: Updated completedLessons state after quiz:", newState);
+          return newState;
+        });
+        setCompletedQuizzes(prev => {
+          const newState = { ...prev, [lessonKey]: true, [lessonId]: true };
+          console.log("useUserCourseProgress: Updated completedQuizzes state:", newState);
+          return newState;
+        });
+        
+        // Actualizamos el progreso desde el backend
+        const updatedProgressData = await courseProgressService.fetchUserProgressData(courseId, userId);
+        setProgress(updatedProgressData.progress);
+        console.log(`useUserCourseProgress: Updated progress after quiz: ${updatedProgressData.progress}%`);
         
         toast({
           title: "Quiz completado",
           description: `Has obtenido ${score}% de respuestas correctas`
         });
+        
+        return true;
+      } else {
+        console.log("useUserCourseProgress: Failed to save quiz results in backend");
+        return false;
       }
-      
-      return success;
     } catch (err) {
-      console.error('Error saving quiz result:', err);
+      console.error('useUserCourseProgress: Error saving quiz result:', err);
       toast({
         variant: "destructive",
         title: "Error",
