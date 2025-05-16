@@ -95,23 +95,32 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       
       if (existingProgress) {
         // Update existing record
+        // Using type assertion to avoid type error
+        const updateData = {
+          completed: true,
+          completed_at: new Date().toISOString()
+        };
+        
         const { error } = await supabase
           .from('user_lesson_progress')
-          .update({ completed: true, completed_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', existingProgress.id);
         
         if (error) throw error;
       } else {
         // Create new record
+        // Using explicit type to avoid deep instantiation
+        const insertData = {
+          user_id: userId,
+          course_id: courseId,
+          lesson_id: lessonId,
+          completed: true,
+          completed_at: new Date().toISOString()
+        };
+        
         const { error } = await supabase
           .from('user_lesson_progress')
-          .insert({
-            user_id: userId,
-            course_id: courseId,
-            lesson_id: lessonId,
-            completed: true,
-            completed_at: new Date().toISOString()
-          });
+          .insert(insertData);
         
         if (error) throw error;
       }
