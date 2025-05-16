@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourseGrid from './CourseGrid';
 import { CourseService, Course } from './services/CourseService';
 import { Skeleton } from '@/components/ui/skeleton';
+import courseCatalog from '@/data/courses';
 
 const CourseTabs: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('todos');
@@ -18,15 +19,60 @@ const CourseTabs: React.FC = () => {
       setLoading(true);
       
       try {
-        const allCourses = await CourseService.getCourses();
+        // Intentamos cargar desde la API
+        const apiCourses = await CourseService.getCourses();
+        
+        // Si no hay datos desde la API, usamos los datos estáticos
+        const allCourses = apiCourses.length > 0 ? apiCourses : courseCatalog.map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          image_url: course.image_url,
+          level: course.level.toLowerCase(),
+          category: course.category,
+          instructor: course.instructor,
+          duration_minutes: course.duration_minutes,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
         setCourses(allCourses);
         
         // Filtrar cursos por nivel
-        setBeginnerCourses(allCourses.filter(course => course.level === 'principiante'));
-        setIntermediateCourses(allCourses.filter(course => course.level === 'intermedio'));
-        setAdvancedCourses(allCourses.filter(course => course.level === 'avanzado'));
+        setBeginnerCourses(allCourses.filter(course => 
+          course.level === 'principiante' || course.level === 'básico'));
+        setIntermediateCourses(allCourses.filter(course => 
+          course.level === 'intermedio'));
+        setAdvancedCourses(allCourses.filter(course => 
+          course.level === 'avanzado'));
+
+        console.log('Cargados cursos:', allCourses.length);
       } catch (error) {
         console.error('Error fetching courses:', error);
+        
+        // En caso de error, usamos los datos estáticos como respaldo
+        const staticCourses = courseCatalog.map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          image_url: course.image_url,
+          level: course.level.toLowerCase(),
+          category: course.category,
+          instructor: course.instructor,
+          duration_minutes: course.duration_minutes,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        setCourses(staticCourses);
+        setBeginnerCourses(staticCourses.filter(course => 
+          course.level === 'principiante' || course.level === 'básico'));
+        setIntermediateCourses(staticCourses.filter(course => 
+          course.level === 'intermedio'));
+        setAdvancedCourses(staticCourses.filter(course => 
+          course.level === 'avanzado'));
+        
+        console.log('Cargados cursos estáticos de respaldo:', staticCourses.length);
       } finally {
         setLoading(false);
       }
