@@ -18,12 +18,17 @@ class CourseProgressService {
    */
   async getCourseProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Getting course progress for user ${userId} and course ${courseId}`);
-    return await supabase
-      .from('user_course_progress')
-      .select('progress_percentage, completed')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
+    try {
+      return await supabase
+        .from('user_course_progress')
+        .select('progress_percentage, completed')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+    } catch (error) {
+      console.error(`CourseProgressService: Error getting course progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -31,11 +36,16 @@ class CourseProgressService {
    */
   async getLessonProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Getting lesson progress for user ${userId} and course ${courseId}`);
-    return await supabase
-      .from('user_lesson_progress')
-      .select('lesson_id, completed, course_id')
-      .eq('user_id', userId)
-      .eq('course_id', courseId);
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .select('lesson_id, completed, course_id')
+        .eq('user_id', userId)
+        .eq('course_id', courseId);
+    } catch (error) {
+      console.error(`CourseProgressService: Error getting lesson progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -43,16 +53,21 @@ class CourseProgressService {
    */
   async getLessonCourseInfo(lessonId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Getting course info for lesson ${lessonId}`);
-    return await supabase
-      .from('course_lessons')
-      .select(`
-        section_id,
-        course_sections:section_id (
-          course_id
-        )
-      `)
-      .eq('id', lessonId)
-      .maybeSingle();
+    try {
+      return await supabase
+        .from('course_lessons')
+        .select(`
+          section_id,
+          course_sections:section_id (
+            course_id
+          )
+        `)
+        .eq('id', lessonId)
+        .maybeSingle();
+    } catch (error) {
+      console.error(`CourseProgressService: Error getting lesson course info:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -60,12 +75,17 @@ class CourseProgressService {
    */
   async fetchLessonProgressByLessonId(userId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Fetching lesson progress by lessonId for user ${userId} and lesson ${lessonId}`);
-    return await supabase
-      .from('user_lesson_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+    } catch (error) {
+      console.error(`CourseProgressService: Error fetching lesson progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -77,13 +97,18 @@ class CourseProgressService {
     lessonId: string
   ): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Checking if lesson progress exists for user ${userId}, course ${courseId}, lesson ${lessonId}`);
-    return await supabase
-      .from('user_lesson_progress')
-      .select('id, completed')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .select('id, completed')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+    } catch (error) {
+      console.error(`CourseProgressService: Error checking lesson progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -94,10 +119,15 @@ class CourseProgressService {
     data: Partial<LessonProgressItem>
   ): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Updating lesson progress with ID ${id}`, data);
-    return await supabase
-      .from('user_lesson_progress')
-      .update(data)
-      .eq('id', id);
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .update(data)
+        .eq('id', id);
+    } catch (error) {
+      console.error(`CourseProgressService: Error updating lesson progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -105,9 +135,18 @@ class CourseProgressService {
    */
   async createLessonProgress(data: LessonProgressItem): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Creating new lesson progress entry`, data);
-    return await supabase
-      .from('user_lesson_progress')
-      .insert([data]);
+    // Remove id field if empty as Supabase will generate it
+    if (data.id === '') {
+      delete data.id;
+    }
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .insert([data]);
+    } catch (error) {
+      console.error(`CourseProgressService: Error creating lesson progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -116,7 +155,6 @@ class CourseProgressService {
   async countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
     console.log(`CourseProgressService: Counting total lessons for course ${courseId}`);
     
-    // FIX: Using a different approach to avoid the type error
     try {
       // First get all sections for this course
       const { data: sections, error: sectionsError } = await supabase
@@ -150,12 +188,17 @@ class CourseProgressService {
    */
   async countCompletedLessons(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Counting completed lessons for user ${userId} and course ${courseId}`);
-    return await supabase
-      .from('user_lesson_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .eq('completed', true);
+    try {
+      return await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .eq('completed', true);
+    } catch (error) {
+      console.error(`CourseProgressService: Error counting completed lessons:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -163,12 +206,17 @@ class CourseProgressService {
    */
   async checkCourseProgressExists(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Checking if course progress exists for user ${userId} and course ${courseId}`);
-    return await supabase
-      .from('user_course_progress')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
+    try {
+      return await supabase
+        .from('user_course_progress')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+    } catch (error) {
+      console.error(`CourseProgressService: Error checking course progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -179,10 +227,15 @@ class CourseProgressService {
     data: Partial<CourseProgressItem>
   ): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Updating course progress record ${id}`, data);
-    return await supabase
-      .from('user_course_progress')
-      .update(data)
-      .eq('id', id);
+    try {
+      return await supabase
+        .from('user_course_progress')
+        .update(data)
+        .eq('id', id);
+    } catch (error) {
+      console.error(`CourseProgressService: Error updating course progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -190,9 +243,18 @@ class CourseProgressService {
    */
   async createCourseProgressRecord(data: CourseProgressItem): Promise<SupabaseSimpleResponse> {
     console.log(`CourseProgressService: Creating new course progress record`, data);
-    return await supabase
-      .from('user_course_progress')
-      .insert([data]);
+    try {
+      // Remove id field if it exists as Supabase will generate it
+      if (data.id) {
+        delete data.id;
+      }
+      return await supabase
+        .from('user_course_progress')
+        .insert([data]);
+    } catch (error) {
+      console.error(`CourseProgressService: Error creating course progress:`, error);
+      return { data: null, error };
+    }
   }
 
   /**
@@ -212,7 +274,7 @@ class CourseProgressService {
         };
       }
 
-      // Get lesson progress data with course_id filter
+      // Get lesson progress data
       const { data: lessonProgressData, error: lessonProgressError } = await this.getLessonProgress(userId, courseId);
       if (lessonProgressError) {
         console.error("CourseProgressService: Error fetching lesson progress:", lessonProgressError);
@@ -281,6 +343,7 @@ class CourseProgressService {
       let success = false;
 
       if (existingProgress?.id) {
+        console.log(`CourseProgressService: Found existing progress record with ID ${existingProgress.id}`);
         // Actualizar registro existente
         const { error: updateError } = await this.updateLessonProgress(
           existingProgress.id, 
@@ -319,6 +382,7 @@ class CourseProgressService {
 
       // Actualizar el progreso del curso
       if (success) {
+        console.log(`CourseProgressService: Successfully marked lesson as completed, updating course progress...`);
         const updateResult = await this.updateCourseProgressData(userId, courseId);
         console.log(`CourseProgressService: Course progress updated after marking lesson: ${updateResult}`);
       }
@@ -397,6 +461,7 @@ class CourseProgressService {
       }
 
       if (existingProgress?.id) {
+        console.log(`CourseProgressService: Found existing course progress record with ID ${existingProgress.id}`);
         // Actualizar registro existente
         const { error: updateError } = await this.updateCourseProgressRecord(
           existingProgress.id,

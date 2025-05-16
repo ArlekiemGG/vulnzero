@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { courseProgressService } from '@/services/course-progress-service';
 import type { 
@@ -19,7 +19,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
   const [error, setError] = useState<Error | null>(null);
 
   // Función para cargar el progreso del usuario
-  const loadUserProgress = async () => {
+  const loadUserProgress = useCallback(async () => {
     if (!courseId || !userId) {
       console.log("useUserCourseProgress: Missing courseId or userId, skipping fetch");
       setIsLoading(false);
@@ -50,7 +50,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId, userId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,7 +65,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
     return () => {
       isMounted = false;
     };
-  }, [courseId, userId]);
+  }, [loadUserProgress]);
 
   /**
    * Marca una lección como completada
@@ -133,6 +133,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
     
     // Usamos una estructura de clave consistente: courseId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
+    const extendedLessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
       console.log(`useUserCourseProgress: Saving quiz result for lesson ${lessonId}, course ${courseId}, user ${userId}`);
@@ -141,12 +142,22 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
       if (success) {
         // Actualizamos el estado local
         setCompletedLessons(prev => {
-          const newState = { ...prev, [lessonKey]: true, [lessonId]: true };
+          const newState = { 
+            ...prev, 
+            [lessonKey]: true, 
+            [extendedLessonKey]: true, 
+            [lessonId]: true 
+          };
           console.log("useUserCourseProgress: Updated completedLessons state after quiz:", newState);
           return newState;
         });
         setCompletedQuizzes(prev => {
-          const newState = { ...prev, [lessonKey]: true, [lessonId]: true };
+          const newState = { 
+            ...prev, 
+            [lessonKey]: true, 
+            [extendedLessonKey]: true, 
+            [lessonId]: true 
+          };
           console.log("useUserCourseProgress: Updated completedQuizzes state:", newState);
           return newState;
         });
