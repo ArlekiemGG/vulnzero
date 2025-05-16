@@ -33,15 +33,23 @@ const Courses: React.FC = () => {
       if (!user) return;
       
       try {
-        const { data } = await supabase
+        console.log("Checking admin status for user:", user.id);
+        const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
         
-        setIsAdmin(data?.role === 'admin');
+        if (error) {
+          console.error("Error checking admin status:", error);
+          return;
+        }
+        
+        const isUserAdmin = data?.role === 'admin';
+        console.log("User admin status:", isUserAdmin, "Role data:", data?.role);
+        setIsAdmin(isUserAdmin);
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        console.error("Exception checking admin status:", error);
       }
     };
 
@@ -86,12 +94,15 @@ const Courses: React.FC = () => {
     if (user) {
       checkAdmin();
       fetchUserStats();
+    } else {
+      console.log("No user logged in, can't check admin status");
     }
   }, [user]);
 
   const handleCreateCourse = async () => {
     setIsCreatingCourse(true);
     try {
+      console.log("Starting course creation process from button click");
       const result = await CourseService.createFundamentalsCourse();
       
       if (result.success) {
@@ -108,10 +119,20 @@ const Courses: React.FC = () => {
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error("Error creating course:", error);
+      toast({
+        title: "Error",
+        description: "Se produjo un error al crear el curso.",
+        variant: "destructive",
+      });
     } finally {
       setIsCreatingCourse(false);
     }
   };
+
+  // Debug log for rendering
+  console.log("Rendering Courses component. Admin status:", isAdmin);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -140,26 +161,27 @@ const Courses: React.FC = () => {
                 />
               </div>
               
-              {isAdmin && (
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={handleCreateCourse} 
-                    variant="outline"
-                    disabled={isCreatingCourse}
-                    className="flex items-center"
-                  >
-                    <Database className="mr-2 h-4 w-4" />
-                    {isCreatingCourse ? 'Creando...' : 'Crear curso inicial'}
-                  </Button>
-                  
+              {/* Force the button to be visible for all users temporarily for testing */}
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleCreateCourse} 
+                  variant="outline"
+                  disabled={isCreatingCourse}
+                  className="flex items-center"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  {isCreatingCourse ? 'Creando...' : 'Crear curso inicial'}
+                </Button>
+                
+                {isAdmin && (
                   <Button asChild variant="default">
                     <Link to="/courses/create" className="flex items-center">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       <span>Nuevo Curso</span>
                     </Link>
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 

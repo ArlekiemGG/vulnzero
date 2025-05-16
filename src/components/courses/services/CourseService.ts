@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -211,6 +210,7 @@ export const CourseService = {
       }
       
       if (!courseData) {
+        console.error("No data returned from course creation");
         throw new Error("No se pudo crear el curso - no se devolvieron datos");
       }
       
@@ -233,6 +233,7 @@ export const CourseService = {
       }
       
       if (!sectionData) {
+        console.error("No data returned from section creation");
         throw new Error("No se pudo crear la sección del curso - no se devolvieron datos");
       }
       
@@ -374,6 +375,7 @@ Objetivo: Conocer hábitos clave para mejorar la seguridad personal y organizaci
         }
       }
       
+      console.log("Course creation completed successfully");
       return { success: true, courseId: courseData.id };
     } catch (error) {
       console.error("Error al crear el curso:", error);
@@ -381,4 +383,3 @@ Objetivo: Conocer hábitos clave para mejorar la seguridad personal y organizaci
     }
   }
 };
-
