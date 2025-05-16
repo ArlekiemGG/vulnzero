@@ -1,8 +1,11 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserProgress, UserStats as ProgressUserStats, UserProgress } from '@/hooks/use-user-progress';
+import { 
+  useUserProgress, 
+  UserStats as ProgressUserStats, 
+  UserProgress 
+} from '@/hooks/use-user-progress';
 
 // Mantenemos la interfaz UserStats original para compatibilidad
 export interface UserStats {

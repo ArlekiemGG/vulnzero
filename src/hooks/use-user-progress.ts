@@ -135,7 +135,7 @@ export const useUserProgress = () => {
         }
       } else if (data) {
         console.log('Progreso del usuario recibido correctamente:', data);
-        // Necesitamos convertir el tipo de datos
+        // Fix: Ensure proper type casting by explicitly casting to UserProgress
         const progress = data as unknown as UserProgress;
         setUserProgress(progress);
         saveToCache(progress);
