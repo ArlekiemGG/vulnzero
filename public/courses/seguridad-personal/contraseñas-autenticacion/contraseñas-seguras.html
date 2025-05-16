@@ -1,0 +1,358 @@
+
+<h1>Creación de Contraseñas Seguras</h1>
+
+<p>Las contraseñas son la primera línea de defensa para proteger tus cuentas digitales. Crear contraseñas seguras es fundamental para prevenir accesos no autorizados a tu información personal.</p>
+
+<div class="bg-blue-900 p-6 rounded-lg my-6">
+  <h3 class="text-white font-bold mb-4">La importancia de las contraseñas</h3>
+  <p class="text-blue-100">Las contraseñas son como las llaves de tu vida digital. Así como no usarías la misma llave para tu casa, automóvil y oficina, tampoco deberías usar la misma contraseña para todas tus cuentas. Una contraseña comprometida puede dar acceso a múltiples aspectos de tu vida digital y personal.</p>
+</div>
+
+<h2>Problemas con las Contraseñas Comunes</h2>
+
+<h3>Contraseñas Débiles</h3>
+
+<p>Las contraseñas más utilizadas siguen siendo extremadamente inseguras. Según reportes de seguridad, estas son algunas de las más comunes:</p>
+
+<div class="overflow-x-auto my-6">
+  <table class="min-w-full border-collapse border border-gray-700">
+    <thead>
+      <tr class="bg-gray-800">
+        <th class="p-2 border border-gray-700">Posición</th>
+        <th class="p-2 border border-gray-700">Contraseña</th>
+        <th class="p-2 border border-gray-700">Problema</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">1</td>
+        <td class="p-2 border border-gray-700"><code>123456</code></td>
+        <td class="p-2 border border-gray-700">Secuencial, muy corta</td>
+      </tr>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">2</td>
+        <td class="p-2 border border-gray-700"><code>password</code></td>
+        <td class="p-2 border border-gray-700">Palabra común</td>
+      </tr>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">3</td>
+        <td class="p-2 border border-gray-700"><code>qwerty</code></td>
+        <td class="p-2 border border-gray-700">Patrón de teclado</td>
+      </tr>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">4</td>
+        <td class="p-2 border border-gray-700"><code>admin</code></td>
+        <td class="p-2 border border-gray-700">Valor predeterminado</td>
+      </tr>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">5</td>
+        <td class="p-2 border border-gray-700"><code>abc123</code></td>
+        <td class="p-2 border border-gray-700">Combinación simple</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Otros tipos de contraseñas débiles incluyen:</p>
+<ul class="list-disc pl-6 space-y-2">
+  <li>Información personal evidente como "nacimiento1990" o "nombreapellido"</li>
+  <li>Nombres de mascotas, hijos o familiares</li>
+  <li>Fechas importantes como aniversarios</li>
+  <li>Palabras seguidas de un número simple (password1)</li>
+  <li>Referencias obvias a intereses o aficiones</li>
+</ul>
+
+<h3>Vulnerabilidades</h3>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-red-400">Ataques de diccionario</h4>
+    <p>Los atacantes utilizan programas que prueban sistemáticamente palabras comunes y sus variaciones. Estos ataques son muy efectivos contra contraseñas basadas en palabras reales.</p>
+  </div>
+  
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-red-400">Ataques de fuerza bruta</h4>
+    <p>Estos ataques prueban todas las combinaciones posibles de caracteres hasta encontrar la correcta. Las computadoras modernas pueden probar millones de combinaciones por segundo.</p>
+  </div>
+  
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-red-400">Filtración de datos</h4>
+    <p>Las contraseñas expuestas en brechas de seguridad se compilan en enormes bases de datos que los atacantes utilizan para intentar acceder a otras cuentas.</p>
+  </div>
+  
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-red-400">Ingeniería social</h4>
+    <p>Los atacantes obtienen información personal a través de manipulación psicológica, phishing o investigación en redes sociales para adivinar o restablecer contraseñas.</p>
+  </div>
+</div>
+
+<div class="bg-yellow-900 p-6 rounded-lg my-6">
+  <h4 class="text-yellow-200 font-bold mb-2">¡DATO ALARMANTE!</h4>
+  <p class="text-yellow-100">Según estudios recientes, un equipo de hacking puede descifrar una contraseña de 7 caracteres en menos de 0.29 milisegundos usando hardware especializado.</p>
+</div>
+
+<h2>Principios para Contraseñas Seguras</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
+  <div class="bg-blue-900 bg-opacity-30 p-4 rounded-lg border border-blue-700 flex flex-col">
+    <h3 class="text-blue-400 font-bold mb-2 text-center">Longitud</h3>
+    <div class="flex-grow flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-3xl font-bold mb-2">12+</p>
+        <p class="text-sm">caracteres mínimo</p>
+      </div>
+    </div>
+    <p class="mt-3 text-sm">La longitud es más importante que la complejidad. Cada caracter adicional aumenta exponencialmente la seguridad.</p>
+  </div>
+  
+  <div class="bg-blue-900 bg-opacity-30 p-4 rounded-lg border border-blue-700 flex flex-col">
+    <h3 class="text-blue-400 font-bold mb-2 text-center">Complejidad</h3>
+    <div class="flex-grow flex items-center justify-center">
+      <div class="text-center">
+        <p class="font-mono text-xl mb-2">A-Z a-z 0-9 !@#</p>
+        <p class="text-sm">mezcla caracteres</p>
+      </div>
+    </div>
+    <p class="mt-3 text-sm">Combina diferentes tipos de caracteres para aumentar la entropía y dificultar los ataques.</p>
+  </div>
+  
+  <div class="bg-blue-900 bg-opacity-30 p-4 rounded-lg border border-blue-700 flex flex-col">
+    <h3 class="text-blue-400 font-bold mb-2 text-center">Unicidad</h3>
+    <div class="flex-grow flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-xl mb-2">1 cuenta = 1 contraseña</p>
+        <p class="text-sm">sin reutilización</p>
+      </div>
+    </div>
+    <p class="mt-3 text-sm">Nunca reutilices contraseñas entre servicios para contener el daño en caso de filtración.</p>
+  </div>
+  
+  <div class="bg-blue-900 bg-opacity-30 p-4 rounded-lg border border-blue-700 flex flex-col">
+    <h3 class="text-blue-400 font-bold mb-2 text-center">Aleatoriedad</h3>
+    <div class="flex-grow flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-xl mb-2">Sin patrones obvios</p>
+        <p class="text-sm">impredecible</p>
+      </div>
+    </div>
+    <p class="mt-3 text-sm">Evita patrones reconocibles o palabras comunes que facilitarían ataques de diccionario.</p>
+  </div>
+</div>
+
+<h2>Métodos para Crear Contraseñas Seguras</h2>
+
+<h3>Método de Frase de Paso</h3>
+
+<div class="bg-gray-800 p-6 rounded-lg my-6">
+  <ol class="list-decimal pl-6 space-y-4">
+    <li>
+      <strong>Elige una frase que puedas recordar:</strong>
+      <p class="italic text-gray-300">"Mi gato Felix come atún todos los martes"</p>
+    </li>
+    
+    <li>
+      <strong>Toma la primera letra de cada palabra:</strong>
+      <p class="font-mono text-gray-300">MgFcatlm</p>
+    </li>
+    
+    <li>
+      <strong>Añade números y símbolos:</strong>
+      <p class="font-mono text-gray-300">MgF3c@tlm!</p>
+    </li>
+    
+    <li>
+      <strong>Resultado:</strong>
+      <p class="font-mono text-green-400 font-bold">MgF3c@tlm!</p>
+      <p class="text-gray-300 text-sm">Una contraseña difícil de adivinar pero fácil de recordar para ti</p>
+    </li>
+  </ol>
+</div>
+
+<p>Para aumentar la seguridad, puedes:</p>
+<ul class="list-disc pl-6 space-y-2">
+  <li>Usar frases muy personales que solo tú conoces</li>
+  <li>Sustituir letras por símbolos similares (A → @, E → 3, S → $)</li>
+  <li>Añadir caracteres específicos por servicio (FB: al final para Facebook)</li>
+</ul>
+
+<h3>Método Diceware</h3>
+
+<p>Una técnica que utiliza dados físicos para seleccionar palabras de una lista predefinida, creando contraseñas altamente aleatorias pero memorables:</p>
+
+<div class="bg-gray-800 p-6 rounded-lg my-6">
+  <ol class="list-decimal pl-6 space-y-4">
+    <li>
+      <strong>Lanza 5 dados (o un dado 5 veces) por cada palabra:</strong>
+      <p class="text-gray-300">Por ejemplo: 4-3-5-2-1 corresponde a una palabra específica en la lista Diceware</p>
+    </li>
+    
+    <li>
+      <strong>Busca las palabras correspondientes en la lista:</strong>
+      <p class="text-gray-300">43521 → "correcto", 51234 → "caballo", etc.</p>
+    </li>
+    
+    <li>
+      <strong>Combina 4-6 palabras aleatorias:</strong>
+      <p class="font-mono text-gray-300">correcto caballo batería grapa</p>
+    </li>
+    
+    <li>
+      <strong>Añade elementos para aumentar la entropía:</strong>
+      <p class="font-mono text-green-400 font-bold">correcto7caballo&batería!grapa</p>
+    </li>
+  </ol>
+</div>
+
+<p>Este método proporciona contraseñas con alta entropía (aleatoriedad) pero que pueden memorizarse como una historia o imagen mental.</p>
+
+<div class="p-4 border border-blue-700 rounded-lg my-4 bg-blue-900 bg-opacity-20">
+  <h3 class="text-blue-400 font-bold mb-2">Recursos para Diceware</h3>
+  <ul class="list-disc pl-6 space-y-1">
+    <li><a href="https://www.eff.org/dice" class="text-blue-400 hover:underline">Lista Diceware de la Electronic Frontier Foundation</a></li>
+    <li><a href="https://www.dicewarepasswords.com/" class="text-blue-400 hover:underline">Generador de contraseñas Diceware online</a></li>
+  </ul>
+  <p class="mt-2 text-sm">Para máxima seguridad, usa dados físicos en lugar de generadores digitales.</p>
+</div>
+
+<h3>Generadores de Contraseñas</h3>
+
+<p>Los gestores de contraseñas (que exploraremos en la próxima lección) incluyen generadores que crean contraseñas totalmente aleatorias:</p>
+
+<div class="bg-gray-900 p-4 rounded-lg my-4 font-mono text-center">
+  <p class="text-green-400">hN8$p2!LmK9*rTx5@qZ</p>
+  <p class="text-sm text-gray-400 mt-2">Ejemplo de contraseña generada automáticamente</p>
+</div>
+
+<p>Ventajas de los generadores:</p>
+<ul class="list-disc pl-6 space-y-2">
+  <li>Máxima aleatoriedad y entropía</li>
+  <li>Ajustables en longitud y tipos de caracteres</li>
+  <li>Se integran con gestores que las almacenan de forma segura</li>
+  <li>Eliminan el sesgo humano en la creación</li>
+</ul>
+
+<h2>Evaluación de Tus Contraseñas</h2>
+
+<h3>Fortaleza</h3>
+
+<p>Una contraseña fuerte debe resistir diferentes tipos de ataques:</p>
+
+<ul class="list-disc pl-6 space-y-2">
+  <li>Millones de intentos por segundo (ataques de fuerza bruta)</li>
+  <li>Análisis basados en patrones lingüísticos</li>
+  <li>Técnicas de ingeniería inversa</li>
+  <li>Adivinación basada en información personal</li>
+</ul>
+
+<h3>Tiempo de Descifrado</h3>
+
+<p>Con tecnología actual, estos son tiempos aproximados para descifrar contraseñas (usando hardware especializado):</p>
+
+<div class="overflow-x-auto my-6">
+  <table class="min-w-full border-collapse border border-gray-700">
+    <thead>
+      <tr class="bg-gray-800">
+        <th class="p-2 border border-gray-700">Longitud</th>
+        <th class="p-2 border border-gray-700">Solo minúsculas</th>
+        <th class="p-2 border border-gray-700">Minúsculas + mayúsculas</th>
+        <th class="p-2 border border-gray-700">Alfanumérica</th>
+        <th class="p-2 border border-gray-700">Alfanumérica + símbolos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="bg-red-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">6 caracteres</td>
+        <td class="p-2 border border-gray-700">Minutos</td>
+        <td class="p-2 border border-gray-700">Horas</td>
+        <td class="p-2 border border-gray-700">Horas</td>
+        <td class="p-2 border border-gray-700">Días</td>
+      </tr>
+      <tr class="bg-red-800 bg-opacity-20">
+        <td class="p-2 border border-gray-700">8 caracteres</td>
+        <td class="p-2 border border-gray-700">Días</td>
+        <td class="p-2 border border-gray-700">Semanas</td>
+        <td class="p-2 border border-gray-700">Meses</td>
+        <td class="p-2 border border-gray-700">Años</td>
+      </tr>
+      <tr class="bg-yellow-800 bg-opacity-20">
+        <td class="p-2 border border-gray-700">10 caracteres</td>
+        <td class="p-2 border border-gray-700">Años</td>
+        <td class="p-2 border border-gray-700">Siglos</td>
+        <td class="p-2 border border-gray-700">Siglos</td>
+        <td class="p-2 border border-gray-700">Milenios</td>
+      </tr>
+      <tr class="bg-green-900 bg-opacity-20">
+        <td class="p-2 border border-gray-700">12+ caracteres</td>
+        <td class="p-2 border border-gray-700">Siglos</td>
+        <td class="p-2 border border-gray-700">Milenios</td>
+        <td class="p-2 border border-gray-700">Milenios</td>
+        <td class="p-2 border border-gray-700">Prácticamente imposible</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Recuerda que estas estimaciones cambian con el avance tecnológico y no consideran vulnerabilidades específicas o ataques dirigidos.</p>
+
+<div class="p-4 border border-gray-700 rounded-lg my-4 bg-gray-900">
+  <h3 class="font-bold mb-2">Verificadores de contraseñas seguros</h3>
+  <p>Algunos sitios permiten evaluar la fortaleza de tus contraseñas de forma segura, sin enviarlas realmente a través de Internet:</p>
+  <ul class="list-disc pl-6 mt-2">
+    <li><a href="https://lowe.github.io/tryzxcvbn/" class="text-blue-400 hover:underline">Offline Password Strength Estimator</a> (basado en zxcvbn, ejecutado localmente en tu navegador)</li>
+    <li>Verificadores integrados en gestores de contraseñas</li>
+  </ul>
+  <p class="mt-2 text-sm text-red-400">¡NUNCA introduzcas tus contraseñas reales en verificadores online que no sean de confianza absoluta!</p>
+</div>
+
+<h2>Renovación de Contraseñas</h2>
+
+<h3>Frecuencia de Cambio</h3>
+
+<p>El concepto de cambiar contraseñas regularmente por fecha (cada 3 meses) está siendo reconsiderado por los expertos en seguridad. Actualmente, se recomienda cambiar contraseñas ante:</p>
+
+<ul class="list-disc pl-6 space-y-2">
+  <li>Sospechas de compromiso (accesos no reconocidos, comportamiento extraño)</li>
+  <li>Notificaciones de brechas de datos en servicios que utilizas</li>
+  <li>Uso en dispositivos no seguros o compartidos</li>
+  <li>Compartir la contraseña con alguien (incluso temporalmente)</li>
+  <li>Después de un incidente de malware o virus en tus dispositivos</li>
+</ul>
+
+<h3>Renovación Inteligente</h3>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+  <div class="bg-red-900 bg-opacity-20 p-4 rounded-lg">
+    <h4 class="font-bold">Errores al cambiar contraseñas</h4>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>Cambios menores (añadir un número al final)</li>
+      <li>Seguir patrones predecibles (password1, password2)</li>
+      <li>Simplificar por fatiga de contraseñas</li>
+      <li>Olvidar actualizar en todos los dispositivos</li>
+    </ul>
+  </div>
+  
+  <div class="bg-green-900 bg-opacity-20 p-4 rounded-lg">
+    <h4 class="font-bold">Buenas prácticas</h4>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>Implementar cambios significativos</li>
+      <li>Usar un gestor de contraseñas para generar nuevas</li>
+      <li>Mantener la complejidad y longitud adecuadas</li>
+      <li>Actualizar en todos los dispositivos simultáneamente</li>
+    </ul>
+  </div>
+</div>
+
+<div class="bg-blue-900 p-6 rounded-lg my-6">
+  <h3 class="text-white font-bold">Conclusión</h3>
+  <p class="text-blue-100 mt-2">Crear contraseñas seguras es el primer paso para proteger tu identidad digital. Sin embargo, manejar múltiples contraseñas complejas puede resultar abrumador sin las herramientas adecuadas. En la siguiente lección, exploraremos cómo los gestores de contraseñas pueden ayudarte a implementar estas prácticas de forma sostenible y conveniente.</p>
+</div>
+
+<div class="p-4 border border-gray-700 rounded-lg my-4">
+  <h3 class="font-bold mb-2">Ejercicio práctico</h3>
+  <ol class="list-decimal pl-6 space-y-3">
+    <li>Identifica tus tres cuentas más importantes (correo, banca, redes sociales principales)</li>
+    <li>Crea nuevas contraseñas seguras para cada una usando uno de los métodos explicados</li>
+    <li>Implementa un sistema para recordarlas que no implique escribirlas en texto plano</li>
+    <li>Si alguna de tus cuentas ofrece autenticación de dos factores, actívala (lo veremos en detalle en lecciones posteriores)</li>
+  </ol>
+</div>

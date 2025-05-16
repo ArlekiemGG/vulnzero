@@ -1,270 +1,255 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { courseProgressService } from '@/services/course-progress-service'; 
 import { HybridCourseService } from './services/HybridCourseService';
-import { SectionWithLessons } from './types';
-import { findCourseById } from '@/data/courses';
+import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { ChevronRight } from 'lucide-react';
 
-// Componentes refactorizados
+// Components
 import CourseHeader from './components/CourseHeader';
 import CourseImage from './components/CourseImage';
-import CourseContent from './components/CourseContent';
+import CourseSections from './components/CourseSections';
 import CourseProgressPanel from './components/CourseProgressPanel';
+import CourseContent from './components/CourseContent';
 import CourseDetailSkeleton from './components/CourseDetailSkeleton';
+
+// Utilities & Services
+import { findCourseById } from '@/data/courses';
+import { validateCourseContent, debugCourseStructure } from '@/utils/course-content-validator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserCourseProgress } from '@/hooks/use-course-progress';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const contentRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [course, setCourse] = useState<any>(null);
+  const [sectionsWithLessons, setSectionsWithLessons] = useState<any[]>([]);
+  const [courseValidation, setCourseValidation] = useState<any | null>(null);
+  const [validationLoading, setValidationLoading] = useState(false);
+  const { progress, completedLessons } = useUserCourseProgress(courseId, user?.id);
   
-  const [course, setCourse] = useState(null);
-  const [sections, setSections] = useState<SectionWithLessons[]>([]);
-  const [progress, setProgress] = useState<number>(0);
-  const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({});
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [fadeIn, setFadeIn] = useState<boolean>(false);
-
-  // Controlamos la animación de entrada solo después de que los datos estén listos
   useEffect(() => {
-    if (!isLoading) {
-      // Pequeño retraso para dar tiempo a que el DOM se actualice
-      const timer = setTimeout(() => setFadeIn(true), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
-  // Scroll to top when navigating to this page
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [courseId]);
-
-  const fetchCourseData = useCallback(async () => {
-    if (!courseId) {
-      console.error("Error: No se especificó un ID de curso");
-      toast({
-        title: "Error",
-        description: "No se especificó un ID de curso",
-        variant: "destructive",
-      });
-      navigate('/courses');
-      return;
-    }
-    
-    setIsLoading(true);
-    setFadeIn(false); // Aseguramos inicio con fade out
-    
-    try {
-      console.log("CourseDetail: Buscando curso con ID:", courseId);
+    const loadCourseDetails = async () => {
+      if (!courseId) {
+        console.error('CourseDetail: No courseId provided');
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el curso",
+          variant: "destructive"
+        });
+        return;
+      }
       
-      // Primero intentamos encontrar el curso desde los datos estáticos
-      const staticCourse = findCourseById(courseId);
-      
-      if (staticCourse) {
-        console.log("CourseDetail: Curso encontrado en datos estáticos:", staticCourse);
-        setCourse(staticCourse);
+      console.log(`CourseDetail: Buscando curso con ID: ${courseId}`);
+      setLoading(true);
+
+      try {
+        // Primer intento: buscar en datos estáticos
+        const staticCourse = findCourseById(courseId);
         
-        // Si tenemos secciones y lecciones en el curso estático
-        if (staticCourse.modules && staticCourse.modules.length > 0) {
-          const sectionsWithLessons = staticCourse.modules.map(module => ({
+        if (staticCourse) {
+          console.log('CourseDetail: Curso encontrado en datos estáticos:', staticCourse);
+          
+          // Procesamos secciones y lecciones del curso estático
+          const sectionsData = staticCourse.modules.map(module => ({
             id: module.id,
             title: module.title,
             course_id: courseId,
             position: module.position || 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            lessons: module.lessons.map(lesson => ({
+            lessons: module.lessons.map((lesson, index) => ({
               id: lesson.id,
               title: lesson.title,
               content: '',
-              duration_minutes: lesson.duration_minutes || 0,
+              duration_minutes: lesson.duration_minutes,
               section_id: module.id,
-              position: 0,
+              position: index,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               video_url: null
             }))
           }));
           
-          console.log("CourseDetail: Secciones con lecciones de datos estáticos:", sectionsWithLessons);
-          setSections(sectionsWithLessons);
-        } else {
-          // Si no hay módulos, intentar cargar las secciones desde el servicio híbrido
-          await loadCourseSections(courseId);
-        }
-      } else {
-        // Si no se encuentra en datos estáticos, intentar con el servicio híbrido
-        console.log("CourseDetail: Curso no encontrado en datos estáticos, buscando en servicio híbrido");
-        const courseData = await HybridCourseService.getCourseById(courseId);
-        
-        if (!courseData) {
-          console.error("CourseDetail: Curso no encontrado con ID:", courseId);
-          toast({
-            title: "Curso no encontrado",
-            description: "El curso que buscas no existe. Por favor, verifica la URL o contacta con soporte.",
-            variant: "destructive",
+          console.log('CourseDetail: Secciones con lecciones de datos estáticos:', sectionsData);
+          
+          setCourse({
+            id: staticCourse.id,
+            title: staticCourse.title,
+            description: staticCourse.description,
+            image_url: staticCourse.image_url || `/courses/${staticCourse.id}/cover.jpg`,
+            category: staticCourse.category,
+            level: staticCourse.level,
+            instructor: staticCourse.instructor,
+            duration_minutes: staticCourse.duration_minutes
           });
-          navigate('/courses');
-          return;
+          
+          setSectionsWithLessons(sectionsData);
+          document.title = `${staticCourse.title} - VulnZero`;
+
+        } else {
+          // Segundo intento: buscar usando el servicio híbrido
+          console.log('CourseDetail: No se encontró en datos estáticos, buscando con servicio híbrido');
+          const dynamicCourse = await HybridCourseService.getCourseById(courseId);
+          
+          if (!dynamicCourse) {
+            console.error(`CourseDetail: No se encontró el curso con ID: ${courseId}`);
+            toast({
+              title: "Curso no encontrado",
+              description: "El curso solicitado no existe",
+              variant: "destructive"
+            });
+            navigate('/courses');
+            return;
+          }
+          
+          setCourse(dynamicCourse);
+          document.title = `${dynamicCourse.title} - VulnZero`;
+          
+          // Cargamos secciones del curso
+          const sections = await HybridCourseService.getCourseSections(courseId);
+          
+          // Para cada sección, cargamos sus lecciones
+          const sectionsWithLessonsPromises = sections.map(async section => {
+            const lessons = await HybridCourseService.getSectionLessons(section.id);
+            return {
+              ...section,
+              lessons
+            };
+          });
+          
+          const resolvedSectionsWithLessons = await Promise.all(sectionsWithLessonsPromises);
+          setSectionsWithLessons(resolvedSectionsWithLessons);
         }
-        
-        console.log("CourseDetail: Course data loaded:", courseData);
-        setCourse(courseData);
-
-        // Obtener las secciones del curso y sus lecciones
-        await loadCourseSections(courseData.id);
+      } catch (error) {
+        console.error('Error loading course details:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el detalle del curso",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-      
-      // Obtener el progreso del curso si el usuario está autenticado
-      if (user) {
-        await loadUserProgress(courseId);
-      }
-    } catch (error) {
-      console.error('CourseDetail: Error fetching course data:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la información del curso. Por favor, inténtalo más tarde.",
-        variant: "destructive",
-      });
-      navigate('/courses');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [courseId, user, navigate]);
-
-  // Extraemos la carga de secciones a una función separada
-  const loadCourseSections = async (courseId: string) => {
-    try {
-      const sectionsData = await HybridCourseService.getCourseSections(courseId);
-      console.log("CourseDetail: Sections loaded:", sectionsData.length);
-      
-      // Obtener las lecciones de cada sección
-      const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
-        sectionsData.map(async (section) => {
-          const lessons = await HybridCourseService.getSectionLessons(section.id);
-          return {
-            ...section,
-            lessons
-          };
-        })
-      );
-      
-      console.log("CourseDetail: Sections with lessons:", sectionsWithLessons);
-      setSections(sectionsWithLessons);
-    } catch (error) {
-      console.error("Error loading course sections:", error);
-      throw error; // Propagar el error para manejarlo en la función principal
-    }
-  };
-
-  // Extraemos la carga de progreso a una función separada
-  const loadUserProgress = async (courseId: string) => {
-    if (!user) return;
+    };
     
-    try {
-      // Usamos el nuevo servicio unificado
-      const { data: progressData } = await courseProgressService.getCourseProgress(user.id, courseId);
-      if (progressData) {
-        setProgress(progressData.progress_percentage || 0);
-      }
+    loadCourseDetails();
+  }, [courseId, navigate]);
+  
+  // Función para iniciar curso (navegar a la primera lección)
+  const startCourse = () => {
+    if (sectionsWithLessons.length > 0 && sectionsWithLessons[0].lessons.length > 0) {
+      const firstSection = sectionsWithLessons[0];
+      const firstLesson = firstSection.lessons[0];
       
-      // Obtener el estado de las lecciones completadas usando el nuevo servicio
-      const result = await courseProgressService.fetchUserProgressData(courseId, user.id);
-      setCompletedLessons(result.completedLessons);
-    } catch (error) {
-      console.error("Error loading user progress:", error);
-      // No lanzamos el error, simplemente continuamos con los valores predeterminados
+      console.log(`Navigating to first lesson: /courses/${courseId}/learn/${firstSection.id}/${firstLesson.id}`);
+      navigate(`/courses/${courseId}/learn/${firstSection.id}/${firstLesson.id}`);
     }
-  };
-
-  // Manejar la carga inicial de datos
-  useEffect(() => {
-    fetchCourseData();
-  }, [fetchCourseData]);
-
-  // Contadores y funciones de navegación
-  const getTotalLessons = () => {
-    return sections.reduce((total, section) => total + section.lessons.length, 0);
   };
   
-  const getCompletedLessonsCount = () => {
-    return Object.values(completedLessons).filter(Boolean).length;
-  };
-
-  const startCourse = () => {
-    if (sections.length > 0 && sections[0].lessons.length > 0) {
-      console.log(`Navigating to first lesson: /courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
-      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
-    } else {
-      toast({
-        title: "Sin lecciones",
-        description: "Este curso aún no tiene lecciones disponibles",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const continueCourse = () => {
-    // Buscar la última lección completada o la primera no completada
-    for (const section of sections) {
-      for (const lesson of section.lessons) {
-        if (!completedLessons[lesson.id] && 
-            !completedLessons[`${courseId}:${lesson.id}`]) {
-          console.log(`Continuing course at: /courses/${courseId}/learn/${section.id}/${lesson.id}`);
-          navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`);
-          return;
-        }
-      }
-    }
+  // Validación del contenido del curso
+  const validateContent = async () => {
+    if (!courseId) return;
     
-    // Si todas están completadas, ir a la primera lección
-    if (sections.length > 0 && sections[0].lessons.length > 0) {
-      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
+    setValidationLoading(true);
+    try {
+      const result = await validateCourseContent(courseId);
+      setCourseValidation(result);
+      
+      // Debug information
+      debugCourseStructure(courseId);
+      
+    } catch (error) {
+      console.error('Error validating course content:', error);
+    } finally {
+      setValidationLoading(false);
     }
   };
 
-  // Renderizamos el estado de carga
-  if (isLoading) {
+  if (loading) {
     return <CourseDetailSkeleton />;
   }
 
-  // Si no hay datos de curso, mostramos un mensaje
   if (!course) {
-    return <div className="container px-4 py-8 mx-auto">Curso no encontrado</div>;
+    return (
+      <div className="container px-4 py-8 mx-auto">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>No se pudo encontrar el curso solicitado.</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
-  // Renderizado principal
   return (
-    <div 
-      ref={contentRef} 
-      className={`container px-4 py-8 mx-auto transition-opacity duration-700 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
-    >
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Contenido principal */}
-        <div className="w-full md:w-2/3">
-          <CourseHeader course={course} totalLessons={getTotalLessons()} />
-          <CourseImage imageUrl={course.image_url} title={course.title} />
-          <CourseContent 
-            sections={sections} 
-            courseId={courseId} 
-            courseDescription={course.description}
-            completedLessons={completedLessons}
-          />
+    <div className="container px-4 py-8 mx-auto">
+      <CourseHeader courseId={courseId || ''} />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+        {/* Columna principal */}
+        <div className="lg:col-span-2 space-y-6">
+          <CourseImage course={course} />
+          
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">{course.title}</h1>
+              <p className="text-gray-400 mt-1">{course.description}</p>
+            </div>
+            
+            <Button 
+              size="lg"
+              onClick={startCourse} 
+              className="flex items-center whitespace-nowrap"
+            >
+              Comenzar Curso
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+          
+          {courseValidation && !courseValidation.valid && 'missingLessons' in courseValidation && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Advertencia: Contenido Incompleto</AlertTitle>
+              <AlertDescription>
+                <p>Algunos archivos de lecciones no fueron encontrados ({courseValidation.missingLessons.length} lecciones faltantes).</p>
+                <p className="mt-2">Esto puede causar errores al intentar acceder a ciertas lecciones.</p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <Separator className="my-6" />
+          
+          {/* Contenido del curso */}
+          <CourseContent course={course} />
+          
+          <Separator className="my-6" />
+          
+          {/* Secciones del curso */}
+          {sectionsWithLessons.length > 0 && (
+            <CourseSections 
+              sections={sectionsWithLessons} 
+              courseId={courseId || ''} 
+              completedLessons={completedLessons}
+            />
+          )}
         </div>
         
-        {/* Panel lateral */}
-        <div className="w-full md:w-1/3">
-          <CourseProgressPanel 
+        {/* Barra lateral */}
+        <div className="lg:col-span-1">
+          <CourseProgressPanel
+            course={course}
             progress={progress}
-            completedLessonsCount={getCompletedLessonsCount()}
-            totalLessons={getTotalLessons()}
-            durationHours={Math.floor(course.duration_minutes / 60)}
-            durationMinutes={course.duration_minutes % 60}
-            onContinue={continueCourse}
-            onStart={startCourse}
+            startCourse={startCourse}
+            onValidate={validateContent}
+            validationLoading={validationLoading}
+            validationResult={courseValidation}
           />
         </div>
       </div>
