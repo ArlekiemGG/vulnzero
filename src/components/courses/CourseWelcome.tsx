@@ -1,108 +1,128 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CourseService, Course } from './services/CourseService';
-import CourseCard from './CourseCard';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Brain, Target, BarChart } from 'lucide-react';
 
 const CourseWelcome = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
+  const [completedAssessment, setCompletedAssessment] = useState<boolean | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchRecommendedCourses = async () => {
+    if (user) {
+      checkUserAssessment();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const checkUserAssessment = async () => {
+    try {
       setLoading(true);
-      try {
-        // En una implementación real, esta función podría usar algoritmos de recomendación
-        // basados en el historial del usuario, su nivel, etc.
-        // Por ahora, simplemente obtenemos algunos cursos aleatorios
-        const allCourses = await CourseService.getCourses();
-        
-        // Seleccionar hasta 2 cursos para recomendar
-        let recommended: Course[] = [];
-        if (allCourses.length > 0) {
-          // Mezclar aleatoriamente los cursos para simular recomendaciones
-          const shuffled = [...allCourses].sort(() => 0.5 - Math.random());
-          recommended = shuffled.slice(0, Math.min(2, allCourses.length));
-        }
-        
-        setRecommendedCourses(recommended);
-      } catch (error) {
-        console.error("Error fetching recommended courses:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecommendedCourses();
-  }, []);
-
-  const getTimeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'buenos días';
-    if (hour < 18) return 'buenas tardes';
-    return 'buenas noches';
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('completed_assessment')
+        .eq('id', user.id)
+        .single();
+      
+      setCompletedAssessment(!!profile?.completed_assessment);
+    } catch (error) {
+      console.error('Error checking assessment status:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="mb-12">
-      <div className="bg-gradient-to-r from-cybersec-darkgray to-cybersec-black p-8 rounded-lg border border-cybersec-darkgray shadow-md mb-8">
-        <h2 className="text-2xl font-bold mb-2">
-          {user ? `Hola ${user.user_metadata?.username || 'Hacker'}, ${getTimeOfDay()}` : '¡Bienvenido a los cursos de VulnZero!'}
-        </h2>
-        
-        <p className="text-gray-400 mb-6">
-          {user 
-            ? 'Continúa tu aprendizaje con nuestros cursos estructurados de ciberseguridad.' 
-            : 'Aprende ciberseguridad a tu ritmo con nuestros cursos estructurados.'}
-        </p>
-        
-        {!user && (
-          <Button onClick={() => navigate('/auth')} className="bg-cybersec-neongreen hover:bg-cybersec-neongreen/90 text-black">
-            Registrarse para guardar progreso
-          </Button>
-        )}
-      </div>
+  const handleStartAssessment = () => {
+    navigate('/courses/onboarding');
+  };
 
-      {user && recommendedCourses.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Recomendados para ti</h3>
-          
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((_, index) => (
-                <div key={index} className="flex flex-col h-[350px] rounded-lg overflow-hidden">
-                  <Skeleton className="h-40 w-full" />
-                  <div className="p-4 space-y-2 flex-grow">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-6 w-20" />
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                    <Skeleton className="h-6 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <div className="flex justify-between pt-4">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <Skeleton className="h-2 w-full mt-4" />
-                  </div>
+  if (loading) return null;
+
+  return (
+    <Card className="mb-8 bg-gradient-to-r from-indigo-900/50 to-purple-900/30 border-indigo-700/50">
+      <CardContent className="p-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="md:col-span-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              Tu Viaje de Aprendizaje en Ciberseguridad
+            </h2>
+            
+            <p className="text-gray-300 mb-6">
+              Nuestra plataforma ofrece cursos estructurados que te guiarán paso a paso en tu 
+              desarrollo profesional en ciberseguridad, desde conceptos básicos hasta técnicas avanzadas.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="flex items-center">
+                <div className="mr-3 p-2 bg-indigo-800/40 rounded-full">
+                  <Target className="h-5 w-5 text-indigo-400" />
                 </div>
-              ))}
+                <div className="text-sm">
+                  <div className="font-medium text-white">Rutas guiadas</div>
+                  <div className="text-gray-400">Aprendizaje estructurado</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <div className="mr-3 p-2 bg-indigo-800/40 rounded-full">
+                  <BarChart className="h-5 w-5 text-indigo-400" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium text-white">Seguimiento</div>
+                  <div className="text-gray-400">Tu progreso en tiempo real</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <div className="mr-3 p-2 bg-indigo-800/40 rounded-full">
+                  <Brain className="h-5 w-5 text-indigo-400" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium text-white">Personalizado</div>
+                  <div className="text-gray-400">Adaptado a tu nivel</div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {recommendedCourses.map(course => (
-                <CourseCard key={course.id} course={course} />
-              ))}
+            
+            {user ? (
+              completedAssessment === false && (
+                <Button onClick={handleStartAssessment} size="lg">
+                  Realizar evaluación inicial
+                </Button>
+              )
+            ) : (
+              <div className="space-y-3">
+                <Button onClick={() => navigate('/auth')} size="lg">
+                  Inicia sesión para comenzar
+                </Button>
+                <p className="text-sm text-gray-400">
+                  Registra una cuenta para guardar tu progreso y desbloquear todas las funciones
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="md:col-span-4 flex justify-center">
+            <div className="p-1 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg">
+              <img
+                src="/courses/cybersecurity-learning.jpg"
+                alt="Cybersecurity Learning"
+                className="rounded-lg h-60 w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop';
+                }}
+              />
             </div>
-          )}
+          </div>
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
