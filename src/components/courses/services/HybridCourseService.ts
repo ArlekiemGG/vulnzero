@@ -87,6 +87,45 @@ export const HybridCourseService = {
   },
   
   /**
+   * Obtiene una sección específica por su ID
+   */
+  getSectionById: async (sectionId: string): Promise<Section | null> => {
+    // Intentamos primero buscar en datos dinámicos
+    try {
+      const { data, error } = await supabase
+        .from('course_sections')
+        .select('*')
+        .eq('id', sectionId)
+        .maybeSingle();
+        
+      if (data) {
+        return data as Section;
+      }
+    } catch (error) {
+      console.error('Error fetching section from database:', error);
+    }
+    
+    // Si no se encuentra en la base de datos, buscamos en datos estáticos
+    for (const courseId of Object.keys(StaticContentService.getAllCourses())) {
+      const sections = StaticContentService.getCourseSections(courseId);
+      const section = sections.find(s => s.id === sectionId);
+      
+      if (section) {
+        return {
+          id: section.id,
+          title: section.title,
+          course_id: courseId,
+          position: 0, // Posición predeterminada
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+    }
+    
+    return null;
+  },
+  
+  /**
    * Obtiene las lecciones de una sección desde el contenido estático
    */
   getSectionLessons: async (sectionId: string): Promise<Lesson[]> => {

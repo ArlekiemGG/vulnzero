@@ -6,7 +6,8 @@ import { toast } from '@/components/ui/use-toast';
 import { HybridCourseService } from './HybridCourseService';
 
 export function useProgressService() {
-  const { user } = useUser();
+  // Instead of destructuring user directly, we'll get the whole context
+  const userContext = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const { refreshUserStats } = useUser();
 
@@ -22,9 +23,17 @@ export function useProgressService() {
 
       // Si tenemos el ID de la sección, obtenemos el curso
       if (lessonData.section_id) {
-        const sectionData = await HybridCourseService.getSectionById(lessonData.section_id);
-        if (sectionData && sectionData.course_id) {
-          return sectionData.course_id;
+        // Let's use a different approach since getSectionById doesn't exist
+        // We'll get all sections for all courses and find the matching one
+        const allCourses = await HybridCourseService.getAllCourses();
+        
+        for (const course of allCourses) {
+          const sections = await HybridCourseService.getCourseSections(course.id);
+          const matchingSection = sections.find(section => section.id === lessonData.section_id);
+          
+          if (matchingSection) {
+            return course.id;
+          }
         }
       }
 
@@ -46,16 +55,17 @@ export function useProgressService() {
    * Obtiene el progreso de una lección específica
    */
   const getLessonProgress = useCallback(async (lessonId: string) => {
-    if (!user) return null;
+    // Access user from the context object
+    if (!userContext.user) return null;
     
     try {
-      const response = await courseProgressService.fetchLessonProgressByLessonId(user.id, lessonId);
+      const response = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, lessonId);
       return response.data;
     } catch (error) {
       console.error("Error getting lesson progress:", error);
       return null;
     }
-  }, [user]);
+  }, [userContext.user]);
 
   /**
    * Marca una lección como completada
@@ -63,7 +73,8 @@ export function useProgressService() {
    * @param moduleId Opcional: ID del módulo/sección (para actualización de estado en UI)
    */
   const markLessonAsCompleted = useCallback(async (lessonId: string, moduleId?: string) => {
-    if (!user) {
+    // Access user from the context object
+    if (!userContext.user) {
       console.error("ProgressService: No user logged in");
       return false;
     }
@@ -89,7 +100,7 @@ export function useProgressService() {
       
       // 2. Marcar la lección como completada
       const success = await courseProgressService.markLessonComplete(
-        user.id,
+        userContext.user.id,
         courseId,
         lessonId
       );
@@ -125,7 +136,7 @@ export function useProgressService() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, getCourseIdFromLesson, refreshUserStats]);
+  }, [userContext.user, getCourseIdFromLesson, refreshUserStats]);
 
   return {
     markLessonAsCompleted,
