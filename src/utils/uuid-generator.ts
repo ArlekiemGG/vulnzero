@@ -20,7 +20,11 @@ export function generateUUID(input: string): string {
     console.error('generateUUID: Input string is empty');
     return '';
   }
-  return uuidv5(input, NAMESPACE);
+  
+  // Añadir logging para debug
+  const result = uuidv5(input, NAMESPACE);
+  console.log(`generateUUID: Converting "${input}" to UUID: ${result}`);
+  return result;
 }
 
 /**
