@@ -1,17 +1,20 @@
 
 import { useEffect, useState } from 'react';
 import CourseTabs from '@/components/courses/CourseTabs';
-import { SearchIcon, PlusCircle } from 'lucide-react';
+import { SearchIcon, PlusCircle, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
+import { CourseService } from '@/components/courses/services/CourseService';
+import { toast } from '@/components/ui/use-toast';
 
 const Courses: React.FC = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [userStats, setUserStats] = useState({
     level: 1,
     points: 0,
@@ -86,6 +89,30 @@ const Courses: React.FC = () => {
     }
   }, [user]);
 
+  const handleCreateCourse = async () => {
+    setIsCreatingCourse(true);
+    try {
+      const result = await CourseService.createFundamentalsCourse();
+      
+      if (result.success) {
+        toast({
+          title: "Curso creado correctamente",
+          description: "El curso de Fundamentos de Ciberseguridad ahora está disponible.",
+        });
+        // Reload the page to show the new course
+        window.location.reload();
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo crear el curso. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsCreatingCourse(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <Navbar />
@@ -114,12 +141,24 @@ const Courses: React.FC = () => {
               </div>
               
               {isAdmin && (
-                <Button asChild variant="default">
-                  <Link to="/courses/create" className="flex items-center">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Nuevo Curso</span>
-                  </Link>
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={handleCreateCourse} 
+                    variant="outline"
+                    disabled={isCreatingCourse}
+                    className="flex items-center"
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    {isCreatingCourse ? 'Creando...' : 'Crear curso inicial'}
+                  </Button>
+                  
+                  <Button asChild variant="default">
+                    <Link to="/courses/create" className="flex items-center">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      <span>Nuevo Curso</span>
+                    </Link>
+                  </Button>
+                </div>
               )}
             </div>
           </div>
