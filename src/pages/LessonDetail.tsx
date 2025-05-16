@@ -7,6 +7,8 @@ import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserStats } from '@/hooks/use-user-stats';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const LessonDetail = () => {
   const { user } = useAuth();
@@ -19,9 +21,11 @@ const LessonDetail = () => {
   
   useEffect(() => {
     document.title = "Lección - VulnZero";
-    // Scroll al inicio para evitar posiciones intermedias
+    // Scroll to top to avoid intermediate positions
     window.scrollTo(0, 0);
   }, []);
+
+  const missingParams = !courseId || !moduleId || !lessonId;
 
   return (
     <div className="min-h-screen bg-cybersec-black">
@@ -29,7 +33,16 @@ const LessonDetail = () => {
       {user && <Sidebar userStats={userStats} />}
       
       <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
-        {courseId && moduleId && lessonId && (
+        {missingParams ? (
+          <div className="container mx-auto px-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No se pudieron cargar los detalles de la lección. Parámetros incompletos.
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : (
           <FileLessonDetail 
             courseId={courseId} 
             moduleId={moduleId} 

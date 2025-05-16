@@ -1,12 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CheckCircle, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, BookOpen, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { findCourseById, findModuleById, findLessonById } from '@/data/courses';
 import { useUserCourseProgress } from '@/hooks/use-course-progress';
 import LessonQuiz from './components/LessonQuiz';
@@ -26,6 +28,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
   const [quizVisible, setQuizVisible] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const { 
     completedLessons, 
     completedQuizzes, 
@@ -50,18 +53,24 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   useEffect(() => {
     const setup = async () => {
       if (!course || !currentModule || !lesson) {
-        navigate(`/courses/${courseId}`);
+        setError("No se encontró la lección solicitada");
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setError(null);
       
       try {
+        // Log the path we're attempting to fetch
+        console.log(`Fetching lesson content from: /courses/${courseId}/${moduleId}/${lessonId}.html`);
+        
         // Fetch lesson content from HTML file
         const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
         const response = await fetch(contentPath);
         
         if (!response.ok) {
+          console.error(`Error loading lesson content: ${response.status} ${response.statusText}`);
           throw new Error("No se pudo cargar el contenido de la lección");
         }
         
@@ -73,19 +82,14 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
         setFadeIn(true);
       } catch (error) {
         console.error('Error loading lesson content:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo cargar el contenido de la lección",
-          variant: "destructive",
-        });
-        navigate(`/courses/${courseId}`);
+        setError("No se pudo cargar el contenido de la lección. Verifica que el archivo exista.");
       } finally {
         setIsLoading(false);
       }
     };
 
     setup();
-  }, [courseId, moduleId, lessonId, navigate]);
+  }, [courseId, moduleId, lessonId, navigate, course, currentModule, lesson]);
 
   const setupNavigation = () => {
     if (!course || !currentModule) return;
@@ -226,12 +230,17 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
     );
   }
 
-  if (!lesson || !course || !currentModule) {
+  if (error || !lesson || !course || !currentModule) {
     return (
       <div className="container px-4 py-8 mx-auto">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">Lección no encontrada</h2>
-          <p className="mt-2 text-gray-500">La lección que buscas no existe o ha sido eliminada</p>
+          <Alert variant="destructive" className="mb-6 max-w-lg mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error || "La lección que buscas no existe o ha sido eliminada"}
+            </AlertDescription>
+          </Alert>
           <Button className="mt-4" onClick={() => navigate(`/courses/${courseId}`)}>
             Volver al curso
           </Button>

@@ -56,7 +56,7 @@
 /* Code blocks */
 .lesson-content pre {
   @apply my-6 rounded-lg overflow-x-auto;
-  background-color: #1e1e1e !important;
+  background-color: #1e1e1e !important; /* Dark background for better contrast */
 }
 
 .lesson-content code:not(pre code) {
