@@ -19,14 +19,18 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Using explicit Promise<any> to avoid deep type instantiation error
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  // Using explicit Promise<any> return type and using a raw query to avoid complex type inference
-  const { data, error } = await supabase
+  // Usando tipos primitivos directamente para evitar la inferencia de tipos complejos
+  const result = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  return { data, error };
+  // Extraer manualmente los campos necesarios para romper la cadena de tipos
+  return {
+    data: result.data,
+    error: result.error
+  };
 }
 
 /**
@@ -66,13 +70,17 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<an
  * Using explicit Promise<any> to avoid deep type instantiation error
  */
 export async function countTotalLessons(courseId: string): Promise<any> {
-  // Using a simpler approach to avoid complex type inference
-  const { count, error } = await supabase
+  // Usando tipos primitivos y descomponiendo la respuesta para evitar la inferencia de tipos profundos
+  const result = await supabase
     .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  return { count, error };
+  // Extraer manualmente los campos necesarios para romper la cadena de tipos
+  return {
+    count: result.count,
+    error: result.error
+  };
 }
 
 /**
