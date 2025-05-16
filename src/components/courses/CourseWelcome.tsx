@@ -102,7 +102,7 @@ const CourseWelcome = () => {
             </div>
             
             {user ? (
-              completedAssessment === false && (
+              !completedAssessment && (
                 <Button onClick={handleStartAssessment} size="lg">
                   Realizar evaluación inicial
                 </Button>
