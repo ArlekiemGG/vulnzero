@@ -13,8 +13,8 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Fetch completed lessons with explicit column selection and type casting
-  const { data, error: lessonsError } = await supabase
+  // Fetch completed lessons without complex type inference
+  const { data: lessonsData, error: lessonsError } = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
@@ -27,9 +27,9 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  if (data) {
-    // Safely iterate through the data with proper typing
-    (data as any[]).forEach(item => {
+  if (lessonsData) {
+    // Safely iterate through the data with explicit any[] casting to avoid deep type inference
+    (lessonsData as any[]).forEach(item => {
       if (item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
