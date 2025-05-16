@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LessonProgressItem, 
@@ -27,8 +28,8 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Ejecutamos la consulta pero no usamos inferencia de tipos
-  const response = await supabase
+  // Usamos any para evitar la inferencia de tipos profunda
+  const response: any = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
@@ -93,8 +94,8 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Ejecutamos la consulta con count explícito para evitar inferencia de tipos
-  const response = await supabase
+  // Usamos any para evitar la inferencia de tipos profunda
+  const response: any = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
