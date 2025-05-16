@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
 @tailwind base;
@@ -63,6 +64,16 @@
   /* Page wrapper styles for consistent footer positioning */
   .page-wrapper {
     @apply flex flex-col min-h-screen;
+  }
+  
+  /* Create a flex column layout for all page containers */
+  .min-h-screen {
+    @apply flex flex-col;
+  }
+
+  /* Make sure the main content area grows to push the footer down */
+  .flex-grow {
+    @apply flex-1;
   }
 
   /* Terminal text effect */

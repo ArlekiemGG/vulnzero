@@ -23,7 +23,7 @@ const Courses: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-cybersec-black flex flex-col">
+    <div className="min-h-screen flex flex-col bg-cybersec-black">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
