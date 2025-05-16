@@ -44,15 +44,27 @@ const CourseDetail = () => {
   }, [courseId]);
 
   const fetchCourseData = useCallback(async () => {
-    if (!courseId) return;
+    if (!courseId) {
+      toast({
+        title: "Error",
+        description: "No se especificó un ID de curso",
+        variant: "destructive",
+      });
+      navigate('/courses');
+      return;
+    }
     
     setIsLoading(true);
     setFadeIn(false); // Aseguramos inicio con fade out
     
     try {
+      console.log("Fetching course with ID:", courseId);
+      
       // Obtener datos del curso usando el servicio híbrido
       const courseData = await HybridCourseService.getCourseById(courseId);
+      
       if (!courseData) {
+        console.error("Curso no encontrado con ID:", courseId);
         toast({
           title: "Curso no encontrado",
           description: "El curso que buscas no existe",
@@ -61,10 +73,13 @@ const CourseDetail = () => {
         navigate('/courses');
         return;
       }
+      
+      console.log("Course data loaded:", courseData);
       setCourse(courseData);
 
       // Obtener las secciones del curso
       const sectionsData = await HybridCourseService.getCourseSections(courseId);
+      console.log("Sections loaded:", sectionsData.length);
       
       // Obtener las lecciones de cada sección
       const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
@@ -77,6 +92,7 @@ const CourseDetail = () => {
         })
       );
       
+      console.log("Sections with lessons:", sectionsWithLessons);
       setSections(sectionsWithLessons);
       
       // Obtener el progreso del curso si el usuario está autenticado
@@ -112,6 +128,7 @@ const CourseDetail = () => {
         description: "No se pudo cargar la información del curso",
         variant: "destructive",
       });
+      navigate('/courses');
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +211,7 @@ const CourseDetail = () => {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Contenido principal */}
         <div className="w-full md:w-2/3">
-          <CourseHeader course={course} totalLessons={getTotalLessons()} />
+          <CourseHeader course={course} totalLessons={sections.reduce((total, section) => total + section.lessons.length, 0)} />
           <CourseImage imageUrl={course.image_url} title={course.title} />
           <CourseContent 
             sections={sections} 
@@ -208,12 +225,37 @@ const CourseDetail = () => {
         <div className="w-full md:w-1/3">
           <CourseProgressPanel 
             progress={progress}
-            completedLessonsCount={getCompletedLessonsCount()}
-            totalLessons={getTotalLessons()}
+            completedLessonsCount={Object.values(completedLessons).filter(Boolean).length}
+            totalLessons={sections.reduce((total, section) => total + section.lessons.length, 0)}
             durationHours={Math.floor(course.duration_minutes / 60)}
             durationMinutes={course.duration_minutes % 60}
-            onContinue={continueCourse}
-            onStart={startCourse}
+            onContinue={() => {
+              // Buscar la última lección completada o la primera no completada
+              for (const section of sections) {
+                for (const lesson of section.lessons) {
+                  if (!completedLessons[lesson.id]) {
+                    navigate(`/courses/${courseId}/lessons/${lesson.id}`);
+                    return;
+                  }
+                }
+              }
+              
+              // Si todas están completadas, ir a la primera lección
+              if (sections.length > 0 && sections[0].lessons.length > 0) {
+                navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
+              }
+            }}
+            onStart={() => {
+              if (sections.length > 0 && sections[0].lessons.length > 0) {
+                navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
+              } else {
+                toast({
+                  title: "Sin lecciones",
+                  description: "Este curso aún no tiene lecciones disponibles",
+                  variant: "destructive",
+                });
+              }
+            }}
           />
         </div>
       </div>

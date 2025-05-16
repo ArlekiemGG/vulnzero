@@ -143,7 +143,16 @@ export const StaticContentService = {
    * @returns Contenido estático del curso o null si no existe
    */
   getCourseContent: (courseId: string): StaticCourseContent | null => {
-    return courseContentMap[courseId] || null;
+    // Comprobamos si el courseId existe exactamente como está
+    if (courseContentMap[courseId]) {
+      return courseContentMap[courseId];
+    }
+    
+    // Si no se encontró, intentamos buscar de forma más flexible
+    const courseIds = Object.keys(courseContentMap);
+    const matchedId = courseIds.find(id => id.toLowerCase() === courseId.toLowerCase());
+    
+    return matchedId ? courseContentMap[matchedId] : null;
   },
 
   /**
@@ -153,7 +162,7 @@ export const StaticContentService = {
    * @returns Contenido estático de la lección o null si no existe
    */
   getLessonContent: (courseId: string, lessonId: string): StaticLesson | null => {
-    const course = courseContentMap[courseId];
+    const course = StaticContentService.getCourseContent(courseId);
     if (!course) return null;
 
     for (const section of course.sections) {
@@ -174,7 +183,7 @@ export const StaticContentService = {
    * @returns Lista de lecciones o array vacío si la sección no existe
    */
   getSectionLessons: (courseId: string, sectionId: string): StaticLesson[] => {
-    const course = courseContentMap[courseId];
+    const course = StaticContentService.getCourseContent(courseId);
     if (!course) return [];
 
     const section = course.sections.find(s => s.id === sectionId);
@@ -187,7 +196,7 @@ export const StaticContentService = {
    * @returns Lista de secciones o array vacío si el curso no existe
    */
   getCourseSections: (courseId: string): StaticSection[] => {
-    const course = courseContentMap[courseId];
+    const course = StaticContentService.getCourseContent(courseId);
     return course ? course.sections : [];
   },
 
