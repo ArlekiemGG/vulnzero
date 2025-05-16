@@ -83,10 +83,22 @@ const LessonDetail = () => {
         setIsCompleted(progress?.completed || false);
       }
       
-      // Verificar si la lección tiene un quiz asociado
-      if (lessonData.quizData) {
-        setQuizData(lessonData.quizData);
+      // Para evitar errores de tipado, verificamos si hay datos de quiz de forma segura
+      // Esta verificación es mejor que comprobar lessonData.quizData directamente
+      const quizPath = `/courses/${courseId}/${lessonData.module_id || "default"}/${lessonId}-quiz.json`;
+      try {
+        const response = await fetch(quizPath);
+        if (response.ok) {
+          const quizContent = await response.json();
+          setQuizData(quizContent);
+          // Actualizamos lesson con el quizData para mantener compatibilidad
+          lessonData.quizData = quizContent;
+        }
+      } catch (quizError) {
+        console.log('No quiz found for this lesson or quiz error:', quizError);
+        // Quiz no encontrado, no es un error crítico
       }
+      
     } catch (error) {
       console.error('Error fetching lesson data:', error);
       toast({

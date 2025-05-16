@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -7,8 +6,8 @@ export interface Course {
   title: string;
   description: string;
   image_url: string;
-  level: string;
   category: string;
+  level: string;
   instructor: string;
   duration_minutes: number;
   created_at: string;
@@ -17,8 +16,8 @@ export interface Course {
 
 export interface Section {
   id: string;
-  course_id: string;
   title: string;
+  course_id: string;
   position: number;
   created_at: string;
   updated_at: string;
@@ -26,14 +25,16 @@ export interface Section {
 
 export interface Lesson {
   id: string;
-  section_id: string;
   title: string;
   content: string;
   duration_minutes: number;
+  section_id: string;
   position: number;
-  video_url: string | null;
   created_at: string;
   updated_at: string;
+  video_url: string | null;
+  module_id?: string;
+  quizData?: any;  // Añadida propiedad opcional quizData
 }
 
 export interface CourseProgress {
