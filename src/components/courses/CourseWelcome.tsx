@@ -7,11 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Brain, Target, BarChart } from 'lucide-react';
 import { ProfileWithPreferences } from '@/services/course-progress/types';
+import { toast } from '@/components/ui/use-toast';
 
 const CourseWelcome = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [completedAssessment, setCompletedAssessment] = useState<boolean | null>(null);
+  const [completedAssessment, setCompletedAssessment] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -25,6 +26,8 @@ const CourseWelcome = () => {
   const checkUserAssessment = async () => {
     try {
       setLoading(true);
+      console.log("Verificando evaluación para usuario:", user.id);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -38,12 +41,21 @@ const CourseWelcome = () => {
         return;
       }
       
+      // Imprimir datos para depuración
+      console.log("Datos del perfil:", profile);
+      
       // Manejar el perfil con seguridad comprobando si los campos existen
       const userProfile = profile as ProfileWithPreferences;
       setCompletedAssessment(userProfile?.completed_assessment || false);
+      console.log("Estado de completed_assessment:", userProfile?.completed_assessment);
     } catch (error) {
       console.error('Error checking assessment status:', error);
       setCompletedAssessment(false);
+      toast({
+        title: "Error",
+        description: "No se pudo verificar el estado de la evaluación",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -53,7 +65,11 @@ const CourseWelcome = () => {
     navigate('/courses/onboarding');
   };
 
+  // No renderizar nada si está cargando
   if (loading) return null;
+
+  // Verificar en consola los valores que determinan la visualización del botón
+  console.log("Estado final - Usuario:", !!user, "Evaluación completada:", completedAssessment);
 
   return (
     <Card className="mb-8 bg-gradient-to-r from-indigo-900/50 to-purple-900/30 border-indigo-700/50">
@@ -102,10 +118,17 @@ const CourseWelcome = () => {
             </div>
             
             {user ? (
+              // Si hay usuario autenticado, mostrar el botón si NO ha completado la evaluación
+              // (La condición se invierte para mostrar el botón cuando completedAssessment es false)
               !completedAssessment && (
-                <Button onClick={handleStartAssessment} size="lg">
-                  Realizar evaluación inicial
-                </Button>
+                <>
+                  <Button onClick={handleStartAssessment} size="lg" variant="default">
+                    Realizar evaluación inicial
+                  </Button>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Completa una breve evaluación para personalizar tu experiencia de aprendizaje.
+                  </p>
+                </>
               )
             ) : (
               <div className="space-y-3">
