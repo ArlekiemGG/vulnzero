@@ -1,5 +1,5 @@
 
-// DEPRECATED: Este archivo está obsoleto - usar src/services/course-progress/index.ts en su lugar
+// DEPRECATED: Este archivo está obsoleto - usar src/services/course-progress-service.ts en su lugar
 // Mantenido temporalmente para asegurar compatibilidad con cualquier componente antiguo que aún lo utilice
 
 import { 
@@ -29,4 +29,4 @@ export type {
   SupabaseSimpleResponse,
   QuizResult,
   ProfileWithPreferences
-} from './course-progress/types';
+} from '@/types/course-progress';

@@ -1,12 +1,13 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HybridCourseService } from './services/HybridCourseService';
-import { useProgressService } from './services/ProgressService';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { SectionWithLessons } from './types';
+import { courseProgressService } from '@/services/course-progress-service'; 
 
 // Componentes refactorizados
 import CourseHeader from './components/CourseHeader';
@@ -18,7 +19,6 @@ const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getCourseProgress } = useProgressService();
   const contentRef = useRef<HTMLDivElement>(null);
   
   const [course, setCourse] = useState(null);
@@ -97,29 +97,15 @@ const CourseDetail = () => {
       
       // Obtener el progreso del curso si el usuario está autenticado
       if (user) {
-        const progressData = await getCourseProgress(courseData.id);
+        // Usamos el nuevo servicio unificado
+        const { data: progressData } = await courseProgressService.getCourseProgress(user.id, courseData.id);
         if (progressData) {
-          setProgress(progressData.progress_percentage);
+          setProgress(progressData.progress_percentage || 0);
         }
         
-        // Obtener el estado de las lecciones completadas
-        const fetchCompletedLessons = async () => {
-          const { data } = await supabase
-            .from('user_lesson_progress')
-            .select('lesson_id, completed')
-            .eq('user_id', user.id)
-            .eq('completed', true);
-          
-          if (data) {
-            const completedMap: Record<string, boolean> = {};
-            data.forEach(item => {
-              completedMap[item.lesson_id] = item.completed;
-            });
-            setCompletedLessons(completedMap);
-          }
-        };
-        
-        fetchCompletedLessons();
+        // Obtener el estado de las lecciones completadas usando el nuevo servicio
+        const result = await courseProgressService.fetchUserProgressData(courseData.id, user.id);
+        setCompletedLessons(result.completedLessons);
       }
     } catch (error) {
       console.error('CourseDetail: Error fetching course data:', error);
@@ -132,7 +118,7 @@ const CourseDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [courseId, user, navigate, getCourseProgress]);
+  }, [courseId, user, navigate]);
 
   // Manejar la carga inicial de datos
   useEffect(() => {
@@ -163,7 +149,8 @@ const CourseDetail = () => {
     // Buscar la última lección completada o la primera no completada
     for (const section of sections) {
       for (const lesson of section.lessons) {
-        if (!completedLessons[lesson.id]) {
+        if (!completedLessons[lesson.id] && 
+            !completedLessons[`${courseId}:${lesson.id}`]) {
           navigate(`/courses/${courseId}/lessons/${lesson.id}`);
           return;
         }
@@ -211,7 +198,7 @@ const CourseDetail = () => {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Contenido principal */}
         <div className="w-full md:w-2/3">
-          <CourseHeader course={course} totalLessons={sections.reduce((total, section) => total + section.lessons.length, 0)} />
+          <CourseHeader course={course} totalLessons={getTotalLessons()} />
           <CourseImage imageUrl={course.image_url} title={course.title} />
           <CourseContent 
             sections={sections} 
@@ -225,37 +212,12 @@ const CourseDetail = () => {
         <div className="w-full md:w-1/3">
           <CourseProgressPanel 
             progress={progress}
-            completedLessonsCount={Object.values(completedLessons).filter(Boolean).length}
-            totalLessons={sections.reduce((total, section) => total + section.lessons.length, 0)}
+            completedLessonsCount={getCompletedLessonsCount()}
+            totalLessons={getTotalLessons()}
             durationHours={Math.floor(course.duration_minutes / 60)}
             durationMinutes={course.duration_minutes % 60}
-            onContinue={() => {
-              // Buscar la última lección completada o la primera no completada
-              for (const section of sections) {
-                for (const lesson of section.lessons) {
-                  if (!completedLessons[lesson.id]) {
-                    navigate(`/courses/${courseId}/lessons/${lesson.id}`);
-                    return;
-                  }
-                }
-              }
-              
-              // Si todas están completadas, ir a la primera lección
-              if (sections.length > 0 && sections[0].lessons.length > 0) {
-                navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
-              }
-            }}
-            onStart={() => {
-              if (sections.length > 0 && sections[0].lessons.length > 0) {
-                navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
-              } else {
-                toast({
-                  title: "Sin lecciones",
-                  description: "Este curso aún no tiene lecciones disponibles",
-                  variant: "destructive",
-                });
-              }
-            }}
+            onContinue={continueCourse}
+            onStart={startCourse}
           />
         </div>
       </div>

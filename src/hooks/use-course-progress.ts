@@ -1,11 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { 
-  fetchUserProgressData, 
-  markLessonComplete, 
-  saveQuizResults 
-} from '@/services/course-progress';
+import { courseProgressService } from '@/services/course-progress-service';
 import type { 
   CourseProgressHook, 
   CompletedLessonsMap, 
@@ -35,7 +31,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
         setIsLoading(true);
         console.log(`Fetching progress for course ${courseId} and user ${userId}`);
         
-        const result = await fetchUserProgressData(courseId, userId);
+        const result = await courseProgressService.fetchUserProgressData(courseId, userId);
         
         if (isMounted) {
           console.log('Progress data loaded:', result);
@@ -78,7 +74,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     
     try {
       console.log(`Marking lesson ${lessonId} as completed for course ${courseId} and user ${userId}`);
-      const success = await markLessonComplete(userId, courseId, lessonId);
+      const success = await courseProgressService.markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
         // Actualizamos el estado local
@@ -123,7 +119,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
     
     try {
       console.log(`Saving quiz result for lesson ${lessonId}, course ${courseId}, user ${userId}`);
-      const success = await saveQuizResults(userId, courseId, lessonId, score, answers);
+      const success = await courseProgressService.saveQuizResults(userId, courseId, lessonId, score, answers);
       
       if (success) {
         // Actualizamos el estado local

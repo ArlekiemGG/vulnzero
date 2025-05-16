@@ -6,6 +6,7 @@ import CourseCard from './CourseCard';
 import { Course } from './services/CourseService';
 import courseCatalog from '@/data/courses';
 import { toast } from '@/components/ui/use-toast';
+import { courseProgressService } from '@/services/course-progress-service';
 
 interface CourseGridProps {
   courses: Course[];
@@ -31,23 +32,23 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
       try {
         console.log(`Fetching progress for user ${user.id} and courses:`, courses.map(c => c.id));
         
-        const { data, error } = await supabase
-          .from('user_course_progress')
-          .select('course_id, progress_percentage, completed')
-          .eq('user_id', user.id)
-          .in('course_id', courses.map(course => course.id));
+        // Usamos el nuevo servicio unificado para obtener los datos de progreso
+        const promises = courses.map(async (course) => {
+          const { data, error } = await courseProgressService.getCourseProgress(user.id, course.id);
+          if (error) throw error;
+          return { 
+            courseId: course.id, 
+            progress: data?.progress_percentage || 0, 
+            completed: !!data?.completed 
+          };
+        });
         
-        if (error) {
-          console.error('Error details:', error);
-          throw error;
-        }
-        
-        console.log('Received progress data:', data);
+        const results = await Promise.all(promises);
         
         const newProgressMap: Record<string, { progress: number; completed: boolean }> = {};
-        data?.forEach(item => {
-          newProgressMap[item.course_id] = { 
-            progress: item.progress_percentage,
+        results.forEach(item => {
+          newProgressMap[item.courseId] = { 
+            progress: item.progress,
             completed: item.completed
           };
         });
@@ -55,7 +56,6 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
         setProgressMap(newProgressMap);
       } catch (error) {
         console.error('Error fetching course progress:', error);
-        // Solo mostramos el toast si hay un usuario autenticado Y no estamos en un proceso de inicialización
         if (user && !isLoading) {
           toast({
             title: "Error",
