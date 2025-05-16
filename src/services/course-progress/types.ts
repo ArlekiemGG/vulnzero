@@ -1,4 +1,3 @@
-
 export type CompletedLessonsMap = Record<string, boolean>;
 export type CompletedQuizzesMap = Record<string, boolean>;
 
@@ -79,4 +78,22 @@ export interface QuizResult {
   completed: boolean;
   score: number;
   answers: Record<string, number>;
+}
+
+// Ampliación de la interfaz de Profiles para incluir los nuevos campos
+export interface ProfileWithPreferences {
+  id: string;
+  username?: string;
+  avatar_url?: string;
+  points?: number;
+  level?: number;
+  solved_machines?: number;
+  completed_challenges?: number;
+  role?: string;
+  rank?: number;
+  created_at?: string;
+  updated_at?: string;
+  preferred_level?: string;
+  recommended_course?: string;
+  completed_assessment?: boolean;
 }

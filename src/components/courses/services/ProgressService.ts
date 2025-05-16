@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -30,6 +31,31 @@ export function useProgressService() {
       return data || null;
     } catch (error) {
       console.error('Error fetching lesson progress:', error);
+      return null;
+    }
+  };
+
+  const getCourseProgress = async (courseId: string): Promise<CourseProgressItem | null> => {
+    if (!userSession) {
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .eq('user_id', userSession.id)
+        .eq('course_id', courseId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching course progress:', error);
+        return null;
+      }
+
+      return data || null;
+    } catch (error) {
+      console.error('Error fetching course progress:', error);
       return null;
     }
   };
@@ -67,9 +93,9 @@ export function useProgressService() {
             completed: true,
             completed_at: new Date().toISOString(),
           },
-          { onConflict: ['user_id', 'lesson_id'] }
+          { onConflict: 'user_id,lesson_id' }
         )
-        .select()
+        .select();
 
       if (error) {
         console.error('Error marking lesson as completed:', error);
@@ -168,5 +194,6 @@ export function useProgressService() {
     getLessonProgress,
     markLessonAsCompleted,
     updateCourseProgress,
+    getCourseProgress,
   };
 }

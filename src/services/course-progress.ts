@@ -27,5 +27,6 @@ export type {
   LessonProgressResponse,
   TotalLessonsResponse,
   SupabaseSimpleResponse,
-  QuizResult
+  QuizResult,
+  ProfileWithPreferences
 } from './course-progress/types';

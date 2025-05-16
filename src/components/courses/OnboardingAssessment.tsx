@@ -102,17 +102,13 @@ export function OnboardingAssessment({ onComplete }: OnboardingAssessmentProps) 
   
   const saveUserPreferences = async (level: string, recommendedCourseId: string) => {
     try {
-      // En lugar de consultar la estructura de la tabla, intentaremos actualizar directamente 
-      // los campos y manejamos posibles errores si no existen
-      const updateObject = {
-        preferred_level: level,
-        recommended_course: recommendedCourseId,
-        completed_assessment: true
-      };
-      
       const { error } = await supabase
         .from('profiles')
-        .update(updateObject)
+        .update({
+          preferred_level: level,
+          recommended_course: recommendedCourseId,
+          completed_assessment: true
+        })
         .eq('id', user.id);
       
       if (error) {

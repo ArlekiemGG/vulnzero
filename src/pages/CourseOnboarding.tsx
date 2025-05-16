@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Lightbulb, Route } from 'lucide-react';
+import { ProfileWithPreferences } from '@/services/course-progress/types';
 
 const CourseOnboarding = () => {
   const { user } = useAuth();
@@ -36,11 +37,17 @@ const CourseOnboarding = () => {
         .eq('id', user.id)
         .single();
       
-      if (!error && profile) {
+      if (error) {
+        console.error('Error checking user assessment:', error);
+        return;
+      }
+      
+      if (profile) {
+        const userProfile = profile as ProfileWithPreferences;
         // Safely handle potential missing fields
-        setCompletedAssessment(profile.completed_assessment || false);
-        setLevel(profile.preferred_level || '');
-        setRecommendedCourseId(profile.recommended_course || '');
+        setCompletedAssessment(userProfile.completed_assessment || false);
+        setLevel(userProfile.preferred_level || '');
+        setRecommendedCourseId(userProfile.recommended_course || '');
       }
     } catch (error) {
       console.error('Error checking user assessment:', error);
@@ -55,16 +62,13 @@ const CourseOnboarding = () => {
     // Update user profile with assessment results
     if (user) {
       try {
-        // Intentamos actualizar directamente los campos y manejamos posibles errores
-        const updateObject = {
-          preferred_level: level,
-          recommended_course: courseId,
-          completed_assessment: true
-        };
-        
         const { error } = await supabase
           .from('profiles')
-          .update(updateObject)
+          .update({
+            preferred_level: level,
+            recommended_course: courseId,
+            completed_assessment: true
+          })
           .eq('id', user.id);
         
         if (error) {

@@ -365,12 +365,15 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          completed_assessment: boolean | null
           completed_challenges: number | null
           created_at: string | null
           id: string
           level: number | null
           points: number | null
+          preferred_level: string | null
           rank: number | null
+          recommended_course: string | null
           role: string | null
           solved_machines: number | null
           updated_at: string | null
@@ -378,12 +381,15 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          completed_assessment?: boolean | null
           completed_challenges?: number | null
           created_at?: string | null
           id: string
           level?: number | null
           points?: number | null
+          preferred_level?: string | null
           rank?: number | null
+          recommended_course?: string | null
           role?: string | null
           solved_machines?: number | null
           updated_at?: string | null
@@ -391,12 +397,15 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          completed_assessment?: boolean | null
           completed_challenges?: number | null
           created_at?: string | null
           id?: string
           level?: number | null
           points?: number | null
+          preferred_level?: string | null
           rank?: number | null
+          recommended_course?: string | null
           role?: string | null
           solved_machines?: number | null
           updated_at?: string | null

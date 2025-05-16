@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Brain, Target, BarChart } from 'lucide-react';
+import { ProfileWithPreferences } from '@/services/course-progress/types';
 
 const CourseWelcome = () => {
   const { user } = useAuth();
@@ -30,8 +31,16 @@ const CourseWelcome = () => {
         .eq('id', user.id)
         .single();
       
-      // Safely handle the case where the field might not exist
-      setCompletedAssessment(profile ? !!profile.completed_assessment : false);
+      if (error) {
+        console.error('Error al verificar el perfil:', error);
+        setCompletedAssessment(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Manejar el perfil con seguridad comprobando si los campos existen
+      const userProfile = profile as ProfileWithPreferences;
+      setCompletedAssessment(userProfile?.completed_assessment || false);
     } catch (error) {
       console.error('Error checking assessment status:', error);
       setCompletedAssessment(false);
