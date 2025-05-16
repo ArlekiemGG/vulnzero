@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { courseProgressService } from '@/services/course-progress-service';
+import { useUser } from '@/contexts/UserContext';
 import type { 
   CourseProgressHook, 
   CompletedLessonsMap, 
@@ -17,6 +18,22 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
   const [completedQuizzes, setCompletedQuizzes] = useState<CompletedQuizzesMap>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const { detailedProgress, refreshUserStats } = useUser();
+
+  // Intentar recuperar progreso del curso desde el contexto de usuario
+  useEffect(() => {
+    if (detailedProgress && courseId && !isLoading) {
+      // Buscar este curso en el detailedProgress
+      const courseProgress = detailedProgress.detailed_progress.course_progress.find(
+        course => course.course_id === courseId
+      );
+      
+      if (courseProgress) {
+        console.log(`useUserCourseProgress: Encontrado progreso para curso ${courseId} en caché global:`, courseProgress);
+        setProgress(courseProgress.progress_percentage);
+      }
+    }
+  }, [detailedProgress, courseId, isLoading]);
 
   // Función para cargar el progreso del usuario
   const loadUserProgress = useCallback(async () => {
@@ -106,6 +123,9 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
         setProgress(updatedProgressData.progress);
         console.log(`useUserCourseProgress: Updated progress from backend: ${updatedProgressData.progress}%`);
         
+        // Actualizar el progreso global del usuario
+        await refreshUserStats();
+        
         return true;
       } else {
         console.log("useUserCourseProgress: Failed to mark lesson as completed in backend");
@@ -167,6 +187,9 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
         setProgress(updatedProgressData.progress);
         console.log(`useUserCourseProgress: Updated progress after quiz: ${updatedProgressData.progress}%`);
         
+        // Actualizar el progreso global del usuario
+        await refreshUserStats();
+        
         toast({
           title: "Quiz completado",
           description: `Has obtenido ${score}% de respuestas correctas`
@@ -191,6 +214,7 @@ export const useUserCourseProgress = (courseId?: string, userId?: string): Cours
   // Método para forzar la recarga del progreso
   const refreshProgress = async (): Promise<void> => {
     await loadUserProgress();
+    await refreshUserStats();
   };
 
   return {

@@ -1,8 +1,10 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase, queries } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
+import { useUserProgress, UserStats, UserProgress } from '@/hooks/use-user-progress';
 
+// Mantenemos la interfaz UserStats original para compatibilidad
 export interface UserStats {
   level: number;
   points: number;
@@ -17,6 +19,7 @@ interface UserContextType {
   userStats: UserStats;
   loading: boolean;
   refreshUserStats: () => Promise<void>;
+  detailedProgress: UserProgress | null;
 }
 
 const defaultUserStats: UserStats = {
@@ -33,6 +36,7 @@ const UserContext = createContext<UserContextType>({
   userStats: defaultUserStats,
   loading: true,
   refreshUserStats: async () => {},
+  detailedProgress: null,
 });
 
 export const useUser = () => useContext(UserContext);
@@ -40,130 +44,131 @@ export const useUser = () => useContext(UserContext);
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [userStats, setUserStats] = useState<UserStats>(defaultUserStats);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchUserProfile = async () => {
-    if (!user) {
-      setLoading(false);
-      setUserStats(defaultUserStats);
-      return;
-    }
-
-    try {
-      console.log('Fetching user profile for:', user.id);
-      setLoading(true);
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
-      }
-
-      if (profile) {
-        console.log('User profile loaded:', profile);
-        // Calculate progress to next level (simple formula: need 500 points per level)
-        const pointsPerLevel = 500;
-        const currentLevelPoints = (profile.level - 1) * pointsPerLevel;
-        const nextLevelPoints = profile.level * pointsPerLevel;
-        const pointsInCurrentLevel = profile.points - currentLevelPoints;
-        const progressToNextLevel = Math.min(100, Math.round((pointsInCurrentLevel / pointsPerLevel) * 100));
-        
-        setUserStats({
-          level: profile.level || 1,
-          points: profile.points || 0,
-          pointsToNextLevel: nextLevelPoints - profile.points,
-          progress: progressToNextLevel,
-          rank: profile.rank || 0,
-          solvedMachines: profile.solved_machines || 0,
-          completedChallenges: profile.completed_challenges || 0,
-        });
-        console.log('User stats updated');
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const { userProgress, isLoading, refreshProgress } = useUserProgress();
+  
+  // Actualizar las estadísticas del usuario cuando cambia el progreso
   useEffect(() => {
-    fetchUserProfile();
-    
-    // Subscribe to profile changes and activity changes
-    if (user) {
-      // Subscribe to profile updates
-      const profileSubscription = supabase
-        .channel('schema-db-changes-profile')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('Profile updated:', payload);
-            fetchUserProfile();
-          }
-        )
-        .subscribe();
+    if (userProgress) {
+      const stats = userProgress.user_stats;
       
-      // Subscribe to new activities (for CTF registrations, etc.)
-      const activitySubscription = supabase
-        .channel('schema-db-changes-activities')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'user_activities',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('New activity detected:', payload);
-            fetchUserProfile();
-          }
-        )
-        .subscribe();
+      // Calcular progreso al siguiente nivel (fórmula simple: 500 puntos por nivel)
+      const pointsPerLevel = 500;
+      const currentLevelPoints = (stats.level - 1) * pointsPerLevel;
+      const nextLevelPoints = stats.level * pointsPerLevel;
+      const pointsInCurrentLevel = stats.points - currentLevelPoints;
+      const progressToNextLevel = Math.min(100, Math.round((pointsInCurrentLevel / pointsPerLevel) * 100));
       
-      // Subscribe to CTF registrations
-      const registrationSubscription = supabase
-        .channel('schema-db-changes-registrations')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'ctf_registrations',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('New CTF registration detected:', payload);
-            fetchUserProfile();
-          }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(profileSubscription);
-        supabase.removeChannel(activitySubscription);
-        supabase.removeChannel(registrationSubscription);
-      };
+      setUserStats({
+        level: stats.level || 1,
+        points: stats.points || 0,
+        pointsToNextLevel: nextLevelPoints - stats.points,
+        progress: progressToNextLevel,
+        rank: stats.rank || 0,
+        solvedMachines: stats.solved_machines || 0,
+        completedChallenges: stats.completed_courses || 0,
+      });
+      
+      console.log('Estadísticas de usuario actualizadas desde el progreso unificado');
     }
-  }, [user]);
+  }, [userProgress]);
+  
+  // Suscribirse a cambios en las tablas relevantes
+  useEffect(() => {
+    if (!user) return;
+    
+    // Suscribirse a actualizaciones del perfil
+    const profileSubscription = supabase
+      .channel('schema-db-changes-profile')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        () => {
+          console.log('Perfil actualizado, refrescando progreso');
+          refreshProgress();
+        }
+      )
+      .subscribe();
+    
+    // Suscribirse a nuevas actividades
+    const activitySubscription = supabase
+      .channel('schema-db-changes-activities')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_activities',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Nueva actividad detectada, refrescando progreso');
+          refreshProgress();
+        }
+      )
+      .subscribe();
+    
+    // Suscribirse a progreso en cursos
+    const courseProgressSubscription = supabase
+      .channel('schema-db-changes-course-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_course_progress',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Progreso de curso actualizado, refrescando progreso');
+          refreshProgress();
+        }
+      )
+      .subscribe();
+      
+    // Suscribirse a progreso en lecciones
+    const lessonProgressSubscription = supabase
+      .channel('schema-db-changes-lesson-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_lesson_progress',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Nueva lección completada, refrescando progreso');
+          refreshProgress();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(profileSubscription);
+      supabase.removeChannel(activitySubscription);
+      supabase.removeChannel(courseProgressSubscription);
+      supabase.removeChannel(lessonProgressSubscription);
+    };
+  }, [user, refreshProgress]);
 
+  // Función para actualizar estadísticas manualmente
   const refreshUserStats = async () => {
-    console.log('Manually refreshing user stats');
-    await fetchUserProfile();
+    console.log('Actualización manual del progreso del usuario solicitada');
+    await refreshProgress();
   };
 
   return (
-    <UserContext.Provider value={{ userStats, loading, refreshUserStats }}>
+    <UserContext.Provider value={{ 
+      userStats, 
+      loading: isLoading, 
+      refreshUserStats, 
+      detailedProgress: userProgress 
+    }}>
       {children}
     </UserContext.Provider>
   );

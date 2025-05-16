@@ -639,6 +639,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_progress: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       increment: {
         Args: { row_id: string; value: number }
         Returns: undefined

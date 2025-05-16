@@ -1,16 +1,17 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, Database, Book, Calendar, 
   Flag, Activity, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ChallengeService } from '@/components/challenges/ChallengeService';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProgressSummary } from './ProgressSummary';
+import { useUser } from '@/contexts/UserContext';
 
 interface SidebarProps {
   userStats: {
@@ -26,13 +27,14 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
   const { user } = useAuth();
-  const [weeklyChallenge, setWeeklyChallenge] = useState<{
+  const { detailedProgress } = useUser();
+  const [weeklyChallenge, setWeeklyChallenge] = React.useState<{
     title: string;
     progress: number;
     total: number;
   } | null>(null);
   
-  useEffect(() => {
+  React.useEffect(() => {
     const loadWeeklyChallenge = async () => {
       if (!user) return;
       
@@ -65,19 +67,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 pt-16 bg-cybersec-black border-r border-cybersec-darkgray">
       <div className="px-4 py-6">
-        <div className="neon-border p-4 rounded-lg bg-cybersec-darkgray mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Nivel {userStats.level}</span>
-            <Badge variant="outline" className="border-cybersec-electricblue text-cybersec-electricblue">
-              Rank #{userStats.rank || '-'}
-            </Badge>
-          </div>
-          <Progress value={userStats.progress} className="h-2 bg-cybersec-darkgray" />
-          <div className="flex justify-between text-xs mt-2">
-            <span>{userStats.points} pts</span>
-            <span>{userStats.pointsToNextLevel} pts para nivel {userStats.level + 1}</span>
-          </div>
-        </div>
+        {/* Reemplazamos el bloque anterior con nuestro nuevo componente */}
+        <ProgressSummary />
         
         <div className="mb-6">
           <h3 className="text-xs uppercase tracking-wider mb-3 text-cybersec-electricblue">Estadísticas</h3>
@@ -113,6 +104,24 @@ const Sidebar: React.FC<SidebarProps> = ({ userStats }) => {
             </Button>
           ))}
         </nav>
+
+        {detailedProgress && detailedProgress.detailed_progress.machine_progress.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xs uppercase tracking-wider mb-3 text-cybersec-electricblue">
+              Máquinas Recientes
+            </h3>
+            <div className="space-y-2">
+              {detailedProgress.detailed_progress.machine_progress.slice(0, 3).map((machine, idx) => (
+                <div key={idx} className="text-sm flex justify-between items-center">
+                  <div className="truncate max-w-[70%]">{machine.machine_id}</div>
+                  <Badge variant={machine.completed ? "success" : "default"}>
+                    {machine.completed ? "Completada" : `${machine.progress}%`}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-8">
           <div className="neon-border-blue p-3 rounded-lg bg-cybersec-darkgray">
