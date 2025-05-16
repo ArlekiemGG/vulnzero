@@ -23,7 +23,7 @@ const Courses: React.FC = () => {
   }, []);
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${user ? 'has-sidebar' : ''}`}>
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       

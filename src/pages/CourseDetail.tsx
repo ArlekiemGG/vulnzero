@@ -41,7 +41,7 @@ const CourseDetailPage = () => {
   console.log("CourseDetailPage: courseId recibido:", courseId);
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${user ? 'has-sidebar' : ''}`}>
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
