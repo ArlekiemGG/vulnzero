@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface MarkdownRendererProps {
   content: string;
@@ -14,7 +16,7 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 300);
+    }, 100); // Reduced delay for better performance
 
     return () => clearTimeout(timer);
   }, [content]);
@@ -35,7 +37,28 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   }
 
   return (
-    <ReactMarkdown className="prose prose-invert max-w-none">
+    <ReactMarkdown
+      className="prose prose-invert max-w-none"
+      components={{
+        code({ node, inline, className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || '');
+          return !inline && match ? (
+            <SyntaxHighlighter
+              style={vscDarkPlus}
+              language={match[1]}
+              PreTag="div"
+              {...props}
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          ) : (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+      }}
+    >
       {content}
     </ReactMarkdown>
   );

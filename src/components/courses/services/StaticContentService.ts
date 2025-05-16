@@ -135,7 +135,7 @@ El hacking ético requiere un profundo conocimiento técnico y un fuerte código
   }
 };
 
-// Simulamos la carga de contenido Markdown desde archivos
+// Servicio para gestionar el contenido estático de los cursos
 export const StaticContentService = {
   /**
    * Obtiene el contenido estático de un curso
