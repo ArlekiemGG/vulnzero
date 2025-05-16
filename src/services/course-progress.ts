@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { ProgressResult } from '@/types/course-progress';
 
@@ -12,28 +13,36 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
   if (progressError) throw progressError;
 
-  // Define the return type explicitly to avoid type inference issues
-  type LessonProgressQueryResult = {
-    data: Array<{lesson_id: string; completed: boolean}> | null;
-    error: Error | null;
-  };
+  // Define explicit interfaces to avoid deep type instantiation issues
+  interface LessonProgressItem {
+    lesson_id: string;
+    completed: boolean;
+  }
 
-  // Use explicit typing to avoid deep inference
-  const lessonProgressResult: LessonProgressQueryResult = await supabase
+  interface LessonProgressResult {
+    data: LessonProgressItem[] | null;
+    error: Error | null;
+  }
+
+  // Use the explicit interface for the query result
+  const lessonProgressResult = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
     
-  if (lessonProgressResult.error) throw lessonProgressResult.error;
+  // Cast the result to our explicit interface to solve the deep instantiation error
+  const typedResult = lessonProgressResult as unknown as LessonProgressResult;
+  
+  if (typedResult.error) throw typedResult.error;
 
   // Process and set data
   const progress = progressData?.progress_percentage || 0;
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
-    lessonProgressResult.data.forEach(item => {
+  if (typedResult.data && Array.isArray(typedResult.data)) {
+    typedResult.data.forEach(item => {
       if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
