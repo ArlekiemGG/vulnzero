@@ -3,12 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourseSections from './CourseSections';
 import { SectionWithLessons } from '../types';
 import MarkdownRenderer from './MarkdownRenderer';
+import type { CompletedLessonsMap } from '@/types/course-progress';
 
 interface CourseContentProps {
   sections: SectionWithLessons[];
   courseId: string;
   courseDescription: string;
-  completedLessons: Record<string, boolean>;
+  completedLessons: CompletedLessonsMap;
 }
 
 const CourseContent = ({ sections, courseId, courseDescription, completedLessons }: CourseContentProps) => {
