@@ -18,7 +18,7 @@ export async function getCourseProgress(userId: string, courseId: string) {
  * Obtiene el progreso de las lecciones de un curso para un usuario
  */
 export async function getLessonProgress(userId: string, courseId: string) {
-  // Usamos 'unknown' y luego hacemos un cast seguro para evitar problemas de tipo
+  // Usamos un tipado más explícito para evitar problemas de tipo
   const result = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
@@ -54,7 +54,7 @@ export async function updateLessonProgress(id: string, data: Partial<LessonProgr
 /**
  * Crea un nuevo registro de progreso de lección
  */
-export async function createLessonProgress(data: Partial<LessonProgressItem>) {
+export async function createLessonProgress(data: LessonProgressItem) {
   return supabase
     .from('user_lesson_progress')
     .insert(data);
@@ -64,7 +64,7 @@ export async function createLessonProgress(data: Partial<LessonProgressItem>) {
  * Cuenta el total de lecciones en un curso
  */
 export async function countTotalLessons(courseId: string) {
-  // Usamos 'unknown' para evitar problemas de tipo
+  // Usamos un tipado más específico para evitar problemas
   const result = await supabase
     .from('user_lesson_progress')
     .select('*', { count: 'exact', head: true })
@@ -77,7 +77,7 @@ export async function countTotalLessons(courseId: string) {
  * Cuenta las lecciones completadas por un usuario en un curso
  */
 export async function countCompletedLessons(userId: string, courseId: string) {
-  // Usamos 'unknown' para evitar problemas de tipo
+  // Usamos un tipado más específico para evitar problemas
   const result = await supabase
     .from('user_lesson_progress')
     .select('*')
@@ -113,7 +113,7 @@ export async function updateCourseProgressRecord(id: string, data: Partial<Cours
 /**
  * Crea un nuevo registro de progreso de curso
  */
-export async function createCourseProgressRecord(data: Partial<CourseProgressItem>) {
+export async function createCourseProgressRecord(data: CourseProgressItem) {
   return supabase
     .from('user_course_progress')
     .insert(data);

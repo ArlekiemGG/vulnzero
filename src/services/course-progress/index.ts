@@ -10,7 +10,7 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   const { data: progressData, error: progressError } = await queries.getCourseProgress(userId, courseId);
   if (progressError) throw progressError;
 
-  // Fetch lesson progress data - cast a any para evitar el error de tipo
+  // Fetch lesson progress data - tipado explícitamente para evitar error de instantiación profunda
   const lessonProgressResult: any = await queries.getLessonProgress(userId, courseId);
   if (lessonProgressResult.error) throw lessonProgressResult.error;
   
@@ -52,7 +52,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
     
     if (result.error) throw result.error;
   } else {
-    // Create new record
+    // Create new record - proveer todos los campos requeridos
     const result = await queries.createLessonProgress({
       user_id: userId,
       course_id: courseId,
@@ -93,7 +93,7 @@ export async function saveQuizResults(
     const result = await queries.updateLessonProgress(existingLesson.id, lessonData);
     if (result.error) throw result.error;
   } else {
-    // Create new lesson progress record
+    // Create new lesson progress record - proveer todos los campos requeridos
     const result = await queries.createLessonProgress({
       user_id: userId,
       course_id: courseId,
@@ -144,12 +144,13 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     // Update existing record
     await queries.updateCourseProgressRecord(existingProgress.id, updateData);
   } else {
-    // Create new record
+    // Create new record - proveer todos los campos requeridos
     await queries.createCourseProgressRecord({
       user_id: userId,
       course_id: courseId,
       ...updateData,
-      started_at: new Date().toISOString()
+      started_at: new Date().toISOString(),
+      progress_percentage: progressPercentage
     });
   }
   
