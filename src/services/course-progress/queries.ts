@@ -5,7 +5,7 @@ import { LessonProgressItem, CourseProgressItem } from './types';
 /**
  * Obtiene los datos de progreso de un curso para un usuario
  */
-export async function getCourseProgress(userId: string, courseId: string) {
+export async function getCourseProgress(userId: string, courseId: string): Promise<any> {
   return supabase
     .from('user_course_progress')
     .select('progress_percentage, completed')
@@ -42,7 +42,7 @@ export async function checkLessonProgressExists(userId: string, courseId: string
 /**
  * Actualiza un progreso de lección existente
  */
-export async function updateLessonProgress(id: string, data: Partial<LessonProgressItem>) {
+export async function updateLessonProgress(id: string, data: Partial<LessonProgressItem>): Promise<any> {
   return supabase
     .from('user_lesson_progress')
     .update(data)
@@ -52,7 +52,7 @@ export async function updateLessonProgress(id: string, data: Partial<LessonProgr
 /**
  * Crea un nuevo registro de progreso de lección
  */
-export async function createLessonProgress(data: LessonProgressItem) {
+export async function createLessonProgress(data: LessonProgressItem): Promise<any> {
   return supabase
     .from('user_lesson_progress')
     .insert([data]); // Wrapping in array to fix type issue
@@ -84,7 +84,7 @@ export async function countCompletedLessons(userId: string, courseId: string): P
 /**
  * Verifica si existe un progreso de curso
  */
-export async function checkCourseProgressExists(userId: string, courseId: string) {
+export async function checkCourseProgressExists(userId: string, courseId: string): Promise<any> {
   return supabase
     .from('user_course_progress')
     .select('id')
@@ -96,7 +96,7 @@ export async function checkCourseProgressExists(userId: string, courseId: string
 /**
  * Actualiza un progreso de curso existente
  */
-export async function updateCourseProgressRecord(id: string, data: Partial<CourseProgressItem>) {
+export async function updateCourseProgressRecord(id: string, data: Partial<CourseProgressItem>): Promise<any> {
   return supabase
     .from('user_course_progress')
     .update(data)
@@ -106,7 +106,7 @@ export async function updateCourseProgressRecord(id: string, data: Partial<Cours
 /**
  * Crea un nuevo registro de progreso de curso
  */
-export async function createCourseProgressRecord(data: CourseProgressItem) {
+export async function createCourseProgressRecord(data: CourseProgressItem): Promise<any> {
   return supabase
     .from('user_course_progress')
     .insert([data]); // Wrapping in array to fix type issue
