@@ -134,7 +134,7 @@ const Auth = () => {
         </Tabs>
         
         <div className="mt-8 text-center text-gray-500 text-sm">
-          <p>&copy; 2023 VulnZero. Todos los derechos reservados.</p>
+          <p>&copy; 2025 VulnZero. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>
