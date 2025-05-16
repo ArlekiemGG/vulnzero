@@ -1,6 +1,5 @@
 
 import { useEffect } from "react";
-import "./App.css";
 import { HashRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
