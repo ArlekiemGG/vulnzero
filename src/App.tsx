@@ -21,6 +21,7 @@ import Index from "./pages/Index";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "./contexts/AuthContext";
 import Labs from "./pages/Labs";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Import the middleware
 import { RouteMiddleware } from "./middleware";
@@ -28,36 +29,41 @@ import { RouteMiddleware } from "./middleware";
 // Import the new course page component
 import LessonPage from "./pages/courses/[courseId]/learn/[moduleId]/[lessonId]/page";
 
+// Create a QueryClient instance
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <HashRouter>
-      <AuthProvider>
-        <RouteMiddleware />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/courses/:courseId" element={<CourseDetail />} />
-          <Route path="/courses/:courseId/learn/:moduleId/:lessonId" element={<LessonPage />} />
-          <Route path="/courses/onboarding" element={<CourseOnboarding />} />
-          <Route path="/courses/:courseId/onboarding" element={<CourseOnboarding />} />
-          
-          {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/machines" element={<ProtectedRoute><Machines /></ProtectedRoute>} />
-          <Route path="/machines/:machineId" element={<ProtectedRoute><MachineDetail /></ProtectedRoute>} />
-          <Route path="/machines/:machineId/session/:sessionId" element={<ProtectedRoute><MachineSessionDetail /></ProtectedRoute>} />
-          <Route path="/ctfs" element={<ProtectedRoute><CTFs /></ProtectedRoute>} />
-          <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
-          <Route path="/labs" element={<ProtectedRoute><Labs /></ProtectedRoute>} />
-          <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
-          
-          {/* Fallback route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <RouteMiddleware />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:courseId" element={<CourseDetail />} />
+            <Route path="/courses/:courseId/learn/:moduleId/:lessonId" element={<LessonPage />} />
+            <Route path="/courses/onboarding" element={<CourseOnboarding />} />
+            <Route path="/courses/:courseId/onboarding" element={<CourseOnboarding />} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/machines" element={<ProtectedRoute><Machines /></ProtectedRoute>} />
+            <Route path="/machines/:machineId" element={<ProtectedRoute><MachineDetail /></ProtectedRoute>} />
+            <Route path="/machines/:machineId/session/:sessionId" element={<ProtectedRoute><MachineSessionDetail /></ProtectedRoute>} />
+            <Route path="/ctfs" element={<ProtectedRoute><CTFs /></ProtectedRoute>} />
+            <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
+            <Route path="/labs" element={<ProtectedRoute><Labs /></ProtectedRoute>} />
+            <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+            
+            {/* Fallback route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
     </HashRouter>
   );
 }
