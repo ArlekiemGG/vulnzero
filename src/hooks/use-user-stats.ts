@@ -38,13 +38,13 @@ export const useUserStats = (userId?: string) => {
         setLoading(true);
         
         // Fetch user points and level
-        const { data: userData, error: userError } = await supabase
-          .from('user_profiles')
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
           .select('points, level')
-          .eq('user_id', userId)
+          .eq('id', userId)
           .single();
           
-        if (userError) throw userError;
+        if (profileError) throw profileError;
         
         // Fetch solved machines count
         const { count: solvedMachines, error: machinesError } = await supabase
@@ -57,21 +57,21 @@ export const useUserStats = (userId?: string) => {
         
         // Fetch completed challenges count
         const { count: completedChallenges, error: challengesError } = await supabase
-          .from('user_challenge_progress')
+          .from('challenges_progress')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('completed', true);
           
         if (challengesError) throw challengesError;
         
-        // Fetch user rank
+        // Fetch user rank (assuming there's a function for this)
         const { data: rankData, error: rankError } = await supabase
-          .rpc('get_user_rank', { user_id: userId });
+          .rpc('get_user_ranking', { user_id: userId });
           
         if (rankError) throw rankError;
         
-        const points = userData?.points || 0;
-        const level = userData?.level || 1;
+        const points = profileData?.points || 0;
+        const level = profileData?.level || 1;
         const pointsToNextLevel = level * 1000;
         const progress = (points % pointsToNextLevel) / pointsToNextLevel * 100;
         
