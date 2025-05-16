@@ -14,29 +14,32 @@ const CourseWelcome = () => {
   const navigate = useNavigate();
   const [completedAssessment, setCompletedAssessment] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
       checkUserAssessment();
     } else {
       setLoading(false);
+      setProfileLoaded(true);
     }
   }, [user]);
 
   const checkUserAssessment = async () => {
     try {
       setLoading(true);
-      console.log("Verificando evaluación para usuario:", user.id);
+      console.log("Verificando evaluación para usuario:", user?.id);
       
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', user?.id)
         .single();
       
       if (error) {
         console.error('Error al verificar el perfil:', error);
         setCompletedAssessment(false);
+        setProfileLoaded(true);
         setLoading(false);
         return;
       }
@@ -46,11 +49,15 @@ const CourseWelcome = () => {
       
       // Manejar el perfil con seguridad comprobando si los campos existen
       const userProfile = profile as ProfileWithPreferences;
-      setCompletedAssessment(userProfile?.completed_assessment || false);
-      console.log("Estado de completed_assessment:", userProfile?.completed_assessment);
+      const hasCompletedAssessment = Boolean(userProfile?.completed_assessment);
+      
+      console.log("Estado de completed_assessment:", hasCompletedAssessment);
+      setCompletedAssessment(hasCompletedAssessment);
+      setProfileLoaded(true);
     } catch (error) {
       console.error('Error checking assessment status:', error);
       setCompletedAssessment(false);
+      setProfileLoaded(true);
       toast({
         title: "Error",
         description: "No se pudo verificar el estado de la evaluación",
@@ -65,11 +72,16 @@ const CourseWelcome = () => {
     navigate('/courses/onboarding');
   };
 
-  // No renderizar nada si está cargando
-  if (loading) return null;
+  // Mostrar pantalla de carga mientras se verifica el estado
+  if (loading) {
+    return <div className="text-center py-8">Cargando...</div>;
+  }
 
   // Verificar en consola los valores que determinan la visualización del botón
-  console.log("Estado final - Usuario:", !!user, "Evaluación completada:", completedAssessment);
+  console.log("Estado final: Usuario:", !!user, "Perfil cargado:", profileLoaded, "Evaluación completada:", completedAssessment);
+
+  const shouldShowButton = user && profileLoaded && !completedAssessment;
+  console.log("¿Debería mostrar botón?", shouldShowButton);
 
   return (
     <Card className="mb-8 bg-gradient-to-r from-indigo-900/50 to-purple-900/30 border-indigo-700/50">
@@ -118,9 +130,8 @@ const CourseWelcome = () => {
             </div>
             
             {user ? (
-              // Si hay usuario autenticado, mostrar el botón si NO ha completado la evaluación
-              // (La condición se invierte para mostrar el botón cuando completedAssessment es false)
-              !completedAssessment && (
+              shouldShowButton ? (
+                // Mostrar el botón solo si el usuario está autenticado y NO ha completado la evaluación
                 <>
                   <Button onClick={handleStartAssessment} size="lg" variant="default">
                     Realizar evaluación inicial
@@ -129,6 +140,11 @@ const CourseWelcome = () => {
                     Completa una breve evaluación para personalizar tu experiencia de aprendizaje.
                   </p>
                 </>
+              ) : (
+                // Cuando el usuario ya completó la evaluación
+                <p className="text-sm text-white mt-2 p-3 bg-indigo-800/40 rounded-md">
+                  Ya has completado la evaluación inicial. Explora los cursos recomendados para ti.
+                </p>
               )
             ) : (
               <div className="space-y-3">
