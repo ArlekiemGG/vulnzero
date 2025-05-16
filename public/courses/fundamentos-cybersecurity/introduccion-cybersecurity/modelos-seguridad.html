@@ -1,0 +1,298 @@
+
+<h2>Modelos de Seguridad</h2>
+
+<p>Los modelos de seguridad proporcionan marcos conceptuales para comprender y aplicar principios de ciberseguridad de manera sistemática. Estos modelos ayudan a las organizaciones a implementar controles de seguridad efectivos y a evaluar su postura de seguridad general.</p>
+
+<h3>Modelo de Defensa en Profundidad</h3>
+
+<p>El concepto de defensa en profundidad se origina en estrategias militares y se aplica a la ciberseguridad implementando múltiples capas de seguridad para proteger los activos valiosos. Si un atacante logra penetrar una capa, aún debe superar otras capas de protección.</p>
+
+<div class="bg-blue-900 p-6 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-4">Capas de la Defensa en Profundidad</h4>
+  
+  <div class="space-y-4">
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">1</span>
+      <div>
+        <strong class="text-white">Políticas, Procedimientos y Concienciación</strong>
+        <p class="text-blue-200">El primer nivel de defensa incluye las políticas de seguridad, procedimientos y la concienciación de los usuarios.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">2</span>
+      <div>
+        <strong class="text-white">Seguridad Física</strong>
+        <p class="text-blue-200">Protección de instalaciones, control de acceso físico, y medidas contra amenazas ambientales.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">3</span>
+      <div>
+        <strong class="text-white">Seguridad Perimetral</strong>
+        <p class="text-blue-200">Firewalls, sistemas de detección de intrusiones (IDS), y otras medidas para proteger el perímetro de la red.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">4</span>
+      <div>
+        <strong class="text-white">Seguridad de Red Interna</strong>
+        <p class="text-blue-200">Segmentación de red, monitoreo de tráfico y controles de acceso a nivel de red.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">5</span>
+      <div>
+        <strong class="text-white">Seguridad de Host</strong>
+        <p class="text-blue-200">Sistemas operativos endurecidos, antivirus, y detección de amenazas a nivel de host.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">6</span>
+      <div>
+        <strong class="text-white">Seguridad de Aplicación</strong>
+        <p class="text-blue-200">Autenticación, autorización, y prácticas de codificación segura.</p>
+      </div>
+    </div>
+    
+    <div class="flex items-start">
+      <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full mr-3 mt-1">7</span>
+      <div>
+        <strong class="text-white">Seguridad de Datos</strong>
+        <p class="text-blue-200">Cifrado, gestión de derechos digitales y controles de acceso a los datos.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flex justify-center my-6">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Defense_in_depth_-_security.png" alt="Modelo de Defensa en Profundidad" class="rounded-lg shadow-lg" />
+</div>
+
+<h3>El Modelo CIA (Confidencialidad, Integridad, Disponibilidad)</h3>
+
+<p>Ya mencionado en la lección anterior, el modelo CIA representa los tres pilares fundamentales de la seguridad de la información:</p>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-purple-400">Confidencialidad</h4>
+    <p>Garantiza que la información sea accesible únicamente para aquellos autorizados a tener acceso. Implementado a través de:</p>
+    <ul class="list-disc pl-5 mt-2">
+      <li>Cifrado de datos</li>
+      <li>Control de acceso basado en roles</li>
+      <li>Autenticación multifactor</li>
+    </ul>
+  </div>
+  
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-green-400">Integridad</h4>
+    <p>Asegura que los datos sean precisos y fiables, y que no hayan sido modificados de manera no autorizada. Implementado mediante:</p>
+    <ul class="list-disc pl-5 mt-2">
+      <li>Hashes criptográficos</li>
+      <li>Firmas digitales</li>
+      <li>Checksums y validación de datos</li>
+    </ul>
+  </div>
+  
+  <div class="bg-gray-800 p-4 rounded-lg">
+    <h4 class="font-bold text-blue-400">Disponibilidad</h4>
+    <p>Garantiza que los sistemas y datos estén disponibles cuando se necesiten. Asegurado a través de:</p>
+    <ul class="list-disc pl-5 mt-2">
+      <li>Sistemas redundantes</li>
+      <li>Copias de seguridad</li>
+      <li>Planes de continuidad de negocio</li>
+      <li>Protección contra DDoS</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Modelo de Parkerian Hexad</h3>
+
+<p>Este modelo amplía el modelo CIA tradicional para abordar aspectos adicionales de la seguridad de la información:</p>
+
+<ul>
+  <li><strong>Confidencialidad:</strong> Ya cubierto en el modelo CIA.</li>
+  <li><strong>Integridad:</strong> Ya cubierto en el modelo CIA.</li>
+  <li><strong>Disponibilidad:</strong> Ya cubierto en el modelo CIA.</li>
+  <li><strong>Posesión o Control:</strong> Se refiere a la custodia o control físico de los datos, independientemente de la confidencialidad.</li>
+  <li><strong>Autenticidad:</strong> Garantiza que los datos provienen de la fuente declarada y no han sido falsificados.</li>
+  <li><strong>Utilidad:</strong> Asegura que los datos son utilizables y útiles para el propósito previsto.</li>
+</ul>
+
+<h3>El Modelo AAA (Autenticación, Autorización, Auditoría)</h3>
+
+<p>El modelo AAA es un marco conceptual para controlar el acceso a recursos informáticos y rastrear su uso:</p>
+
+<div class="bg-gray-800 p-6 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-3">Los tres componentes del modelo AAA</h4>
+  
+  <div class="space-y-6">
+    <div>
+      <h5 class="text-yellow-400 font-bold">Autenticación</h5>
+      <p>El proceso de verificar la identidad de un usuario o sistema. Responde a la pregunta: "¿Eres quien dices ser?"</p>
+      <ul class="list-disc pl-5 mt-2">
+        <li>Algo que sabes (contraseña, PIN)</li>
+        <li>Algo que tienes (token, tarjeta inteligente)</li>
+        <li>Algo que eres (biometría)</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h5 class="text-yellow-400 font-bold">Autorización</h5>
+      <p>El proceso de determinar qué acciones puede realizar un usuario autenticado. Responde a la pregunta: "¿Qué tienes permitido hacer?"</p>
+      <ul class="list-disc pl-5 mt-2">
+        <li>Control de acceso basado en roles (RBAC)</li>
+        <li>Listas de control de acceso (ACL)</li>
+        <li>Políticas basadas en atributos</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h5 class="text-yellow-400 font-bold">Auditoría</h5>
+      <p>El proceso de registrar y revisar las acciones realizadas por los usuarios. Responde a la pregunta: "¿Qué has hecho?"</p>
+      <ul class="list-disc pl-5 mt-2">
+        <li>Logging de eventos</li>
+        <li>Monitoreo de actividades</li>
+        <li>Análisis forense</li>
+      </ul>
+      <pre class="bg-gray-900 text-green-400 text-sm p-2 mt-2 rounded overflow-x-auto">
+May 25 14:30:27 server sshd[12345]: Accepted password for user admin from 192.168.1.100 port 52413 ssh2
+May 25 14:30:45 server sudo: admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow</pre>
+    </div>
+  </div>
+</div>
+
+<h3>El Principio de Privilegio Mínimo</h3>
+
+<p>Este principio establece que un usuario, proceso o sistema debe tener únicamente los privilegios necesarios para realizar su función, ni más ni menos.</p>
+
+<div class="bg-yellow-900 p-6 rounded-lg my-6">
+  <h4 class="text-yellow-200 font-bold mb-2">CASO PRÁCTICO:</h4>
+  <p class="text-yellow-100 mb-3">En lugar de dar acceso de administrador a todos los usuarios, una empresa implementa el principio de privilegio mínimo:</p>
+  <ul class="list-disc pl-5 text-yellow-100">
+    <li>Los desarrolladores solo tienen acceso a los servidores de desarrollo</li>
+    <li>El equipo de marketing solo puede acceder a los CMS y herramientas de marketing</li>
+    <li>Los administradores de sistemas tienen acceso elevado, pero solo a los sistemas específicos que gestionan</li>
+    <li>Se utilizan cuentas separadas para tareas administrativas y uso diario</li>
+  </ul>
+</div>
+
+<p>La aplicación de este principio reduce significativamente la superficie de ataque y limita el daño potencial en caso de compromiso de una cuenta.</p>
+
+<h3>Modelo de Control de Acceso Basado en Roles (RBAC)</h3>
+
+<p>El RBAC asigna permisos a roles específicos en lugar de a usuarios individuales. Los usuarios reciben asignaciones a roles según su función en la organización.</p>
+
+<pre class="bg-gray-800 text-green-400 p-4 my-4 rounded overflow-x-auto">
+# Ejemplo simplificado de configuración RBAC
+
+# Definición de roles
+Rol: Administrador
+  Permisos: crear_usuario, modificar_usuario, eliminar_usuario, ver_logs
+
+Rol: Editor
+  Permisos: crear_contenido, modificar_contenido, publicar_contenido
+
+Rol: Autor
+  Permisos: crear_contenido, modificar_contenido_propio
+
+Rol: Lector
+  Permisos: ver_contenido
+
+# Asignación de usuarios a roles
+Usuario: alice@empresa.com
+  Roles: Administrador
+
+Usuario: bob@empresa.com
+  Roles: Editor, Autor
+
+Usuario: charlie@empresa.com
+  Roles: Autor
+
+Usuario: dave@empresa.com
+  Roles: Lector</pre>
+
+<div class="flex justify-center my-6">
+  <img src="https://anil-pace.medium.com/role-based-access-control-rbac-in-kibana-bd55a2db1264" alt="Modelo RBAC" class="rounded-lg shadow-lg" />
+</div>
+
+<h3>Modelo de Seguridad de Perímetro vs Zero Trust</h3>
+
+<p>Tradicionalmente, la seguridad de red se ha basado en el modelo de perímetro o "castillo y foso", donde se establece un fuerte perímetro de seguridad alrededor de los recursos internos. Sin embargo, este enfoque ha evolucionado hacia el modelo Zero Trust.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+  <div class="bg-gray-800 p-6 rounded-lg">
+    <h4 class="font-bold text-red-400">Modelo de Seguridad de Perímetro</h4>
+    <p class="mb-4">Se basa en establecer un fuerte perímetro defensivo alrededor de los recursos de la organización.</p>
+    <strong class="block mb-2">Características:</strong>
+    <ul class="list-disc pl-5">
+      <li>Confianza implícita en el tráfico interno</li>
+      <li>Foco en proteger los límites de la red</li>
+      <li>Enfoque "crujiente por fuera, blando por dentro"</li>
+      <li>Vulnerable a amenazas internas y brechas de perímetro</li>
+    </ul>
+  </div>
+  
+  <div class="bg-gray-800 p-6 rounded-lg">
+    <h4 class="font-bold text-green-400">Modelo Zero Trust</h4>
+    <p class="mb-4">Basado en el principio "nunca confíes, siempre verifica" - sin confianza implícita, independientemente de la ubicación.</p>
+    <strong class="block mb-2">Características:</strong>
+    <ul class="list-disc pl-5">
+      <li>Verificación estricta de cada solicitud de acceso</li>
+      <li>Autenticación multifactor continua</li>
+      <li>Principio de privilegio mínimo</li>
+      <li>Microsegmentación de redes</li>
+      <li>Monitoreo y análisis continuos</li>
+    </ul>
+  </div>
+</div>
+
+<h3>El Modelo NIST Cybersecurity Framework</h3>
+
+<p>El Marco de Ciberseguridad del Instituto Nacional de Estándares y Tecnología (NIST) proporciona un enfoque coherente y sistemático para gestionar los riesgos de ciberseguridad. Se organiza en cinco funciones principales:</p>
+
+<div class="bg-blue-900 p-6 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-4">Funciones del NIST Cybersecurity Framework</h4>
+  
+  <div class="space-y-4">
+    <div>
+      <h5 class="text-blue-200 font-bold">1. Identificar</h5>
+      <p class="text-gray-300">Desarrollar una comprensión organizacional para gestionar el riesgo de ciberseguridad para sistemas, personas, activos, datos y capacidades.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-blue-200 font-bold">2. Proteger</h5>
+      <p class="text-gray-300">Implementar salvaguardas apropiadas para garantizar la entrega de servicios críticos.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-blue-200 font-bold">3. Detectar</h5>
+      <p class="text-gray-300">Desarrollar e implementar actividades apropiadas para identificar la ocurrencia de un evento de ciberseguridad.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-blue-200 font-bold">4. Responder</h5>
+      <p class="text-gray-300">Desarrollar e implementar actividades apropiadas para tomar medidas con respecto a un incidente de ciberseguridad detectado.</p>
+    </div>
+    
+    <div>
+      <h5 class="text-blue-200 font-bold">5. Recuperar</h5>
+      <p class="text-gray-300">Desarrollar e implementar actividades apropiadas para mantener los planes de resiliencia y restaurar cualquier capacidad o servicio que se haya visto afectado debido a un incidente de ciberseguridad.</p>
+    </div>
+  </div>
+</div>
+
+<h3>Conclusión</h3>
+
+<p>Los modelos de seguridad proporcionan marcos conceptuales que ayudan a las organizaciones a implementar medidas de ciberseguridad de manera sistemática y coherente. Ningún modelo único es suficiente por sí solo; la práctica recomendada es utilizar combinaciones de estos modelos adaptadas a las necesidades específicas de cada organización.</p>
+
+<p>En las próximas lecciones, exploraremos cómo estos modelos teóricos se traducen en implementaciones prácticas de seguridad y cómo pueden aplicarse a diferentes escenarios y requisitos de seguridad.</p>
+
+<div class="bg-green-900 p-6 rounded-lg my-6">
+  <h4 class="text-white font-bold mb-2">PUNTO CLAVE:</h4>
+  <p class="text-green-100">La seguridad no es un producto o servicio que se pueda comprar e instalar, sino un proceso continuo que requiere atención constante, adaptación y mejora. Los modelos de seguridad nos ayudan a estructurar este proceso, pero la efectividad depende de su correcta implementación y adaptación a cada contexto específico.</p>
+</div>

@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
-import LessonDetailComponent from '@/components/courses/LessonDetail';
+import { useParams } from 'react-router-dom';
+import FileLessonDetail from '@/components/courses/FileLessonDetail';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
@@ -10,6 +11,11 @@ import { useUserStats } from '@/hooks/use-user-stats';
 const LessonDetail = () => {
   const { user } = useAuth();
   const { userStats } = useUserStats(user?.id);
+  const { courseId, moduleId, lessonId } = useParams<{ 
+    courseId: string; 
+    moduleId: string;
+    lessonId: string;
+  }>();
   
   useEffect(() => {
     document.title = "Lección - VulnZero";
@@ -23,7 +29,13 @@ const LessonDetail = () => {
       {user && <Sidebar userStats={userStats} />}
       
       <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
-        <LessonDetailComponent />
+        {courseId && moduleId && lessonId && (
+          <FileLessonDetail 
+            courseId={courseId} 
+            moduleId={moduleId} 
+            lessonId={lessonId} 
+          />
+        )}
       </main>
       
       <Footer />

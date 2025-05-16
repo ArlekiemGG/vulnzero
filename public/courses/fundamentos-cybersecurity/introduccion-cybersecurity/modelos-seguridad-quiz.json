@@ -1,0 +1,65 @@
+
+{
+  "questions": [
+    {
+      "id": "defense-depth",
+      "question": "¿Cuál es el principio fundamental del modelo de Defensa en Profundidad?",
+      "options": [
+        "Confiar en una única solución de seguridad muy robusta",
+        "Implementar múltiples capas de seguridad para proteger los activos",
+        "Concentrar todos los recursos en proteger el perímetro de la red",
+        "Proteger únicamente los datos más sensibles de la organización"
+      ],
+      "correctOption": 1,
+      "explanation": "El principio fundamental de la Defensa en Profundidad es implementar múltiples capas de seguridad superpuestas, de modo que si un atacante logra penetrar una capa, aún debe enfrentarse a otras capas de protección antes de alcanzar los activos valiosos."
+    },
+    {
+      "id": "parkerian-hexad",
+      "question": "¿Qué elementos adicionales añade el modelo Parkerian Hexad al tradicional modelo CIA?",
+      "options": [
+        "Privacidad, Regulación y Propiedad",
+        "Monitoreo, Detección y Respuesta",
+        "Posesión/Control, Autenticidad y Utilidad",
+        "Prevención, Detección y Corrección"
+      ],
+      "correctOption": 2,
+      "explanation": "El modelo Parkerian Hexad expande el modelo CIA (Confidencialidad, Integridad, Disponibilidad) añadiendo tres elementos adicionales: Posesión o Control, Autenticidad y Utilidad."
+    },
+    {
+      "id": "zero-trust",
+      "question": "¿Cuál es el principio central del modelo de seguridad Zero Trust?",
+      "options": [
+        "Confía pero verifica",
+        "Nunca confíes, siempre verifica",
+        "Confía en la red interna, verifica la red externa",
+        "Verificar una vez, confiar siempre"
+      ],
+      "correctOption": 1,
+      "explanation": "El principio central del modelo Zero Trust es \"nunca confíes, siempre verifica\". Este enfoque asume que las amenazas existen tanto dentro como fuera de la red, por lo que cada solicitud de acceso debe ser verificada rigurosamente, independientemente de su origen."
+    },
+    {
+      "id": "nist-framework",
+      "question": "¿Cuáles son las cinco funciones principales del Marco de Ciberseguridad NIST?",
+      "options": [
+        "Proteger, Prevenir, Detectar, Responder, Recuperar",
+        "Planificar, Implementar, Verificar, Actuar, Mejorar",
+        "Identificar, Proteger, Detectar, Responder, Recuperar",
+        "Evaluar, Mitigar, Monitorizar, Responder, Reportar"
+      ],
+      "correctOption": 2,
+      "explanation": "Las cinco funciones principales del Marco de Ciberseguridad NIST son: Identificar (comprender los riesgos), Proteger (implementar salvaguardas), Detectar (identificar incidentes), Responder (tomar medidas ante incidentes) y Recuperar (restaurar capacidades)."
+    },
+    {
+      "id": "least-privilege",
+      "question": "El Principio de Privilegio Mínimo establece que:",
+      "options": [
+        "Todos los usuarios deben tener los mismos privilegios para garantizar la equidad",
+        "Los administradores deben tener acceso total a todos los sistemas",
+        "Un usuario o sistema debe tener únicamente los privilegios necesarios para realizar su función",
+        "El acceso a los sistemas debe rotarse periódicamente entre todos los usuarios"
+      ],
+      "correctOption": 2,
+      "explanation": "El Principio de Privilegio Mínimo establece que un usuario, proceso o sistema debe tener únicamente los privilegios necesarios para realizar su función específica, ni más ni menos. Esto reduce la superficie de ataque y limita el daño potencial en caso de compromiso."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+
+{
+  "questions": [
+    {
+      "id": "cs-definition",
+      "question": "¿Qué es la ciberseguridad?",
+      "options": [
+        "Un software para mejorar el rendimiento de los ordenadores",
+        "El conjunto de tecnologías, procesos y prácticas diseñadas para proteger sistemas informáticos",
+        "Una rama de la programación para desarrollar aplicaciones web",
+        "Un método para acelerar las conexiones de internet"
+      ],
+      "correctOption": 1,
+      "explanation": "La ciberseguridad es el conjunto de tecnologías, procesos y prácticas diseñadas para proteger redes, dispositivos, programas y datos de ataques, daños o accesos no autorizados."
+    },
+    {
+      "id": "cia-triad",
+      "question": "¿Cuáles son los tres principios fundamentales de la ciberseguridad conocidos como la 'Tríada CIA'?",
+      "options": [
+        "Configuración, Implementación, Actualización",
+        "Control, Identificación, Auditoría",
+        "Confidencialidad, Integridad, Disponibilidad",
+        "Corrección, Instalación, Administración"
+      ],
+      "correctOption": 2,
+      "explanation": "La Tríada CIA se refiere a Confidencialidad (garantizar que solo usuarios autorizados accedan a la información), Integridad (mantener la precisión de los datos) y Disponibilidad (asegurar que la información esté disponible cuando se necesite)."
+    },
+    {
+      "id": "security-role",
+      "question": "¿Qué rol en ciberseguridad se encarga de realizar pruebas de penetración para identificar vulnerabilidades?",
+      "options": [
+        "Analista de Seguridad",
+        "CISO (Chief Information Security Officer)",
+        "Forense Digital",
+        "Pentester (Ethical Hacker)"
+      ],
+      "correctOption": 3,
+      "explanation": "Los Pentesters o Ethical Hackers son profesionales que utilizan técnicas de hacking de forma ética y autorizada para identificar vulnerabilidades en sistemas antes que los atacantes maliciosos puedan explotarlas."
+    },
+    {
+      "id": "security-threat",
+      "question": "¿Cuál de las siguientes NO es una amenaza común en ciberseguridad?",
+      "options": [
+        "Malware",
+        "Phishing",
+        "Firewall",
+        "Denegación de Servicio (DoS)"
+      ],
+      "correctOption": 2,
+      "explanation": "El Firewall no es una amenaza, sino una herramienta de seguridad que permite o bloquea tráfico de red basándose en reglas de seguridad predefinidas. Las otras opciones (Malware, Phishing y DoS) son tipos de amenazas o ataques cibernéticos."
+    }
+  ]
+}

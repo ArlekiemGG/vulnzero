@@ -1,0 +1,65 @@
+
+{
+  "questions": [
+    {
+      "id": "malware-type",
+      "question": "¿Qué tipo de malware cifra los archivos del usuario y exige un pago para restaurar el acceso?",
+      "options": [
+        "Spyware",
+        "Troyano",
+        "Ransomware",
+        "Gusano"
+      ],
+      "correctOption": 2,
+      "explanation": "El ransomware es un tipo de malware que cifra los archivos de la víctima y exige un pago (rescate) a cambio de la clave de descifrado. Ejemplos notables incluyen WannaCry y Petya."
+    },
+    {
+      "id": "phishing-variant",
+      "question": "¿Qué variante de phishing está dirigida específicamente a ejecutivos o personas de alto nivel?",
+      "options": [
+        "Smishing",
+        "Vishing",
+        "Whaling",
+        "Spear phishing"
+      ],
+      "correctOption": 2,
+      "explanation": "Whaling (caza de ballenas) es un tipo de phishing que se dirige específicamente a ejecutivos de alto nivel o 'peces gordos' de una organización, generalmente con mensajes personalizados relacionados con temas financieros o legales."
+    },
+    {
+      "id": "ddos-difference",
+      "question": "¿Cuál es la principal diferencia entre un ataque DoS y un ataque DDoS?",
+      "options": [
+        "Los ataques DoS son más efectivos que los DDoS",
+        "Los ataques DoS provienen de una única fuente, mientras que los DDoS utilizan múltiples fuentes coordinadas",
+        "Los ataques DDoS solo afectan a sitios web, mientras que los DoS afectan a cualquier servicio",
+        "Los ataques DoS son ilegales, mientras que los DDoS pueden ser legales en algunas circunstancias"
+      ],
+      "correctOption": 1,
+      "explanation": "La principal diferencia es que un ataque DoS (Denegación de Servicio) proviene de una única fuente o dispositivo, mientras que un DDoS (Denegación de Servicio Distribuida) utiliza múltiples dispositivos comprometidos (a menudo una botnet) para lanzar un ataque coordinado desde diferentes ubicaciones."
+    },
+    {
+      "id": "sql-injection",
+      "question": "En un ataque de inyección SQL, ¿qué significan los caracteres '--' en el siguiente ejemplo: 'admin' --'?",
+      "options": [
+        "Concatenan la consulta con otra instrucción SQL",
+        "Insertan un error deliberado para obtener mensajes de depuración",
+        "Comentan el resto de la consulta SQL, ignorando condiciones adicionales como la verificación de contraseña",
+        "Representan un comando especial para elevar privilegios en la base de datos"
+      ],
+      "correctOption": 2,
+      "explanation": "En SQL, los caracteres '--' son utilizados para iniciar un comentario de línea. En un ataque de inyección SQL, esto se usa para comentar (y por lo tanto ignorar) el resto de la consulta SQL original, que típicamente incluiría la validación de contraseña."
+    },
+    {
+      "id": "xss-type",
+      "question": "¿Qué tipo de ataque XSS almacena permanentemente el código malicioso en el servidor?",
+      "options": [
+        "XSS Reflejado",
+        "XSS basado en DOM",
+        "XSS Persistente",
+        "XSS de Sesión"
+      ],
+      "correctOption": 2,
+      "explanation": "El XSS Persistente (también conocido como XSS Almacenado) ocurre cuando el código malicioso se guarda permanentemente en los recursos del servidor objetivo, como en una base de datos. El código malicioso se sirve a las víctimas cuando solicitan la información almacenada (por ejemplo, al cargar una página con comentarios infectados)."
+    }
+  ]
+}

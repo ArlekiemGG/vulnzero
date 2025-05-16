@@ -82,7 +82,7 @@ function App() {
                 
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:courseId" element={<CourseDetail />} />
-                <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonDetail />} />
+                <Route path="/courses/:courseId/:moduleId/:lessonId" element={<LessonDetail />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
