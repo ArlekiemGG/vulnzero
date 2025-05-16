@@ -23,7 +23,7 @@ const Courses: React.FC = () => {
   }, []);
 
   return (
-    <div className={`page-wrapper ${user ? 'has-sidebar' : ''}`}>
+    <div className="page-wrapper">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
@@ -52,7 +52,7 @@ const Courses: React.FC = () => {
           </div>
 
           <CourseWelcome />
-          <CourseTabs />
+          <CourseTabs searchTerm={searchTerm} />
         </div>
       </main>
       

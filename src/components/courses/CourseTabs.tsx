@@ -1,12 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourseGrid from './CourseGrid';
 import { CourseService, Course } from './services/CourseService';
 import { Skeleton } from '@/components/ui/skeleton';
 import courseCatalog from '@/data/courses';
 
-const CourseTabs: React.FC = () => {
+interface CourseTabsProps {
+  searchTerm?: string;
+}
+
+const CourseTabs: React.FC<CourseTabsProps> = ({ searchTerm = '' }) => {
   const [activeTab, setActiveTab] = useState<string>('todos');
   const [courses, setCourses] = useState<Course[]>([]);
   const [beginnerCourses, setBeginnerCourses] = useState<Course[]>([]);
@@ -81,6 +85,34 @@ const CourseTabs: React.FC = () => {
     fetchCourses();
   }, []);
 
+  // Filtramos los cursos basados en el término de búsqueda
+  const filteredCourses = useMemo(() => {
+    if (!searchTerm.trim()) return { 
+      all: courses, 
+      beginner: beginnerCourses, 
+      intermediate: intermediateCourses, 
+      advanced: advancedCourses 
+    };
+
+    const term = searchTerm.toLowerCase().trim();
+    
+    const filterBySearchTerm = (courseList: Course[]) => {
+      return courseList.filter(course => 
+        course.title.toLowerCase().includes(term) || 
+        course.description.toLowerCase().includes(term) ||
+        course.category.toLowerCase().includes(term) ||
+        course.instructor.toLowerCase().includes(term)
+      );
+    };
+
+    return {
+      all: filterBySearchTerm(courses),
+      beginner: filterBySearchTerm(beginnerCourses),
+      intermediate: filterBySearchTerm(intermediateCourses),
+      advanced: filterBySearchTerm(advancedCourses)
+    };
+  }, [courses, beginnerCourses, intermediateCourses, advancedCourses, searchTerm]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
@@ -124,34 +156,42 @@ const CourseTabs: React.FC = () => {
       ) : (
         <>
           <TabsContent value="todos">
-            {courses.length > 0 ? (
-              <CourseGrid courses={courses} />
+            {filteredCourses.all.length > 0 ? (
+              <CourseGrid courses={filteredCourses.all} />
             ) : (
-              <p className="text-center py-8 text-gray-500">No hay cursos disponibles</p>
+              <p className="text-center py-8 text-gray-500">
+                {searchTerm ? "No se encontraron cursos que coincidan con tu búsqueda" : "No hay cursos disponibles"}
+              </p>
             )}
           </TabsContent>
           
           <TabsContent value="principiante">
-            {beginnerCourses.length > 0 ? (
-              <CourseGrid courses={beginnerCourses} />
+            {filteredCourses.beginner.length > 0 ? (
+              <CourseGrid courses={filteredCourses.beginner} />
             ) : (
-              <p className="text-center py-8 text-gray-500">No hay cursos de nivel principiante disponibles</p>
+              <p className="text-center py-8 text-gray-500">
+                {searchTerm ? "No se encontraron cursos de nivel principiante que coincidan con tu búsqueda" : "No hay cursos de nivel principiante disponibles"}
+              </p>
             )}
           </TabsContent>
           
           <TabsContent value="intermedio">
-            {intermediateCourses.length > 0 ? (
-              <CourseGrid courses={intermediateCourses} />
+            {filteredCourses.intermediate.length > 0 ? (
+              <CourseGrid courses={filteredCourses.intermediate} />
             ) : (
-              <p className="text-center py-8 text-gray-500">No hay cursos de nivel intermedio disponibles</p>
+              <p className="text-center py-8 text-gray-500">
+                {searchTerm ? "No se encontraron cursos de nivel intermedio que coincidan con tu búsqueda" : "No hay cursos de nivel intermedio disponibles"}
+              </p>
             )}
           </TabsContent>
           
           <TabsContent value="avanzado">
-            {advancedCourses.length > 0 ? (
-              <CourseGrid courses={advancedCourses} />
+            {filteredCourses.advanced.length > 0 ? (
+              <CourseGrid courses={filteredCourses.advanced} />
             ) : (
-              <p className="text-center py-8 text-gray-500">No hay cursos de nivel avanzado disponibles</p>
+              <p className="text-center py-8 text-gray-500">
+                {searchTerm ? "No se encontraron cursos de nivel avanzado que coincidan con tu búsqueda" : "No hay cursos de nivel avanzado disponibles"}
+              </p>
             )}
           </TabsContent>
         </>
