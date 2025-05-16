@@ -52,5 +52,5 @@ export interface SupabaseSimpleResponse {
 export interface SimpleLessonProgress {
   lesson_id: string;
   completed: boolean;
-  course_id: string;  // Ahora es requerido para evitar problemas de tipo
+  course_id: string;  // Requerido para evitar problemas de tipo
 }
