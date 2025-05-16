@@ -28,16 +28,16 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Usamos any para evitar la inferencia de tipos profunda
-  const response: any = await supabase
+  // Definimos la estructura exacta de la respuesta para evitar inferencia profunda
+  const { data: rawData, error } = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
   // Transformamos explícitamente la respuesta para evitar problemas de inferencia de tipos
-  const transformedData = response.data ? 
-    response.data.map((item: any) => ({
+  const transformedData = rawData ? 
+    rawData.map((item: {lesson_id: string, completed: boolean}) => ({
       lesson_id: item.lesson_id,
       completed: item.completed,
       course_id: courseId // Añadimos el courseId manualmente ya que estamos filtrando por él
@@ -47,7 +47,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
   // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
     data: transformedData,
-    error: response.error
+    error: error
   };
 }
 
@@ -94,16 +94,16 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Usamos any para evitar la inferencia de tipos profunda
-  const response: any = await supabase
+  // Definimos la estructura exacta de la respuesta para evitar inferencia profunda
+  const { data, error, count } = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
   // Retornamos una estructura simplificada con solo lo que necesitamos
   return {
-    count: response.count || 0,
-    error: response.error
+    count: count || 0,
+    error: error
   };
 }
 
