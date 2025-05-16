@@ -100,21 +100,17 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Usamos tipado explícito para la respuesta
-  const { count, error } = await supabase
+  // Usamos una estructura con tipado explícito para evitar la inferencia profunda
+  const result = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true });
   
-  // Filtramos manualmente los resultados
-  let finalCount = 0;
-  if (count !== null) {
-    finalCount = count;
-  }
+  const count = result.count !== null ? result.count : 0;
   
   // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    count: finalCount,
-    error: error
+    count: count,
+    error: result.error
   };
 }
 
