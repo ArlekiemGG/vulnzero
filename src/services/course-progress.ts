@@ -25,26 +25,22 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
   if (progressError) throw progressError;
 
   // Use explicit typing with PostgrestResponse interface to avoid deep type instantiation
-  interface PostgrestResponse {
-    data: LessonProgressItem[] | null;
-    error: any;
-  }
-  
-  const lessonProgressResult: PostgrestResponse = await supabase
+  // Avoid using complex type inference by using simplified response interface
+  const lessonProgressResponse = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  if (lessonProgressResult.error) throw lessonProgressResult.error;
+  if (lessonProgressResponse.error) throw lessonProgressResponse.error;
 
   // Process and set data
   const progress = progressData?.progress_percentage || 0;
   const completedLessonsMap: Record<string, boolean> = {};
   const completedQuizzesMap: Record<string, boolean> = {};
   
-  if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
-    lessonProgressResult.data.forEach((item: LessonProgressItem) => {
+  if (lessonProgressResponse.data && Array.isArray(lessonProgressResponse.data)) {
+    lessonProgressResponse.data.forEach((item: any) => {
       if (item && item.completed) {
         // Create lesson key using courseId and lessonId
         const lessonKey = `${courseId}:${item.lesson_id}`;
@@ -152,32 +148,27 @@ export async function saveQuizResults(
 }
 
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
-  // Define interfaces for response types to avoid deep instantiation
-  interface CountResult {
-    count?: number;
-    data: any[] | null;
-    error: any;
-  }
+  // Avoid deep type instantiation by using minimal typing
   
-  // Count total lessons in the course
-  const totalLessonsResult: CountResult = await supabase
-    .from('course_lessons') // Fixed table name
+  // Count total lessons in the course - using simple response type
+  const totalLessonsResponse = await supabase
+    .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  const totalLessonsCount = totalLessonsResult.count;
-  if (totalLessonsResult.error) throw totalLessonsResult.error;
+  const totalLessonsCount = totalLessonsResponse.count;
+  if (totalLessonsResponse.error) throw totalLessonsResponse.error;
   
-  // Count completed lessons
-  const completedLessonsResult: CountResult = await supabase
+  // Count completed lessons - using simple response type
+  const completedLessonsResponse = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .eq('completed', true);
   
-  const completedLessonsData = completedLessonsResult.data;
-  if (completedLessonsResult.error) throw completedLessonsResult.error;
+  const completedLessonsData = completedLessonsResponse.data;
+  if (completedLessonsResponse.error) throw completedLessonsResponse.error;
   
   const totalLessons = totalLessonsCount || 0;
   const completedCount = completedLessonsData?.length || 0;
