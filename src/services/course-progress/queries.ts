@@ -28,12 +28,16 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Definimos la estructura exacta de la respuesta para evitar inferencia profunda
-  const { data: rawData, error } = await supabase
+  // Usamos una estructura explícita para evitar inferencia profunda
+  const response = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
+  
+  // Extraemos manualmente los valores para evitar problemas de inferencia
+  const rawData = response.data;
+  const error = response.error;
   
   // Transformamos explícitamente la respuesta para evitar problemas de inferencia de tipos
   const transformedData = rawData ? 
@@ -94,15 +98,19 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Definimos la estructura exacta de la respuesta para evitar inferencia profunda
-  const { data, error, count } = await supabase
+  // Usamos una estructura explícita para evitar inferencia profunda
+  const response = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
+  // Extraemos manualmente los valores para evitar problemas de inferencia
+  const countValue = response.count || 0;
+  const error = response.error;
+  
   // Retornamos una estructura simplificada con solo lo que necesitamos
   return {
-    count: count || 0,
+    count: countValue,
     error: error
   };
 }
