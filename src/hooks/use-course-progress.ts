@@ -32,20 +32,11 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         // Fetch completed lessons
         const { data: lessonsData, error: lessonsError } = await supabase
           .from('user_lesson_progress')
-          .select('lesson_key, completed')
+          .select('*')
           .eq('user_id', userId)
           .eq('course_id', courseId);
 
         if (lessonsError) throw lessonsError;
-
-        // Fetch completed quizzes
-        const { data: quizzesData, error: quizzesError } = await supabase
-          .from('user_quiz_results')
-          .select('lesson_key, completed')
-          .eq('user_id', userId)
-          .eq('course_id', courseId);
-
-        if (quizzesError) throw quizzesError;
 
         // Process and set data
         if (progressData) {
@@ -53,23 +44,26 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         }
 
         const completedLessonsMap: Record<string, boolean> = {};
+        const completedQuizzesMap: Record<string, boolean> = {};
+        
         if (lessonsData) {
           lessonsData.forEach(item => {
             if (item.completed) {
-              completedLessonsMap[item.lesson_key] = true;
+              // Use moduleId and lessonId to create consistent keys
+              if (item.module_id && item.lesson_id) {
+                const lessonKey = `${courseId}:${item.module_id}:${item.lesson_id}`;
+                completedLessonsMap[lessonKey] = true;
+                
+                // If quiz was completed, track it
+                if (item.quiz_completed) {
+                  completedQuizzesMap[lessonKey] = true;
+                }
+              }
             }
           });
         }
+        
         setCompletedLessons(completedLessonsMap);
-
-        const completedQuizzesMap: Record<string, boolean> = {};
-        if (quizzesData) {
-          quizzesData.forEach(item => {
-            if (item.completed) {
-              completedQuizzesMap[item.lesson_key] = true;
-            }
-          });
-        }
         setCompletedQuizzes(completedQuizzesMap);
 
       } catch (err) {
@@ -95,7 +89,8 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         .select('id')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .eq('lesson_key', lessonKey)
+        .eq('module_id', moduleId)
+        .eq('lesson_id', lessonId)
         .maybeSingle();
       
       if (existingProgress) {
@@ -113,11 +108,11 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
           .insert({
             user_id: userId,
             course_id: courseId,
-            lesson_key: lessonKey,
             module_id: moduleId,
             lesson_id: lessonId,
             completed: true,
-            completed_at: new Date().toISOString()
+            completed_at: new Date().toISOString(),
+            quiz_completed: false
           });
         
         if (error) throw error;
@@ -142,54 +137,57 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
     const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
-      // Check if quiz result already exists
-      const { data: existingResult } = await supabase
-        .from('user_quiz_results')
+      // Check if lesson progress already exists
+      const { data: existingLesson } = await supabase
+        .from('user_lesson_progress')
         .select('id')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .eq('lesson_key', lessonKey)
+        .eq('module_id', moduleId)
+        .eq('lesson_id', lessonId)
         .maybeSingle();
       
-      if (existingResult) {
-        // Update existing record
+      if (existingLesson) {
+        // Update existing record with quiz results
         const { error } = await supabase
-          .from('user_quiz_results')
+          .from('user_lesson_progress')
           .update({ 
-            score, 
-            answers, 
-            completed: true, 
-            completed_at: new Date().toISOString() 
+            quiz_completed: true,
+            quiz_score: score,
+            quiz_answers: answers,
+            quiz_completed_at: new Date().toISOString(),
+            completed: true,
+            completed_at: new Date().toISOString()
           })
-          .eq('id', existingResult.id);
+          .eq('id', existingLesson.id);
         
         if (error) throw error;
       } else {
-        // Create new record
+        // Create new lesson progress record with quiz results
         const { error } = await supabase
-          .from('user_quiz_results')
+          .from('user_lesson_progress')
           .insert({
             user_id: userId,
             course_id: courseId,
             module_id: moduleId,
             lesson_id: lessonId,
-            lesson_key: lessonKey,
-            score,
-            answers,
             completed: true,
-            completed_at: new Date().toISOString()
+            completed_at: new Date().toISOString(),
+            quiz_completed: true,
+            quiz_score: score,
+            quiz_answers: answers,
+            quiz_completed_at: new Date().toISOString()
           });
         
         if (error) throw error;
       }
       
       // Update local state
+      setCompletedLessons(prev => ({ ...prev, [lessonKey]: true }));
       setCompletedQuizzes(prev => ({ ...prev, [lessonKey]: true }));
       
-      // If quiz is completed, mark lesson as completed as well
-      if (!completedLessons[lessonKey]) {
-        await markLessonAsCompleted(moduleId, lessonId);
-      }
+      // Update course progress
+      await updateCourseProgress(courseId, userId);
       
       return true;
     } catch (err) {
@@ -200,20 +198,27 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
 
   const updateCourseProgress = async (courseId: string, userId: string): Promise<void> => {
     try {
-      // Calculate total lessons in the course
-      const totalLessons = await calculateTotalLessons(courseId, userId);
-      if (!totalLessons) return;
+      // Count total lessons in the course based on user_lesson_progress records
+      const { count: totalLessonsCount, error: countError } = await supabase
+        .from('user_lesson_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('course_id', courseId);
+      
+      if (countError) throw countError;
       
       // Calculate completed lessons
-      const { data: completedLessonsData } = await supabase
+      const { data: completedLessonsData, error: completedError } = await supabase
         .from('user_lesson_progress')
-        .select('lesson_key')
+        .select('*')
         .eq('user_id', userId)
         .eq('course_id', courseId)
         .eq('completed', true);
       
+      if (completedError) throw completedError;
+      
+      const totalLessons = totalLessonsCount || 0;
       const completedCount = completedLessonsData?.length || 0;
-      const progressPercentage = Math.round((completedCount / totalLessons) * 100);
+      const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
       const completed = progressPercentage === 100;
       
       // Check if course progress record exists
@@ -253,23 +258,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       
     } catch (err) {
       console.error('Error updating course progress:', err);
-    }
-  };
-
-  const calculateTotalLessons = async (courseId: string, userId: string): Promise<number> => {
-    try {
-      // Count total lessons from user_lesson_progress table
-      const { count, error } = await supabase
-        .from('user_lesson_progress')
-        .select('*', { count: 'exact', head: true })
-        .eq('course_id', courseId);
-      
-      if (error) throw error;
-      
-      return count || 0;
-    } catch (err) {
-      console.error('Error calculating total lessons:', err);
-      return 0;
     }
   };
 
