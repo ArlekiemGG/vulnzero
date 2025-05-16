@@ -56,7 +56,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
               // Check for quiz completion using a type-safe property access
               // We need to use type assertion since the database schema might have this field
               // but TypeScript doesn't know about it
-              const lessonWithQuizData = item as unknown as { quiz_completed?: boolean };
+              const lessonWithQuizData = item as { quiz_completed?: boolean };
               if (lessonWithQuizData.quiz_completed) {
                 completedQuizzesMap[lessonKey] = true;
               }
@@ -95,19 +95,17 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       
       if (existingProgress) {
         // Update existing record
-        // Using simple object literal to avoid complex type inference
         const { error } = await supabase
           .from('user_lesson_progress')
           .update({
             completed: true,
             completed_at: new Date().toISOString()
-          } as const)
+          } as any)
           .eq('id', existingProgress.id);
         
         if (error) throw error;
       } else {
         // Create new record
-        // Using simple object literal to avoid complex type inference
         const { error } = await supabase
           .from('user_lesson_progress')
           .insert({
@@ -116,7 +114,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
             lesson_id: lessonId,
             completed: true,
             completed_at: new Date().toISOString()
-          } as const);
+          } as any);
         
         if (error) throw error;
       }
@@ -151,7 +149,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
       
       if (existingLesson) {
         // Update existing record with quiz results
-        // Using type assertion for consistency
         const { error } = await supabase
           .from('user_lesson_progress')
           .update({
@@ -167,7 +164,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         if (error) throw error;
       } else {
         // Create new lesson progress record with quiz results
-        // Using type assertion for consistency
         const { error } = await supabase
           .from('user_lesson_progress')
           .insert({
@@ -238,7 +234,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         progress_percentage: progressPercentage,
         completed,
         completed_at: completed ? new Date().toISOString() : null
-      };
+      } as any;
       
       if (existingProgress) {
         // Update existing record
@@ -255,7 +251,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
             course_id: courseId,
             ...updateData,
             started_at: new Date().toISOString()
-          });
+          } as any);
       }
       
       // Update local state
