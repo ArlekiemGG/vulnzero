@@ -33,7 +33,8 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
         existingProgress.id, 
         {
           completed: true,
-          completed_at: now
+          completed_at: now,
+          course_id: courseId // Nos aseguramos de que course_id esté actualizado
         }
       );
 
@@ -69,6 +70,10 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
     // Actualizar el progreso del curso
     if (success) {
       console.log(`markLessonComplete: Updating course progress data for course ${courseId}`);
+      
+      // Ejecutar la función para asegurarnos de que todos los registros tienen el course_id correcto
+      await queries.updateLessonProgressCourseId();
+      
       const courseUpdateResult = await updateCourseProgressData(userId, courseId);
       console.log(`markLessonComplete: Course progress update result: ${courseUpdateResult}`);
     }

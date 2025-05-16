@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LessonProgressItem, 
@@ -140,4 +139,12 @@ export async function createCourseProgressRecord(data: CourseProgressItem): Prom
   return await supabase
     .from('user_course_progress')
     .insert([data]);
+}
+
+/**
+ * Actualiza el campo course_id en los registros de progreso de lecciones
+ * que no tienen asociado un course_id
+ */
+export async function updateLessonProgressCourseId(): Promise<SupabaseSimpleResponse> {
+  return await supabase.rpc('update_lesson_progress_course_id');
 }
