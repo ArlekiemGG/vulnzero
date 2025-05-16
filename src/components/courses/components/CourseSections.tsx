@@ -14,8 +14,10 @@ const CourseSections = ({ sections, courseId, completedLessons }: CourseSections
   const navigate = useNavigate();
 
   const navigateToLesson = (moduleId: string, lessonId: string) => {
-    console.log(`Navigating to: /courses/${courseId}/learn/${moduleId}/${lessonId}`);
-    navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
+    // Usar el formato actualizado de URL: /courses/courseId/learn/moduleId/lessonId
+    const url = `/courses/${courseId}/learn/${moduleId}/${lessonId}`;
+    console.log(`Navigating to: ${url}`);
+    navigate(url);
   };
 
   return (

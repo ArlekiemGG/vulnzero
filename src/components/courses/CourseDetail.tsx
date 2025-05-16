@@ -1,11 +1,12 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
 import { courseProgressService } from '@/services/course-progress-service'; 
 import { HybridCourseService } from './services/HybridCourseService';
 import { SectionWithLessons } from './types';
+import { findCourseById } from '@/data/courses';
 
 // Componentes refactorizados
 import CourseHeader from './components/CourseHeader';
@@ -57,31 +58,69 @@ const CourseDetail = () => {
     setFadeIn(false); // Aseguramos inicio con fade out
     
     try {
-      console.log("CourseDetail: Fetching course with ID:", courseId);
+      console.log("CourseDetail: Buscando curso con ID:", courseId);
       
-      // Obtener datos del curso usando el servicio híbrido
-      const courseData = await HybridCourseService.getCourseById(courseId);
+      // Primero intentamos encontrar el curso desde los datos estáticos
+      const staticCourse = findCourseById(courseId);
       
-      if (!courseData) {
-        console.error("CourseDetail: Curso no encontrado con ID:", courseId);
-        toast({
-          title: "Curso no encontrado",
-          description: "El curso que buscas no existe. Por favor, verifica la URL o contacta con soporte.",
-          variant: "destructive",
-        });
-        navigate('/courses');
-        return;
-      }
-      
-      console.log("CourseDetail: Course data loaded:", courseData);
-      setCourse(courseData);
+      if (staticCourse) {
+        console.log("CourseDetail: Curso encontrado en datos estáticos:", staticCourse);
+        setCourse(staticCourse);
+        
+        // Si tenemos secciones y lecciones en el curso estático
+        if (staticCourse.modules && staticCourse.modules.length > 0) {
+          const sectionsWithLessons = staticCourse.modules.map(module => ({
+            id: module.id,
+            title: module.title,
+            course_id: courseId,
+            position: module.position || 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            lessons: module.lessons.map(lesson => ({
+              id: lesson.id,
+              title: lesson.title,
+              content: '',
+              duration_minutes: lesson.duration_minutes || 0,
+              section_id: module.id,
+              position: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              video_url: null
+            }))
+          }));
+          
+          console.log("CourseDetail: Secciones con lecciones de datos estáticos:", sectionsWithLessons);
+          setSections(sectionsWithLessons);
+        } else {
+          // Si no hay módulos, intentar cargar las secciones desde el servicio híbrido
+          await loadCourseSections(courseId);
+        }
+      } else {
+        // Si no se encuentra en datos estáticos, intentar con el servicio híbrido
+        console.log("CourseDetail: Curso no encontrado en datos estáticos, buscando en servicio híbrido");
+        const courseData = await HybridCourseService.getCourseById(courseId);
+        
+        if (!courseData) {
+          console.error("CourseDetail: Curso no encontrado con ID:", courseId);
+          toast({
+            title: "Curso no encontrado",
+            description: "El curso que buscas no existe. Por favor, verifica la URL o contacta con soporte.",
+            variant: "destructive",
+          });
+          navigate('/courses');
+          return;
+        }
+        
+        console.log("CourseDetail: Course data loaded:", courseData);
+        setCourse(courseData);
 
-      // Obtener las secciones del curso y sus lecciones
-      await loadCourseSections(courseData.id);
+        // Obtener las secciones del curso y sus lecciones
+        await loadCourseSections(courseData.id);
+      }
       
       // Obtener el progreso del curso si el usuario está autenticado
       if (user) {
-        await loadUserProgress(courseData.id);
+        await loadUserProgress(courseId);
       }
     } catch (error) {
       console.error('CourseDetail: Error fetching course data:', error);

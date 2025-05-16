@@ -9,9 +9,21 @@ export const RouteMiddleware = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if the current URL matches the old format
+    // Check if the current URL matches the old format (for backward compatibility)
+    // Two patterns: 
+    // 1. /course/courseId/moduleId/lessonId (old format)
+    // 2. /courses/courseId/moduleId/lessonId (without 'learn' segment)
+    
     const oldFormatRegex = /^\/course\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
-    const match = location.pathname.match(oldFormatRegex);
+    const oldCoursesFormatRegex = /^\/courses\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
+    
+    let match = location.pathname.match(oldFormatRegex);
+    let matchType = 'old';
+    
+    if (!match) {
+      match = location.pathname.match(oldCoursesFormatRegex);
+      matchType = 'semi-old';
+    }
 
     if (match) {
       // Extract courseId, moduleId and lessonId from the old URL format
@@ -19,7 +31,7 @@ export const RouteMiddleware = () => {
       
       // Redirect to the new URL format
       const newUrl = `/courses/${courseId}/learn/${moduleId}/${lessonId}`;
-      console.log(`Redirecting from old URL format to: ${newUrl}`);
+      console.log(`Redirecting from ${matchType} URL format to: ${newUrl}`);
       
       navigate(newUrl, { replace: true });
     }
@@ -36,7 +48,13 @@ export async function middleware(request) {
   
   // Check if the current URL matches the old format
   const oldFormatRegex = /^\/course\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
-  const match = url.pathname.match(oldFormatRegex);
+  const oldCoursesFormatRegex = /^\/courses\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
+  
+  let match = url.pathname.match(oldFormatRegex);
+  
+  if (!match) {
+    match = url.pathname.match(oldCoursesFormatRegex);
+  }
 
   if (match) {
     // Extract courseId, moduleId and lessonId from the old URL format
@@ -52,5 +70,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/course/:path*']
+  matcher: ['/course/:path*', '/courses/:courseId/:moduleId/:lessonId']
 };

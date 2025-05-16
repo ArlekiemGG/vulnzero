@@ -19,24 +19,27 @@ const CourseDetailPage = () => {
   
   useEffect(() => {
     if (courseId) {
+      console.log("CourseDetailPage: Verificando curso con ID:", courseId);
       const course = findCourseById(courseId);
+      
       if (!course) {
-        toast({
-          title: "Curso no encontrado",
-          description: "El curso que buscas no existe. Verifica la URL o contacta con soporte.",
-          variant: "destructive",
-        });
-        navigate('/courses');
-        return;
+        console.warn("CourseDetailPage: Curso no encontrado con ID:", courseId);
+        // No navegamos aquí, dejamos que el componente CourseDetail maneje este caso
+        // ya que él verificará también con el servicio híbrido
+      } else {
+        console.log("CourseDetailPage: Curso encontrado:", course.title);
+        document.title = `${course.title} - VulnZero`;
       }
       
-      document.title = `${course.title} - VulnZero`;
       setLoading(false);
     }
     
     // Siempre scroll al inicio para evitar posiciones intermedias
     window.scrollTo(0, 0);
   }, [courseId, navigate]);
+
+  // Debug para verificar el courseId recibido
+  console.log("CourseDetailPage: courseId recibido:", courseId);
 
   return (
     <div className="min-h-screen bg-cybersec-black">
