@@ -49,15 +49,14 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         if (lessonsData) {
           lessonsData.forEach(item => {
             if (item.completed) {
-              // Use moduleId and lessonId to create consistent keys
-              if (item.module_id && item.lesson_id) {
-                const lessonKey = `${courseId}:${item.module_id}:${item.lesson_id}`;
-                completedLessonsMap[lessonKey] = true;
-                
-                // If quiz was completed, track it
-                if (item.quiz_completed) {
-                  completedQuizzesMap[lessonKey] = true;
-                }
+              // Create lesson key using courseId and lessonId
+              // We're adapting to the existing schema without module_id
+              const lessonKey = `${courseId}:${item.lesson_id}`;
+              completedLessonsMap[lessonKey] = true;
+              
+              // If quiz data exists, mark it as completed
+              if (item.quiz_completed) {
+                completedQuizzesMap[lessonKey] = true;
               }
             }
           });
@@ -80,7 +79,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
+    const lessonKey = `${courseId}:${lessonId}`;
     
     try {
       // Check if the lesson is already marked as completed
@@ -89,7 +88,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         .select('id')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .eq('module_id', moduleId)
         .eq('lesson_id', lessonId)
         .maybeSingle();
       
@@ -108,7 +106,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
           .insert({
             user_id: userId,
             course_id: courseId,
-            module_id: moduleId,
             lesson_id: lessonId,
             completed: true,
             completed_at: new Date().toISOString(),
@@ -134,7 +131,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
   const saveQuizResult = async (moduleId: string, lessonId: string, score: number, answers: Record<string, number>): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
+    const lessonKey = `${courseId}:${lessonId}`;
     
     try {
       // Check if lesson progress already exists
@@ -143,7 +140,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         .select('id')
         .eq('user_id', userId)
         .eq('course_id', courseId)
-        .eq('module_id', moduleId)
         .eq('lesson_id', lessonId)
         .maybeSingle();
       
@@ -169,7 +165,6 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
           .insert({
             user_id: userId,
             course_id: courseId,
-            module_id: moduleId,
             lesson_id: lessonId,
             completed: true,
             completed_at: new Date().toISOString(),
