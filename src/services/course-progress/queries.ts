@@ -31,7 +31,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
   // Ejecutamos la consulta explícitamente para evitar problemas de inferencia de tipos
   const { data, error } = await supabase
     .from('user_lesson_progress')
-    .select('lesson_id, completed')
+    .select('lesson_id, completed, course_id')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   

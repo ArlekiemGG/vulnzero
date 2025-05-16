@@ -37,6 +37,7 @@ export interface LessonProgressResponse {
   data: Array<{
     lesson_id: string;
     completed: boolean;
+    course_id?: string;
   }> | null;
   error: any | null;
 }
@@ -55,4 +56,5 @@ export interface SupabaseSimpleResponse {
 export interface SimpleLessonProgress {
   lesson_id: string;
   completed: boolean;
+  course_id?: string;
 }

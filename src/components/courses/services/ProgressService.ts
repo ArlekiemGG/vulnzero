@@ -86,7 +86,15 @@ export const useProgressService = () => {
         .eq('lesson_id', lessonId)
         .maybeSingle();
       
-      return existingProgress;
+      if (existingProgress) {
+        // Aseguramos que el objeto tiene el campo course_id requerido
+        return {
+          ...existingProgress,
+          course_id: courseId // Aseguramos que course_id está presente
+        } as LessonProgress;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error fetching lesson progress:', error);
       return null;
