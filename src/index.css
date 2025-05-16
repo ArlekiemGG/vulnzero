@@ -79,6 +79,9 @@
   /* Footer siempre al final del contenido */
   .site-footer {
     @apply w-full mt-auto;
+    margin-left: 0 !important; /* Asegura que el margen izquierdo sea 0 */
+    padding-left: 0 !important; /* Asegura que el padding izquierdo sea 0 */
+    max-width: 100% !important; /* Asegura que el ancho no exceda el 100% */
   }
 
   /* Terminal text effect */
