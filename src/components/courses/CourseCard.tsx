@@ -28,12 +28,13 @@ const getLevelColor = (level: string) => {
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
   return (
     <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-      <Link to={`/courses/${course.id}`} className="block">
+      <Link to={`/courses/${course.id}`} className="block h-full" state={{ fromGrid: true }}>
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 
             src={course.image_url} 
             alt={course.title} 
             className="w-full h-full object-cover"
+            loading="lazy"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
@@ -86,3 +87,4 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
 };
 
 export default CourseCard;
+

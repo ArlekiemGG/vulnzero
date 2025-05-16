@@ -12,10 +12,13 @@ interface CourseGridProps {
 const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
   const { user } = useAuth();
   const [progressMap, setProgressMap] = useState<Record<string, { progress: number; completed: boolean }>>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchProgress = async () => {
       if (!user || courses.length === 0) return;
+      
+      setIsLoading(true);
       
       try {
         const { data, error } = await supabase
@@ -37,6 +40,8 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
         setProgressMap(newProgressMap);
       } catch (error) {
         console.error('Error fetching course progress:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -59,3 +64,4 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
 };
 
 export default CourseGrid;
+
