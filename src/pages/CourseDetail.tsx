@@ -1,24 +1,62 @@
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import CourseDetailComponent from '@/components/courses/CourseDetail';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/components/ui/use-toast';
+import { CourseService } from '@/components/courses/services/CourseService';
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [courseExists, setCourseExists] = useState(false);
 
   useEffect(() => {
     // Set page title
     document.title = "Detalle del curso - VulnZero";
     
-    // Simulate minimal loading time to prevent flickering
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
+    // Check if the course exists
+    const verifyCourseExists = async () => {
+      if (!courseId) {
+        navigate('/courses');
+        return;
+      }
+
+      try {
+        console.log(`Verifying course exists: ${courseId}`);
+        const course = await CourseService.getCourseById(courseId);
+        
+        if (course) {
+          console.log(`Course found:`, course);
+          setCourseExists(true);
+        } else {
+          console.log(`Course not found: ${courseId}`);
+          toast({
+            title: "Curso no encontrado",
+            description: "El curso que intentas ver no existe",
+            variant: "destructive",
+          });
+          navigate('/courses');
+        }
+      } catch (error) {
+        console.error("Error verifying course:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el curso",
+          variant: "destructive",
+        });
+        navigate('/courses');
+      } finally {
+        // Simulate minimal loading time to prevent flickering
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 200);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, [courseId]);
+    verifyCourseExists();
+  }, [courseId, navigate]);
 
   if (isLoading) {
     return (
@@ -43,7 +81,8 @@ const CourseDetail = () => {
     );
   }
 
-  return <CourseDetailComponent />;
+  // Only render the CourseDetailComponent if the course exists
+  return courseExists ? <CourseDetailComponent /> : null;
 };
 
 export default CourseDetail;

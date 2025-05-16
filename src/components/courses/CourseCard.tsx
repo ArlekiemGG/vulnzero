@@ -26,12 +26,17 @@ const getLevelColor = (level: string) => {
 };
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
-  // Use proper course ID path for navigation
-  const courseDetailPath = `/courses/${course.id}`;
+  // Calculate proper course ID path for navigation ensuring it's valid
+  const courseDetailPath = course?.id ? `/courses/${course.id}` : '/courses';
 
   return (
     <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-      <Link to={courseDetailPath} className="block h-full">
+      <Link to={courseDetailPath} className="block h-full" onClick={(e) => {
+        if (!course?.id) {
+          e.preventDefault();
+          console.error("Invalid course ID for navigation");
+        }
+      }}>
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 
             src={course.image_url} 
