@@ -46,35 +46,34 @@ export const useUserStats = (userId?: string) => {
           
         if (profileError) throw profileError;
         
-        // Fetch solved machines count
+        // Fix: Use count() option instead of count: 'exact' to avoid type issues
         const { count: solvedMachines, error: machinesError } = await supabase
           .from('user_machine_progress')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .eq('user_id', userId)
-          .eq('completed', true);
+          .eq('completed_at', 'is', 'not.null')
+          .limit(0);
           
         if (machinesError) throw machinesError;
         
-        // Fetch completed challenges count
-        // Note: Using user_activities table instead of non-existent challenges_progress
+        // Fix: Use same approach for completed challenges
         const { count: completedChallenges, error: challengesError } = await supabase
           .from('user_activities')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .eq('user_id', userId)
           .eq('type', 'challenge')
-          .eq('title', 'completed');
+          .eq('title', 'completed')
+          .limit(0);
           
         if (challengesError) throw challengesError;
         
         // Calculate user rank based on points
-        // Note: Since get_user_ranking function doesn't exist, we'll use a simple approach
         let rank = 0;
         try {
           const { data: usersWithHigherPoints, error: rankError } = await supabase
             .from('profiles')
             .select('id')
-            .gt('points', profileData?.points || 0)
-            .order('points', { ascending: false });
+            .gt('points', profileData?.points || 0);
             
           if (rankError) throw rankError;
           
