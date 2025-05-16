@@ -56,7 +56,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
               // Check for quiz completion using a type-safe property access
               // We need to use type assertion since the database schema might have this field
               // but TypeScript doesn't know about it
-              const lessonWithQuizData = item as any;
+              const lessonWithQuizData = item as unknown as { quiz_completed?: boolean };
               if (lessonWithQuizData.quiz_completed) {
                 completedQuizzesMap[lessonKey] = true;
               }
@@ -145,39 +145,43 @@ export const useUserCourseProgress = (courseId: string, userId?: string) => {
         .maybeSingle();
       
       if (existingLesson) {
-        // Update existing record with quiz results using the column might not be defined in type
-        const updateData: Record<string, any> = { 
-          completed: true,
-          completed_at: new Date().toISOString(),
-          quiz_completed: true,
-          quiz_score: score,
-          quiz_answers: answers,
-          quiz_completed_at: new Date().toISOString()
-        };
-        
+        // Update existing record with quiz results
+        // Using partial type for the update operation
         const { error } = await supabase
           .from('user_lesson_progress')
-          .update(updateData)
+          .update({
+            completed: true,
+            completed_at: new Date().toISOString(),
+            // Below fields aren't in TypeScript type but exist in the database
+            ...(({
+              quiz_completed: true,
+              quiz_score: score,
+              quiz_answers: answers,
+              quiz_completed_at: new Date().toISOString()
+            }) as any)
+          })
           .eq('id', existingLesson.id);
         
         if (error) throw error;
       } else {
         // Create new lesson progress record with quiz results
-        const insertData: Record<string, any> = {
-          user_id: userId,
-          course_id: courseId,
-          lesson_id: lessonId,
-          completed: true,
-          completed_at: new Date().toISOString(),
-          quiz_completed: true,
-          quiz_score: score,
-          quiz_answers: answers,
-          quiz_completed_at: new Date().toISOString()
-        };
-        
+        // Explicitly include required fields and then add extended fields
         const { error } = await supabase
           .from('user_lesson_progress')
-          .insert(insertData);
+          .insert({
+            user_id: userId,
+            course_id: courseId,
+            lesson_id: lessonId,
+            completed: true,
+            completed_at: new Date().toISOString(),
+            // Extended fields need type assertion
+            ...(({
+              quiz_completed: true,
+              quiz_score: score,
+              quiz_answers: answers,
+              quiz_completed_at: new Date().toISOString()
+            }) as any)
+          });
         
         if (error) throw error;
       }
