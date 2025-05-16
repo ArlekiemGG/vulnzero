@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,7 @@ export interface UserStats {
 }
 
 interface UserContextType {
+  user: any; // Add the user property from AuthContext
   userStats: UserStats;
   loading: boolean;
   refreshUserStats: () => Promise<void>;
@@ -36,6 +38,7 @@ const defaultUserStats: UserStats = {
 };
 
 const UserContext = createContext<UserContextType>({
+  user: null, // Initialize with null
   userStats: defaultUserStats,
   loading: true,
   refreshUserStats: async () => {},
@@ -167,6 +170,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <UserContext.Provider value={{ 
+      user, // Pass the user from AuthContext
       userStats, 
       loading: isLoading, 
       refreshUserStats, 
