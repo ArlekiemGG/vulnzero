@@ -46,12 +46,12 @@ export const useUserStats = (userId?: string) => {
           
         if (profileError) throw profileError;
         
-        // Fix: Use count() option instead of count: 'exact' to avoid type issues
+        // Fix: Use count() option and proper filter for completed machines
         const { count: solvedMachines, error: machinesError } = await supabase
           .from('user_machine_progress')
           .select('*', { count: 'exact' })
           .eq('user_id', userId)
-          .eq('completed_at', 'is', 'not.null')
+          .not('completed_at', 'is', null)
           .limit(0);
           
         if (machinesError) throw machinesError;
