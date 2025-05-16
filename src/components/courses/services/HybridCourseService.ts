@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Course, Section, Lesson } from './CourseService';
 import { StaticContentService } from './StaticContentService';
@@ -250,7 +251,7 @@ export const HybridCourseService = {
     }
   },
   
-  // Nuevo método para obtener el progreso de lección por usuario
+  // Método para obtener el progreso de lección por usuario
   getLessonProgressByUserId: async (lessonId: string, userId: string): Promise<any> => {
     try {
       const { data, error } = await supabase
