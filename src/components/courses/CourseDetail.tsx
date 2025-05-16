@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CourseService, Course, Section, Lesson } from './services/CourseService';
 import { useProgressService } from './services/ProgressService';
@@ -33,81 +34,78 @@ const CourseDetail = () => {
   const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      if (!courseId) return;
-      setIsLoading(true);
-      
-      try {
-        // Obtener datos del curso
-        const courseData = await CourseService.getCourseById(courseId);
-        if (!courseData) {
-          toast({
-            title: "Curso no encontrado",
-            description: "El curso que buscas no existe",
-            variant: "destructive",
-          });
-          navigate('/courses');
-          return;
-        }
-        setCourse(courseData);
-
-        // Obtener las secciones del curso
-        const sectionsData = await CourseService.getCourseSections(courseId);
-        
-        // Obtener las lecciones de cada sección
-        const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
-          sectionsData.map(async (section) => {
-            const lessons = await CourseService.getSectionLessons(section.id);
-            return {
-              ...section,
-              lessons
-            };
-          })
-        );
-        
-        setSections(sectionsWithLessons);
-        
-        // Obtener el progreso del curso si el usuario está autenticado
-        if (user) {
-          const progressData = await getCourseProgress(courseId);
-          if (progressData) {
-            setProgress(progressData.progress_percentage);
-          }
-          
-          // Obtener el estado de las lecciones completadas
-          const fetchCompletedLessons = async () => {
-            const { data } = await supabase
-              .from('user_lesson_progress')
-              .select('lesson_id, completed')
-              .eq('user_id', user.id)
-              .eq('completed', true);
-            
-            if (data) {
-              const completedMap: Record<string, boolean> = {};
-              data.forEach(item => {
-                completedMap[item.lesson_id] = item.completed;
-              });
-              setCompletedLessons(completedMap);
-            }
-          };
-          
-          fetchCompletedLessons();
-        }
-      } catch (error) {
-        console.error('Error fetching course data:', error);
+  // Use useCallback to prevent infinite render loops
+  const fetchCourseData = useCallback(async () => {
+    if (!courseId) return;
+    setIsLoading(true);
+    
+    try {
+      // Obtener datos del curso
+      const courseData = await CourseService.getCourseById(courseId);
+      if (!courseData) {
         toast({
-          title: "Error",
-          description: "No se pudo cargar la información del curso",
+          title: "Curso no encontrado",
+          description: "El curso que buscas no existe",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
+        navigate('/courses');
+        return;
       }
-    };
-    
-    fetchCourseData();
+      setCourse(courseData);
+
+      // Obtener las secciones del curso
+      const sectionsData = await CourseService.getCourseSections(courseId);
+      
+      // Obtener las lecciones de cada sección
+      const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
+        sectionsData.map(async (section) => {
+          const lessons = await CourseService.getSectionLessons(section.id);
+          return {
+            ...section,
+            lessons
+          };
+        })
+      );
+      
+      setSections(sectionsWithLessons);
+      
+      // Obtener el progreso del curso si el usuario está autenticado
+      if (user) {
+        const progressData = await getCourseProgress(courseId);
+        if (progressData) {
+          setProgress(progressData.progress_percentage);
+        }
+        
+        // Obtener el estado de las lecciones completadas
+        const { data } = await supabase
+          .from('user_lesson_progress')
+          .select('lesson_id, completed')
+          .eq('user_id', user.id)
+          .eq('completed', true);
+        
+        if (data) {
+          const completedMap: Record<string, boolean> = {};
+          data.forEach(item => {
+            completedMap[item.lesson_id] = item.completed;
+          });
+          setCompletedLessons(completedMap);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching course data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la información del curso",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [courseId, user, navigate, getCourseProgress]);
+
+  useEffect(() => {
+    fetchCourseData();
+  }, [fetchCourseData]);
 
   const getTotalLessons = () => {
     return sections.reduce((total, section) => total + section.lessons.length, 0);
