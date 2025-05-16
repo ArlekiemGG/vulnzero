@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface NavigationProps {
   courseId: string;
-  moduleId?: string;
+  moduleId: string;
   prevLesson: {id: string; title: string; moduleId?: string} | null;
   nextLesson: {id: string; title: string; moduleId?: string} | null;
 }
@@ -14,7 +14,9 @@ const LessonNavigation = ({ courseId, moduleId, prevLesson, nextLesson }: Naviga
   const navigate = useNavigate();
   
   const navigateToLesson = (lessonId: string, targetModuleId?: string) => {
-    navigate(`/courses/${courseId}/learn/${targetModuleId || moduleId}/${lessonId}`);
+    const moduleToUse = targetModuleId || moduleId;
+    console.log(`Navigating to: /courses/${courseId}/learn/${moduleToUse}/${lessonId}`);
+    navigate(`/courses/${courseId}/learn/${moduleToUse}/${lessonId}`);
   };
   
   return (

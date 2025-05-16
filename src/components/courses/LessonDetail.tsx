@@ -21,6 +21,8 @@ const LessonDetail = () => {
   const { user } = useAuth();
   const { markLessonAsCompleted } = useProgressService();
   
+  console.log(`LessonDetail rendered with params: courseId=${courseId}, moduleId=${moduleId}, lessonId=${lessonId}`);
+  
   // Usar el hook personalizado para cargar los datos de la lección
   const {
     lesson,
@@ -72,6 +74,7 @@ const LessonDetail = () => {
   };
 
   const navigateToLesson = (id: string, targetModuleId: string) => {
+    console.log(`Navigating from lesson to: /courses/${courseId}/learn/${targetModuleId || moduleId}/${id}`);
     navigate(`/courses/${courseId}/learn/${targetModuleId || moduleId}/${id}`);
   };
 

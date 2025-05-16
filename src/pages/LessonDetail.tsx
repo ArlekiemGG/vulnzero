@@ -159,7 +159,7 @@ const LessonDetail = () => {
       title: "Siguiente lección",
       description: "Te estamos redirigiendo a la siguiente lección del curso"
     });
-    navigate(`/courses/${courseId}`);
+    navigate(`/courses/${courseId}/learn/${moduleId}/${nextLesson?.id || ''}`);
   };
 
   const goToPreviousLesson = () => {
@@ -168,7 +168,7 @@ const LessonDetail = () => {
       title: "Lección anterior",
       description: "Te estamos redirigiendo a la lección anterior del curso"
     });
-    navigate(`/courses/${courseId}`);
+    navigate(`/courses/${courseId}/learn/${moduleId}/${prevLesson?.id || ''}`);
   };
 
   if (isLoading) {

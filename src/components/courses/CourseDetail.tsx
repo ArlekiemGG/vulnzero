@@ -157,6 +157,7 @@ const CourseDetail = () => {
 
   const startCourse = () => {
     if (sections.length > 0 && sections[0].lessons.length > 0) {
+      console.log(`Navigating to first lesson: /courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
       navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
     } else {
       toast({
@@ -173,6 +174,7 @@ const CourseDetail = () => {
       for (const lesson of section.lessons) {
         if (!completedLessons[lesson.id] && 
             !completedLessons[`${courseId}:${lesson.id}`]) {
+          console.log(`Continuing course at: /courses/${courseId}/learn/${section.id}/${lesson.id}`);
           navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`);
           return;
         }

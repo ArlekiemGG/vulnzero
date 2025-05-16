@@ -1,250 +1,447 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { findCourseById } from '@/data/courses';
-import { CourseMetadata } from './types';
-import { CheckCircle, BookOpen, Clock, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Circle, ChevronRight } from 'lucide-react';
-import { useUserCourseProgress } from '@/hooks/use-course-progress';
+import { ChevronLeft, ChevronRight, CheckCircle, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { findCourseById, findModuleById, findLessonById } from '@/data/courses';
+import { useUserCourseProgress } from '@/hooks/use-course-progress';
+import LessonQuiz from './components/LessonQuiz';
+import EnhancedContentRenderer from './components/EnhancedContentRenderer';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import './components/lesson-content.css';
 
-interface FileCourseDetailProps {
+interface FileLessonDetailProps {
   courseId: string;
+  moduleId: string;
+  lessonId: string;
 }
 
-const FileCourseDetail = ({ courseId }: FileCourseDetailProps) => {
+const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [course, setCourse] = useState<CourseMetadata | null>(null);
+  const [content, setContent] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadAttempts, setLoadAttempts] = useState<number>(0);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
+  const [quizVisible, setQuizVisible] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const { 
-    progress, 
     completedLessons, 
-    isLoading: progressLoading 
+    completedQuizzes, 
+    markLessonAsCompleted, 
+    saveQuizResult
   } = useUserCourseProgress(courseId, user?.id);
 
+  // Get course and lesson metadata
+  const course = findCourseById(courseId);
+  const currentModule = course ? findModuleById(courseId, moduleId) : null;
+  const lesson = currentModule ? findLessonById(courseId, moduleId, lessonId) : null;
+  
+  // Set up navigation to previous/next lessons
+  const [prevLesson, setPrevLesson] = useState<{moduleId: string; lessonId: string; title: string} | null>(null);
+  const [nextLesson, setNextLesson] = useState<{moduleId: string; lessonId: string; title: string} | null>(null);
+
+  // Determine if the lesson is completed
+  const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
+  const isCompleted = completedLessons ? !!completedLessons[lessonKey] : false;
+  const quizCompleted = completedQuizzes ? !!completedQuizzes[lessonKey] : false;
+
+  // Handle synchronizing course content
+  const handleSyncContent = () => {
+    setLoadAttempts(prev => prev + 1);
+    setIsLoading(true);
+    setError(null);
+    toast({
+      title: "Sincronizando contenido",
+      description: "Intentando cargar el contenido de la lección de nuevo..."
+    });
+  };
+
   useEffect(() => {
-    const courseData = findCourseById(courseId);
-    if (courseData) {
-      setCourse(courseData);
-      setTimeout(() => setFadeIn(true), 100);
+    const setup = async () => {
+      if (!course || !currentModule || !lesson) {
+        setError("No se encontró la lección solicitada");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Log the path we're attempting to fetch
+        const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
+        console.log(`Intentando cargar el contenido de la lección desde: ${contentPath}`);
+        
+        // Fetch lesson content from HTML file
+        const response = await fetch(contentPath);
+        
+        if (!response.ok) {
+          console.error(`Error cargando el contenido de la lección: ${response.status} ${response.statusText}`);
+          
+          // More descriptive error message based on status code
+          if (response.status === 404) {
+            throw new Error(`No se encontró el archivo de contenido en la ruta: ${contentPath}`);
+          } else {
+            throw new Error(`Error al cargar el contenido (${response.status}): ${response.statusText}`);
+          }
+        }
+        
+        const html = await response.text();
+        if (!html || html.trim() === '') {
+          throw new Error("El archivo de contenido está vacío");
+        }
+        
+        setContent(html);
+        
+        // Set up navigation between lessons
+        setupNavigation();
+        setFadeIn(true);
+      } catch (error) {
+        console.error('Error cargando el contenido de la lección:', error);
+        setError(error instanceof Error ? error.message : "No se pudo cargar el contenido de la lección. Verifica que el archivo exista.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    setup();
+  }, [courseId, moduleId, lessonId, navigate, course, currentModule, lesson, loadAttempts]);
+
+  const setupNavigation = () => {
+    if (!course || !currentModule) return;
+
+    // Find current lesson index
+    const moduleIndex = course.modules.findIndex(m => m.id === moduleId);
+    const lessonIndex = currentModule.lessons.findIndex(l => l.id === lessonId);
+
+    // Previous lesson
+    if (lessonIndex > 0) {
+      // Previous lesson in same module
+      const prevLessonData = currentModule.lessons[lessonIndex - 1];
+      setPrevLesson({
+        moduleId,
+        lessonId: prevLessonData.id,
+        title: prevLessonData.title
+      });
+    } else if (moduleIndex > 0) {
+      // Last lesson from previous module
+      const prevModule = course.modules[moduleIndex - 1];
+      const prevLessonData = prevModule.lessons[prevModule.lessons.length - 1];
+      setPrevLesson({
+        moduleId: prevModule.id,
+        lessonId: prevLessonData.id,
+        title: prevLessonData.title
+      });
+    } else {
+      setPrevLesson(null);
     }
-  }, [courseId]);
 
-  const getTotalLessons = useCallback(() => {
-    if (!course) return 0;
-    return course.modules.reduce((total, module) => total + module.lessons.length, 0);
-  }, [course]);
-
-  const getCompletedLessonsCount = useCallback(() => {
-    if (!completedLessons) return 0;
-    return Object.values(completedLessons).filter(Boolean).length;
-  }, [completedLessons]);
-
-  const handleStartCourse = useCallback(() => {
-    if (course && course.modules.length > 0 && course.modules[0].lessons.length > 0) {
-      const firstModule = course.modules[0];
-      const firstLesson = firstModule.lessons[0];
-      navigate(`/courses/${course.id}/${firstModule.id}/${firstLesson.id}`);
+    // Next lesson
+    if (lessonIndex < currentModule.lessons.length - 1) {
+      // Next lesson in same module
+      const nextLessonData = currentModule.lessons[lessonIndex + 1];
+      setNextLesson({
+        moduleId,
+        lessonId: nextLessonData.id,
+        title: nextLessonData.title
+      });
+    } else if (moduleIndex < course.modules.length - 1) {
+      // First lesson from next module
+      const nextModule = course.modules[moduleIndex + 1];
+      const nextLessonData = nextModule.lessons[0];
+      setNextLesson({
+        moduleId: nextModule.id,
+        lessonId: nextLessonData.id,
+        title: nextLessonData.title
+      });
+    } else {
+      setNextLesson(null);
     }
-  }, [course, navigate]);
+  };
 
-  const handleContinueCourse = useCallback(() => {
-    if (!course) return;
+  const handleMarkAsCompleted = async () => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Necesitas iniciar sesión para guardar tu progreso",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = await markLessonAsCompleted(moduleId, lessonId);
+    if (success) {
+      toast({
+        title: "¡Lección completada!",
+        description: "Tu progreso ha sido guardado",
+      });
+      
+      // Show quiz if it has one and hasn't been completed yet
+      if (lesson?.has_quiz && !quizCompleted) {
+        setQuizVisible(true);
+      } else if (nextLesson) {
+        // Suggest continuing to next lesson
+        toast({
+          title: "¿Continuar?",
+          description: "¿Quieres avanzar a la siguiente lección?",
+          action: (
+            <Button onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}>
+              Continuar
+            </Button>
+          )
+        });
+      }
+    }
+  };
 
-    // Find first incomplete lesson
-    for (const module of course.modules) {
-      for (const lesson of module.lessons) {
-        const lessonKey = `${course.id}:${module.id}:${lesson.id}`;
-        if (!completedLessons || !completedLessons[lessonKey]) {
-          navigate(`/courses/${course.id}/${module.id}/${lesson.id}`);
+  const handleQuizComplete = async (score: number, answers: Record<string, number>) => {
+    if (!user) return;
+    
+    await saveQuizResult(moduleId, lessonId, score, answers);
+    
+    toast({
+      title: "Quiz completado",
+      description: `Has obtenido ${score}% de respuestas correctas`,
+    });
+    
+    // Suggest continuing to next lesson if available
+    if (nextLesson) {
+      setTimeout(() => {
+        toast({
+          title: "¿Continuar?",
+          description: "¿Quieres avanzar a la siguiente lección?",
+          action: (
+            <Button onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}>
+              Continuar
+            </Button>
+          )
+        });
+      }, 1500);
+    }
+  };
+
+  const navigateToLesson = (moduleId: string, lessonId: string) => {
+    navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container px-4 py-8 mx-auto">
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="w-full md:w-3/4">
+            <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-4 w-1/2 mb-8" />
+            <div className="space-y-4 mb-8">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+          </div>
+          <div className="w-full md:w-1/4">
+            <Skeleton className="h-60 w-full rounded-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !lesson || !course || !currentModule) {
+    return (
+      <div className="container px-4 py-8 mx-auto">
+        <div className="text-center">
+          <Alert variant="destructive" className="mb-6 max-w-lg mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error || "La lección que buscas no existe o ha sido eliminada"}
+            </AlertDescription>
+          </Alert>
+          <div className="space-y-2 mt-4">
+            <p className="text-gray-400">Verifica la ruta:</p>
+            <code className="px-2 py-1 bg-gray-800 rounded text-xs">
+              /courses/{courseId}/{moduleId}/{lessonId}.html
+            </code>
+            <div className="mt-4">
+              <Button 
+                variant="outline"
+                onClick={handleSyncContent} 
+                className="mr-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sincronizar contenido
+              </Button>
+              <Button onClick={() => navigate(`/courses/${courseId}`)}>
+                Volver al curso
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const continueCourse = () => {
+    // Buscar la última lección completada o la primera no completada
+    for (const section of sections) {
+      for (const lesson of section.lessons) {
+        if (!completedLessons[lesson.id]) {
+          console.log(`Continuing course at: /courses/${courseId}/learn/${section.id}/${lesson.id}`);
+          navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`);
           return;
         }
       }
     }
-
-    // If all lessons are completed, go to first lesson
-    if (course.modules.length > 0 && course.modules[0].lessons.length > 0) {
-      const firstModule = course.modules[0];
-      const firstLesson = firstModule.lessons[0];
-      navigate(`/courses/${course.id}/${firstModule.id}/${firstLesson.id}`);
+  
+    // Si todas están completadas, ir a la primera lección
+    if (sections.length > 0 && sections[0].lessons.length > 0) {
+      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
     }
-  }, [course, completedLessons, navigate]);
-
-  if (!course) {
-    return null;
-  }
+  };
 
   return (
-    <div className={`container px-4 py-8 mx-auto transition-opacity duration-700 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Main content */}
-        <div className="w-full md:w-2/3">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">{course.title}</h1>
-            <div className="flex items-center text-gray-400 mb-4">
-              <span className="mr-4">{course.category}</span>
-              <span className="mr-4">•</span>
-              <span className="capitalize">{course.level}</span>
-              <span className="mr-4">•</span>
-              <span>{Math.floor(course.duration_minutes / 60)} horas {course.duration_minutes % 60} minutos</span>
+    <ErrorBoundary>
+      <div className={`container px-4 py-8 mx-auto transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Main content */}
+          <div className="w-full md:w-3/4">
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate(`/courses/${courseId}`)}
+                className="p-0 hover:bg-transparent hover:text-primary"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span>Volver al curso</span>
+              </Button>
+              
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={handleSyncContent}
+                className="text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Sincronizar
+              </Button>
             </div>
-            <p className="text-gray-300">Instructor: {course.instructor}</p>
-          </div>
-          
-          <div className="relative aspect-video w-full mb-8 rounded-lg overflow-hidden">
-            <img 
-              src={course.image_url || "/placeholder.svg"} 
-              alt={course.title} 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          
-          <Tabs defaultValue="contenido">
-            <TabsList className="mb-4">
-              <TabsTrigger value="contenido">Contenido</TabsTrigger>
-              <TabsTrigger value="descripcion">Descripción</TabsTrigger>
-            </TabsList>
             
-            <TabsContent value="contenido" className="space-y-4">
-              <h2 className="text-2xl font-bold">Contenido del curso</h2>
-              
-              <Accordion type="single" collapsible className="w-full">
-                {course.modules.map((module) => (
-                  <AccordionItem key={module.id} value={module.id} className="border rounded-lg mb-4 overflow-hidden">
-                    <AccordionTrigger className="px-4 py-3 hover:bg-gray-50">
-                      <div className="flex justify-between items-center w-full">
-                        <div className="flex items-center">
-                          <span className="font-semibold">{module.title}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <span>{module.lessons.length} lecciones</span>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-0">
-                      <div className="divide-y">
-                        {module.lessons.map((lesson) => {
-                          const lessonKey = `${course.id}:${module.id}:${lesson.id}`;
-                          const isCompleted = completedLessons ? !!completedLessons[lessonKey] : false;
-                          
-                          return (
-                            <div 
-                              key={lesson.id} 
-                              className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer"
-                              onClick={() => navigate(`/courses/${course.id}/${module.id}/${lesson.id}`)}
-                            >
-                              <div className="mr-3">
-                                {isCompleted ? (
-                                  <CheckCircle className="h-5 w-5 text-emerald-500" />
-                                ) : (
-                                  <Circle className="h-5 w-5 text-gray-300" />
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium">{lesson.title}</div>
-                                <div className="flex items-center text-sm text-gray-500">
-                                  <Clock className="mr-1 h-3 w-3" />
-                                  <span>{lesson.duration_minutes} min</span>
-                                  {lesson.has_quiz && (
-                                    <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">Quiz</span>
-                                  )}
-                                </div>
-                              </div>
-                              <ChevronRight className="h-5 w-5 text-gray-400" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </TabsContent>
+            <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
             
-            <TabsContent value="descripcion">
-              <div className="prose max-w-none">
-                <h2 className="text-2xl font-bold mb-4">Descripción</h2>
-                <p className="text-gray-300 whitespace-pre-line">{course.description}</p>
+            <div className="flex items-center text-sm text-gray-500 mb-8">
+              <BookOpen className="mr-1 h-4 w-4" />
+              <span>{lesson.duration_minutes} minutos de lectura</span>
+            </div>
+            
+            <div className="mb-8 rounded-lg shadow-lg overflow-hidden">
+              <EnhancedContentRenderer content={content} />
+            </div>
+            
+            {quizVisible && lesson.has_quiz && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4">Quiz - Comprueba tus conocimientos</h3>
+                <LessonQuiz 
+                  courseId={courseId} 
+                  moduleId={moduleId} 
+                  lessonId={lessonId} 
+                  onComplete={handleQuizComplete}
+                  completed={quizCompleted}
+                />
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {/* Sidebar with progress */}
-        <div className="w-full md:w-1/3">
-          <Card className="sticky top-24">
-            <CardContent className="p-0">
-              <div className="p-6">
-                {progress > 0 ? (
-                  <div className="mb-6">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Tu progreso</span>
-                      <span className="font-medium">{progress}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2 mb-1" />
-                    <p className="text-sm text-gray-500">
-                      {getCompletedLessonsCount()} de {getTotalLessons()} lecciones completadas
-                    </p>
-                  </div>
-                ) : user ? (
-                  <div className="text-center mb-6">
-                    <Circle className="h-12 w-12 mx-auto text-primary mb-2" />
-                    <p className="font-medium">Aún no has comenzado este curso</p>
-                    <p className="text-sm text-gray-500 mb-4">¡Empieza ahora para registrar tu progreso!</p>
-                  </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t">
+              <div className="mb-4 sm:mb-0">
+                {prevLesson && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
+                    className="flex items-center"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span>Anterior</span>
+                  </Button>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                {isCompleted ? (
+                  <Button variant="outline" className="flex items-center" disabled>
+                    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                    <span>Completada</span>
+                  </Button>
                 ) : (
-                  <div className="text-center mb-6">
-                    <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                    <p className="font-medium">Inicia sesión para registrar tu progreso</p>
-                  </div>
+                  <Button onClick={handleMarkAsCompleted}>
+                    Marcar como completada
+                  </Button>
                 )}
                 
-                <Button 
-                  className="w-full flex items-center justify-center mb-4" 
-                  onClick={progress > 0 ? handleContinueCourse : handleStartCourse}
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  {progress > 0 ? 'Continuar aprendizaje' : 'Comenzar curso'}
-                </Button>
-                
-                {!user && (
-                  <p className="text-sm text-center text-gray-500">
-                    Inicia sesión para guardar tu progreso
-                  </p>
+                {nextLesson && (
+                  <Button 
+                    onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
+                    className="flex items-center"
+                  >
+                    <span>Siguiente</span>
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 )}
               </div>
-              
-              <hr className="border-gray-200" />
-              
-              <div className="p-6">
-                <h3 className="font-semibold mb-4">Este curso incluye:</h3>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <BookOpen className="h-5 w-5 text-gray-500 mr-3 mt-0.5" />
-                    <span>{getTotalLessons()} lecciones</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Clock className="h-5 w-5 text-gray-500 mr-3 mt-0.5" />
-                    <span>{Math.floor(course.duration_minutes / 60)} horas {course.duration_minutes % 60} minutos de contenido</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-gray-500 mr-3 mt-0.5" />
-                    <span>Certificado de finalización</span>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          
+          {/* Sidebar */}
+          <div className="w-full md:w-1/4">
+            <Card className="sticky top-24 bg-gray-800 border-gray-700 shadow-lg">
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
+                
+                {prevLesson && (
+                  <>
+                    <div className="mb-3">
+                      <div className="text-sm text-gray-400">Anterior</div>
+                      <button 
+                        onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
+                        className="text-left font-medium hover:text-blue-400 transition-colors"
+                      >
+                        {prevLesson.title}
+                      </button>
+                    </div>
+                    <Separator className="my-3 bg-gray-700" />
+                  </>
+                )}
+                
+                <div className="mb-3">
+                  <div className="text-sm text-gray-400">Actual</div>
+                  <div className="font-medium text-blue-400">{lesson.title}</div>
+                </div>
+                
+                {nextLesson && (
+                  <>
+                    <Separator className="my-3 bg-gray-700" />
+                    <div>
+                      <div className="text-sm text-gray-400">Siguiente</div>
+                      <button 
+                        onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
+                        className="text-left font-medium hover:text-blue-400 transition-colors"
+                      >
+                        {nextLesson.title}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
-export default FileCourseDetail;
+export default FileLessonDetail;
