@@ -53,6 +53,7 @@ export interface SimpleLessonProgress {
 
 export interface TotalLessonsResponse {
   count: number;
+  data?: any; // Adding data property to fix the error
   error: any;
 }
 
@@ -72,4 +73,5 @@ export interface ProfileWithPreferences {
   avatar_url: string;
   preferred_level?: string;
   recommended_course?: string;
+  completed_assessment?: boolean; // Adding this property that was missing
 }

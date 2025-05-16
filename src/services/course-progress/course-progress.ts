@@ -8,7 +8,7 @@ import * as queries from './queries';
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<boolean> {
   try {
     // Contar lecciones totales y completadas
-    const { data: totalLessonsData, error: countError } = await queries.countTotalLessons(courseId);
+    const { count, error: countError } = await queries.countTotalLessons(courseId);
     if (countError) {
       console.error("Error counting total lessons:", countError);
       return false;
@@ -20,7 +20,7 @@ export async function updateCourseProgressData(userId: string, courseId: string)
       return false;
     }
 
-    const totalLessons = totalLessonsData?.count || 0;
+    const totalLessons = count || 0;
     const completedLessons = completedLessonsData?.length || 0;
 
     // Calcular porcentaje de progreso
