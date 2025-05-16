@@ -26,9 +26,12 @@ const getLevelColor = (level: string) => {
 };
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
+  // Use proper course ID path for navigation
+  const courseDetailPath = `/courses/${course.id}`;
+
   return (
     <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-      <Link to={`/courses/${course.id}`} className="block h-full" state={{ fromGrid: true }}>
+      <Link to={courseDetailPath} className="block h-full">
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 
             src={course.image_url} 
@@ -87,4 +90,3 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
 };
 
 export default CourseCard;
-

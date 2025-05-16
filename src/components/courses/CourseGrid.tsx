@@ -48,10 +48,14 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
     fetchProgress();
   }, [user, courses]);
 
+  if (courses.length === 0) {
+    return <div className="text-center py-6">No hay cursos disponibles</div>;
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {courses.map(course => (
-        <div key={course.id}>
+        <div key={course.id} className="h-full">
           <CourseCard 
             course={course}
             progress={progressMap[course.id]?.progress || 0}
@@ -64,4 +68,3 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
 };
 
 export default CourseGrid;
-
