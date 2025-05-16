@@ -51,3 +51,8 @@ export interface SupabaseSimpleResponse {
   error: any | null;
 }
 
+// Tipos adicionales para resolver problemas de inferencia
+export interface SimpleLessonProgress {
+  lesson_id: string;
+  completed: boolean;
+}

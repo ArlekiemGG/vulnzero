@@ -1,4 +1,5 @@
 
+
 // DEPRECATED: Este archivo está obsoleto - usar src/services/course-progress/index.ts en su lugar
 // Mantenido temporalmente para asegurar compatibilidad con cualquier componente antiguo que aún lo utilice
 
@@ -27,3 +28,4 @@ export type {
   TotalLessonsResponse,
   SupabaseSimpleResponse
 } from './course-progress/types';
+

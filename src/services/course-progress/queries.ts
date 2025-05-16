@@ -1,6 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { LessonProgressItem, CourseProgressItem, LessonProgressResponse, TotalLessonsResponse, SupabaseSimpleResponse } from './types';
+import { 
+  LessonProgressItem, 
+  CourseProgressItem, 
+  LessonProgressResponse, 
+  TotalLessonsResponse, 
+  SupabaseSimpleResponse,
+  SimpleLessonProgress
+} from './types';
 
 /**
  * Obtiene los datos de progreso de un curso para un usuario
@@ -21,7 +28,7 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Ejecutamos la consulta y extraemos solo los datos que necesitamos
+  // Ejecutamos la consulta
   const response = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
@@ -30,7 +37,7 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
   
   // Retornamos una estructura simplificada
   return {
-    data: response.data,
+    data: response.data as SimpleLessonProgress[] | null,
     error: response.error
   };
 }
@@ -84,7 +91,7 @@ export async function countTotalLessons(courseId: string): Promise<TotalLessonsR
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
-  // Retornamos una estructura simplificada
+  // Retornamos una estructura simplificada con solo lo que necesitamos
   return {
     count: response.count || 0,
     error: response.error
