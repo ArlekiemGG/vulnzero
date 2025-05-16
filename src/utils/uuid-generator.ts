@@ -40,3 +40,19 @@ export function isValidUUID(id: string): boolean {
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidPattern.test(id);
 }
+
+/**
+ * Normaliza un ID a UUID si es necesario
+ * @param id ID a normalizar
+ * @returns UUID válido
+ */
+export function normalizeId(id: string): string {
+  if (!id) {
+    console.error('normalizeId: ID is empty');
+    return '';
+  }
+  
+  const normalizedId = isValidUUID(id) ? id : generateUUID(id);
+  console.log(`normalizeId: Normalized "${id}" to "${normalizedId}"`);
+  return normalizedId;
+}
