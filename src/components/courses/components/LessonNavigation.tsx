@@ -5,15 +5,16 @@ import { useNavigate } from 'react-router-dom';
 
 interface NavigationProps {
   courseId: string;
-  prevLesson: {id: string; title: string} | null;
-  nextLesson: {id: string; title: string} | null;
+  moduleId?: string;
+  prevLesson: {id: string; title: string; moduleId?: string} | null;
+  nextLesson: {id: string; title: string; moduleId?: string} | null;
 }
 
-const LessonNavigation = ({ courseId, prevLesson, nextLesson }: NavigationProps) => {
+const LessonNavigation = ({ courseId, moduleId, prevLesson, nextLesson }: NavigationProps) => {
   const navigate = useNavigate();
   
-  const navigateToLesson = (id: string) => {
-    navigate(`/courses/${courseId}/lessons/${id}`);
+  const navigateToLesson = (lessonId: string, targetModuleId?: string) => {
+    navigate(`/courses/${courseId}/learn/${targetModuleId || moduleId}/${lessonId}`);
   };
   
   return (
@@ -22,7 +23,7 @@ const LessonNavigation = ({ courseId, prevLesson, nextLesson }: NavigationProps)
         {prevLesson && (
           <Button 
             variant="outline" 
-            onClick={() => navigateToLesson(prevLesson.id)}
+            onClick={() => navigateToLesson(prevLesson.id, prevLesson.moduleId)}
             className="flex items-center"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -34,7 +35,7 @@ const LessonNavigation = ({ courseId, prevLesson, nextLesson }: NavigationProps)
       <div className="flex gap-2">
         {nextLesson && (
           <Button 
-            onClick={() => navigateToLesson(nextLesson.id)}
+            onClick={() => navigateToLesson(nextLesson.id, nextLesson.moduleId)}
             className="flex items-center"
           >
             <span>Siguiente</span>

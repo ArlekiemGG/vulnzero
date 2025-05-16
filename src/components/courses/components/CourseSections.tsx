@@ -35,7 +35,7 @@ const CourseSections = ({ sections, courseId, completedLessons }: CourseSections
                     <div 
                       key={lesson.id} 
                       className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => navigate(`/courses/${courseId}/lessons/${lesson.id}`)}
+                      onClick={() => navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`)}
                     >
                       <div className="mr-3">
                         {completedLessons[lesson.id] ? (

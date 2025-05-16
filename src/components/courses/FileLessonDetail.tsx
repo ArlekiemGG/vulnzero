@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -228,7 +227,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   };
 
   const navigateToLesson = (moduleId: string, lessonId: string) => {
-    navigate(`/courses/${courseId}/${moduleId}/${lessonId}`);
+    navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
   };
 
   if (isLoading) {

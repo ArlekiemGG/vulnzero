@@ -1,4 +1,3 @@
-
 // Importaciones
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -19,7 +18,7 @@ import { useProgressService } from '@/components/courses/services/ProgressServic
 import LessonQuiz from '@/components/courses/components/LessonQuiz';
 
 const LessonDetail = () => {
-  const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
+  const { courseId, moduleId, lessonId } = useParams<{ courseId: string; moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userStats } = useUserStats(user?.id);
@@ -44,10 +43,10 @@ const LessonDetail = () => {
   }, [lessonId, courseId]);
 
   const fetchLessonData = useCallback(async () => {
-    if (!courseId || !lessonId) {
+    if (!courseId || !lessonId || !moduleId) {
       toast({
         title: "Error",
-        description: "No se especificó un ID de curso o lección",
+        description: "No se especificó un ID de curso, módulo o lección",
         variant: "destructive",
       });
       navigate('/courses');
@@ -84,9 +83,8 @@ const LessonDetail = () => {
       }
       
       // Para evitar errores de tipado, verificamos si hay datos de quiz de forma segura
-      // Esta verificación es mejor que comprobar lessonData.quizData directamente
-      const quizPath = `/courses/${courseId}/${lessonData.module_id || "default"}/${lessonId}-quiz.json`;
       try {
+        const quizPath = `/courses/${courseId}/${moduleId}/${lessonId}-quiz.json`;
         const response = await fetch(quizPath);
         if (response.ok) {
           const quizContent = await response.json();
@@ -110,7 +108,7 @@ const LessonDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [courseId, lessonId, user, navigate]);
+  }, [courseId, lessonId, moduleId, user, navigate]);
 
   useEffect(() => {
     fetchLessonData();

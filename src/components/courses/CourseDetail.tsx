@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
@@ -158,7 +157,7 @@ const CourseDetail = () => {
 
   const startCourse = () => {
     if (sections.length > 0 && sections[0].lessons.length > 0) {
-      navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
+      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
     } else {
       toast({
         title: "Sin lecciones",
@@ -174,7 +173,7 @@ const CourseDetail = () => {
       for (const lesson of section.lessons) {
         if (!completedLessons[lesson.id] && 
             !completedLessons[`${courseId}:${lesson.id}`]) {
-          navigate(`/courses/${courseId}/lessons/${lesson.id}`);
+          navigate(`/courses/${courseId}/learn/${section.id}/${lesson.id}`);
           return;
         }
       }
@@ -182,7 +181,7 @@ const CourseDetail = () => {
     
     // Si todas están completadas, ir a la primera lección
     if (sections.length > 0 && sections[0].lessons.length > 0) {
-      navigate(`/courses/${courseId}/lessons/${sections[0].lessons[0].id}`);
+      navigate(`/courses/${courseId}/learn/${sections[0].id}/${sections[0].lessons[0].id}`);
     }
   };
 
