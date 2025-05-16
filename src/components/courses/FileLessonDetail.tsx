@@ -263,7 +263,7 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
             <span>{lesson.duration_minutes} minutos de lectura</span>
           </div>
           
-          <div className="mb-8 bg-cybersec-black p-6 rounded-lg border border-muted shadow-lg">
+          <div className="mb-8 rounded-lg shadow-lg overflow-hidden">
             <EnhancedContentRenderer content={content} />
           </div>
           
@@ -321,38 +321,38 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
         
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
-          <Card className="sticky top-24 bg-cybersec-black border-muted shadow-lg">
+          <Card className="sticky top-24 bg-gray-800 border-gray-700 shadow-lg">
             <CardContent className="p-6">
               <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
               
               {prevLesson && (
                 <>
                   <div className="mb-3">
-                    <div className="text-sm text-gray-500">Anterior</div>
+                    <div className="text-sm text-gray-400">Anterior</div>
                     <button 
                       onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
-                      className="text-left font-medium hover:text-primary transition-colors"
+                      className="text-left font-medium hover:text-blue-400 transition-colors"
                     >
                       {prevLesson.title}
                     </button>
                   </div>
-                  <Separator className="my-3" />
+                  <Separator className="my-3 bg-gray-700" />
                 </>
               )}
               
               <div className="mb-3">
-                <div className="text-sm text-gray-500">Actual</div>
-                <div className="font-medium text-primary">{lesson.title}</div>
+                <div className="text-sm text-gray-400">Actual</div>
+                <div className="font-medium text-blue-400">{lesson.title}</div>
               </div>
               
               {nextLesson && (
                 <>
-                  <Separator className="my-3" />
+                  <Separator className="my-3 bg-gray-700" />
                   <div>
-                    <div className="text-sm text-gray-500">Siguiente</div>
+                    <div className="text-sm text-gray-400">Siguiente</div>
                     <button 
                       onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
-                      className="text-left font-medium hover:text-primary transition-colors"
+                      className="text-left font-medium hover:text-blue-400 transition-colors"
                     >
                       {nextLesson.title}
                     </button>
