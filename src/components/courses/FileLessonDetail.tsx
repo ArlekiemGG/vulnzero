@@ -13,6 +13,7 @@ import { findCourseById, findModuleById, findLessonById } from '@/data/courses';
 import { useUserCourseProgress } from '@/hooks/use-course-progress';
 import LessonQuiz from './components/LessonQuiz';
 import EnhancedContentRenderer from './components/EnhancedContentRenderer';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import './components/lesson-content.css';
 
 interface FileLessonDetailProps {
@@ -63,26 +64,36 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
       
       try {
         // Log the path we're attempting to fetch
-        console.log(`Fetching lesson content from: /courses/${courseId}/${moduleId}/${lessonId}.html`);
+        const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
+        console.log(`Intentando cargar el contenido de la lección desde: ${contentPath}`);
         
         // Fetch lesson content from HTML file
-        const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
         const response = await fetch(contentPath);
         
         if (!response.ok) {
-          console.error(`Error loading lesson content: ${response.status} ${response.statusText}`);
-          throw new Error("No se pudo cargar el contenido de la lección");
+          console.error(`Error cargando el contenido de la lección: ${response.status} ${response.statusText}`);
+          
+          // More descriptive error message based on status code
+          if (response.status === 404) {
+            throw new Error(`No se encontró el archivo de contenido en la ruta: ${contentPath}`);
+          } else {
+            throw new Error(`Error al cargar el contenido (${response.status}): ${response.statusText}`);
+          }
         }
         
         const html = await response.text();
+        if (!html || html.trim() === '') {
+          throw new Error("El archivo de contenido está vacío");
+        }
+        
         setContent(html);
         
         // Set up navigation between lessons
         setupNavigation();
         setFadeIn(true);
       } catch (error) {
-        console.error('Error loading lesson content:', error);
-        setError("No se pudo cargar el contenido de la lección. Verifica que el archivo exista.");
+        console.error('Error cargando el contenido de la lección:', error);
+        setError(error instanceof Error ? error.message : "No se pudo cargar el contenido de la lección. Verifica que el archivo exista.");
       } finally {
         setIsLoading(false);
       }
@@ -241,6 +252,12 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
               {error || "La lección que buscas no existe o ha sido eliminada"}
             </AlertDescription>
           </Alert>
+          <div className="space-y-2 mt-4">
+            <p className="text-gray-400">Verifica la ruta:</p>
+            <code className="px-2 py-1 bg-gray-800 rounded text-xs">
+              /courses/{courseId}/{moduleId}/{lessonId}.html
+            </code>
+          </div>
           <Button className="mt-4" onClick={() => navigate(`/courses/${courseId}`)}>
             Volver al curso
           </Button>
@@ -250,129 +267,131 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   }
 
   return (
-    <div className={`container px-4 py-8 mx-auto transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Main content */}
-        <div className="w-full md:w-3/4">
-          <div className="flex items-center mb-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(`/courses/${courseId}`)}
-              className="p-0 hover:bg-transparent hover:text-primary"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              <span>Volver al curso</span>
-            </Button>
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
-          
-          <div className="flex items-center text-sm text-gray-500 mb-8">
-            <BookOpen className="mr-1 h-4 w-4" />
-            <span>{lesson.duration_minutes} minutos de lectura</span>
-          </div>
-          
-          <div className="mb-8 rounded-lg shadow-lg overflow-hidden">
-            <EnhancedContentRenderer content={content} />
-          </div>
-          
-          {quizVisible && lesson.has_quiz && (
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4">Quiz - Comprueba tus conocimientos</h3>
-              <LessonQuiz 
-                courseId={courseId} 
-                moduleId={moduleId} 
-                lessonId={lessonId} 
-                onComplete={handleQuizComplete}
-                completed={quizCompleted}
-              />
-            </div>
-          )}
-          
-          <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t">
-            <div className="mb-4 sm:mb-0">
-              {prevLesson && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
-                  className="flex items-center"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  <span>Anterior</span>
-                </Button>
-              )}
+    <ErrorBoundary>
+      <div className={`container px-4 py-8 mx-auto transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Main content */}
+          <div className="w-full md:w-3/4">
+            <div className="flex items-center mb-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate(`/courses/${courseId}`)}
+                className="p-0 hover:bg-transparent hover:text-primary"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span>Volver al curso</span>
+              </Button>
             </div>
             
-            <div className="flex gap-2">
-              {isCompleted ? (
-                <Button variant="outline" className="flex items-center" disabled>
-                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                  <span>Completada</span>
-                </Button>
-              ) : (
-                <Button onClick={handleMarkAsCompleted}>
-                  Marcar como completada
-                </Button>
-              )}
-              
-              {nextLesson && (
-                <Button 
-                  onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
-                  className="flex items-center"
-                >
-                  <span>Siguiente</span>
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
+            <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
+            
+            <div className="flex items-center text-sm text-gray-500 mb-8">
+              <BookOpen className="mr-1 h-4 w-4" />
+              <span>{lesson.duration_minutes} minutos de lectura</span>
             </div>
-          </div>
-        </div>
-        
-        {/* Sidebar */}
-        <div className="w-full md:w-1/4">
-          <Card className="sticky top-24 bg-gray-800 border-gray-700 shadow-lg">
-            <CardContent className="p-6">
-              <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
-              
-              {prevLesson && (
-                <>
-                  <div className="mb-3">
-                    <div className="text-sm text-gray-400">Anterior</div>
-                    <button 
-                      onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
-                      className="text-left font-medium hover:text-blue-400 transition-colors"
-                    >
-                      {prevLesson.title}
-                    </button>
-                  </div>
-                  <Separator className="my-3 bg-gray-700" />
-                </>
-              )}
-              
-              <div className="mb-3">
-                <div className="text-sm text-gray-400">Actual</div>
-                <div className="font-medium text-blue-400">{lesson.title}</div>
+            
+            <div className="mb-8 rounded-lg shadow-lg overflow-hidden">
+              <EnhancedContentRenderer content={content} />
+            </div>
+            
+            {quizVisible && lesson.has_quiz && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-4">Quiz - Comprueba tus conocimientos</h3>
+                <LessonQuiz 
+                  courseId={courseId} 
+                  moduleId={moduleId} 
+                  lessonId={lessonId} 
+                  onComplete={handleQuizComplete}
+                  completed={quizCompleted}
+                />
+              </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t">
+              <div className="mb-4 sm:mb-0">
+                {prevLesson && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
+                    className="flex items-center"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span>Anterior</span>
+                  </Button>
+                )}
               </div>
               
-              {nextLesson && (
-                <>
-                  <Separator className="my-3 bg-gray-700" />
-                  <div>
-                    <div className="text-sm text-gray-400">Siguiente</div>
-                    <button 
-                      onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
-                      className="text-left font-medium hover:text-blue-400 transition-colors"
-                    >
-                      {nextLesson.title}
-                    </button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+              <div className="flex gap-2">
+                {isCompleted ? (
+                  <Button variant="outline" className="flex items-center" disabled>
+                    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                    <span>Completada</span>
+                  </Button>
+                ) : (
+                  <Button onClick={handleMarkAsCompleted}>
+                    Marcar como completada
+                  </Button>
+                )}
+                
+                {nextLesson && (
+                  <Button 
+                    onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
+                    className="flex items-center"
+                  >
+                    <span>Siguiente</span>
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Sidebar */}
+          <div className="w-full md:w-1/4">
+            <Card className="sticky top-24 bg-gray-800 border-gray-700 shadow-lg">
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-4">Navegación rápida</h3>
+                
+                {prevLesson && (
+                  <>
+                    <div className="mb-3">
+                      <div className="text-sm text-gray-400">Anterior</div>
+                      <button 
+                        onClick={() => navigateToLesson(prevLesson.moduleId, prevLesson.lessonId)}
+                        className="text-left font-medium hover:text-blue-400 transition-colors"
+                      >
+                        {prevLesson.title}
+                      </button>
+                    </div>
+                    <Separator className="my-3 bg-gray-700" />
+                  </>
+                )}
+                
+                <div className="mb-3">
+                  <div className="text-sm text-gray-400">Actual</div>
+                  <div className="font-medium text-blue-400">{lesson.title}</div>
+                </div>
+                
+                {nextLesson && (
+                  <>
+                    <Separator className="my-3 bg-gray-700" />
+                    <div>
+                      <div className="text-sm text-gray-400">Siguiente</div>
+                      <button 
+                        onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}
+                        className="text-left font-medium hover:text-blue-400 transition-colors"
+                      >
+                        {nextLesson.title}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 

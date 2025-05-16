@@ -45,13 +45,25 @@ const EnhancedContentRenderer = ({ content }: EnhancedContentRendererProps) => {
           '<div class="enhanced-block enhanced-block-$1'
         );
 
+        // Enhance tables for better visibility
+        enhancedContent = enhancedContent.replace(
+          /<table>/g,
+          '<table class="enhanced-table">'
+        );
+
+        // Process hyperlinks to open in new tab
+        enhancedContent = enhancedContent.replace(
+          /<a href="(http[s]?:\/\/[^"]+)">/g,
+          '<a href="$1" target="_blank" rel="noopener noreferrer">'
+        );
+
         setProcessedContent(enhancedContent);
         setIsLoading(false);
       }, 300);
 
       return () => clearTimeout(timer);
     } catch (err) {
-      console.error("Error processing content:", err);
+      console.error("Error procesando el contenido:", err);
       setError("Error al procesar el contenido de la lección");
       setIsLoading(false);
     }
@@ -84,7 +96,7 @@ const EnhancedContentRenderer = ({ content }: EnhancedContentRendererProps) => {
 
   return (
     <div 
-      className="lesson-content prose max-w-none" 
+      className="lesson-content" 
       dangerouslySetInnerHTML={{ __html: processedContent }} 
     />
   );

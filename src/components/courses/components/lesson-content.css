@@ -1,7 +1,7 @@
 
 /* Base Lesson Content Styling */
 .lesson-content {
-  @apply text-gray-200 bg-gray-800 p-6 rounded-lg;
+  @apply text-gray-200 bg-gray-800/80 p-6 rounded-lg;
 }
 
 /* Typography enhancements */
@@ -16,23 +16,32 @@
 
 .lesson-content h1 {
   @apply text-3xl border-b border-gray-700 pb-2;
+  color: #9fef00; /* HackTheBox green */
 }
 
 .lesson-content h2 {
   @apply text-2xl border-b border-gray-700 pb-2 mt-10;
+  color: #9fef00; /* HackTheBox green */
 }
 
 .lesson-content h3 {
-  @apply text-xl mt-8 text-blue-300;
+  @apply text-xl mt-8;
+  color: #00b3e6; /* Bright blue - similar to TryHackMe */
 }
 
 .lesson-content h4 {
-  @apply text-lg text-blue-200;
+  @apply text-lg;
+  color: #00b3e6; /* Bright blue - similar to TryHackMe */
 }
 
 /* Paragraph spacing */
 .lesson-content p {
   @apply my-4 leading-7 text-gray-300;
+}
+
+/* Links */
+.lesson-content a {
+  @apply text-blue-400 hover:underline;
 }
 
 /* Lists */
@@ -65,16 +74,13 @@
 
 /* Code block language badge */
 .code-language-badge {
-  @apply px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-t-md inline-block;
+  @apply px-3 py-1 text-xs font-semibold rounded-t-md inline-block;
+  background-color: #9fef00; /* HackTheBox green */
+  color: #111927; /* Dark background */
 }
 
 .code-block-container {
   @apply mb-6;
-}
-
-/* Links */
-.lesson-content a {
-  @apply text-blue-400 hover:underline;
 }
 
 /* Images */
@@ -94,6 +100,23 @@
 
 .lesson-content th {
   @apply bg-gray-700 text-white;
+}
+
+.enhanced-table {
+  @apply w-full border-collapse my-6 rounded-md overflow-hidden;
+  border: 1px solid #2d3748;
+}
+
+.enhanced-table th {
+  @apply bg-gray-700 text-white p-3 text-left;
+}
+
+.enhanced-table td {
+  @apply border-t border-gray-700 p-3;
+}
+
+.enhanced-table tr:hover {
+  @apply bg-gray-700/40;
 }
 
 /* Custom content blocks */
@@ -133,7 +156,8 @@
 
 /* Animation for important elements */
 .lesson-content .highlight {
-  @apply border border-blue-500 rounded px-2 bg-blue-500/20;
+  @apply border border-blue-500 rounded px-2;
+  background-color: rgba(0, 179, 230, 0.1);
 }
 
 /* Improved syntax highlighting */
