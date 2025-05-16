@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   CourseProgressItem, 
@@ -34,6 +33,34 @@ class CourseProgressService {
       .select('lesson_id, completed, course_id')
       .eq('user_id', userId)
       .eq('course_id', courseId);
+  }
+
+  /**
+   * Obtener información del curso al que pertenece una lección
+   */
+  async getLessonCourseInfo(lessonId: string): Promise<SupabaseSimpleResponse> {
+    return await supabase
+      .from('course_lessons')
+      .select(`
+        section_id,
+        course_sections:section_id (
+          course_id
+        )
+      `)
+      .eq('id', lessonId)
+      .maybeSingle();
+  }
+
+  /**
+   * Obtener el progreso de una lección por su ID sin conocer el curso
+   */
+  async fetchLessonProgressByLessonId(userId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
+    return await supabase
+      .from('user_lesson_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle();
   }
 
   /**

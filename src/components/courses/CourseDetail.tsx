@@ -1,19 +1,19 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HybridCourseService } from './services/HybridCourseService';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
-import { SectionWithLessons } from './types';
 import { courseProgressService } from '@/services/course-progress-service'; 
+import { HybridCourseService } from './services/HybridCourseService';
+import { SectionWithLessons } from './types';
 
 // Componentes refactorizados
 import CourseHeader from './components/CourseHeader';
 import CourseImage from './components/CourseImage';
 import CourseContent from './components/CourseContent';
 import CourseProgressPanel from './components/CourseProgressPanel';
+import CourseDetailSkeleton from './components/CourseDetailSkeleton';
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -77,8 +77,30 @@ const CourseDetail = () => {
       console.log("CourseDetail: Course data loaded:", courseData);
       setCourse(courseData);
 
-      // Obtener las secciones del curso
-      const sectionsData = await HybridCourseService.getCourseSections(courseData.id);
+      // Obtener las secciones del curso y sus lecciones
+      await loadCourseSections(courseData.id);
+      
+      // Obtener el progreso del curso si el usuario está autenticado
+      if (user) {
+        await loadUserProgress(courseData.id);
+      }
+    } catch (error) {
+      console.error('CourseDetail: Error fetching course data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la información del curso. Por favor, inténtalo más tarde.",
+        variant: "destructive",
+      });
+      navigate('/courses');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [courseId, user, navigate]);
+
+  // Extraemos la carga de secciones a una función separada
+  const loadCourseSections = async (courseId: string) => {
+    try {
+      const sectionsData = await HybridCourseService.getCourseSections(courseId);
       console.log("CourseDetail: Sections loaded:", sectionsData.length);
       
       // Obtener las lecciones de cada sección
@@ -94,37 +116,38 @@ const CourseDetail = () => {
       
       console.log("CourseDetail: Sections with lessons:", sectionsWithLessons);
       setSections(sectionsWithLessons);
-      
-      // Obtener el progreso del curso si el usuario está autenticado
-      if (user) {
-        // Usamos el nuevo servicio unificado
-        const { data: progressData } = await courseProgressService.getCourseProgress(user.id, courseData.id);
-        if (progressData) {
-          setProgress(progressData.progress_percentage || 0);
-        }
-        
-        // Obtener el estado de las lecciones completadas usando el nuevo servicio
-        const result = await courseProgressService.fetchUserProgressData(courseData.id, user.id);
-        setCompletedLessons(result.completedLessons);
-      }
     } catch (error) {
-      console.error('CourseDetail: Error fetching course data:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cargar la información del curso. Por favor, inténtalo más tarde.",
-        variant: "destructive",
-      });
-      navigate('/courses');
-    } finally {
-      setIsLoading(false);
+      console.error("Error loading course sections:", error);
+      throw error; // Propagar el error para manejarlo en la función principal
     }
-  }, [courseId, user, navigate]);
+  };
+
+  // Extraemos la carga de progreso a una función separada
+  const loadUserProgress = async (courseId: string) => {
+    if (!user) return;
+    
+    try {
+      // Usamos el nuevo servicio unificado
+      const { data: progressData } = await courseProgressService.getCourseProgress(user.id, courseId);
+      if (progressData) {
+        setProgress(progressData.progress_percentage || 0);
+      }
+      
+      // Obtener el estado de las lecciones completadas usando el nuevo servicio
+      const result = await courseProgressService.fetchUserProgressData(courseId, user.id);
+      setCompletedLessons(result.completedLessons);
+    } catch (error) {
+      console.error("Error loading user progress:", error);
+      // No lanzamos el error, simplemente continuamos con los valores predeterminados
+    }
+  };
 
   // Manejar la carga inicial de datos
   useEffect(() => {
     fetchCourseData();
   }, [fetchCourseData]);
 
+  // Contadores y funciones de navegación
   const getTotalLessons = () => {
     return sections.reduce((total, section) => total + section.lessons.length, 0);
   };
@@ -163,33 +186,17 @@ const CourseDetail = () => {
     }
   };
 
+  // Renderizamos el estado de carga
   if (isLoading) {
-    return (
-      <div className="container px-4 py-8 mx-auto">
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="w-full md:w-2/3">
-            <Skeleton className="h-12 w-3/4 mb-4" />
-            <Skeleton className="h-6 w-1/2 mb-8" />
-            <Skeleton className="h-40 w-full mb-8" />
-            <Skeleton className="h-8 w-1/4 mb-4" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          </div>
-          <div className="w-full md:w-1/3">
-            <Skeleton className="h-80 w-full rounded-lg" />
-          </div>
-        </div>
-      </div>
-    );
+    return <CourseDetailSkeleton />;
   }
 
+  // Si no hay datos de curso, mostramos un mensaje
   if (!course) {
     return <div className="container px-4 py-8 mx-auto">Curso no encontrado</div>;
   }
 
+  // Renderizado principal
   return (
     <div 
       ref={contentRef} 
