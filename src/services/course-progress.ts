@@ -20,5 +20,10 @@ export {
 // También re-exportamos los tipos para mantener compatibilidad
 export type { 
   ProgressResult, 
-  QuizResult 
+  QuizResult,
+  LessonProgressItem,
+  CourseProgressItem,
+  LessonProgressResponse,
+  TotalLessonsResponse,
+  SupabaseSimpleResponse
 } from './course-progress/types';

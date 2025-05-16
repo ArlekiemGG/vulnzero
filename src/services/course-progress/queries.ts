@@ -1,130 +1,143 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { LessonProgressItem, CourseProgressItem } from './types';
+import { LessonProgressItem, CourseProgressItem, LessonProgressResponse, TotalLessonsResponse, SupabaseSimpleResponse } from './types';
 
 /**
  * Obtiene los datos de progreso de un curso para un usuario
  */
-export async function getCourseProgress(userId: string, courseId: string): Promise<any> {
-  return supabase
+export async function getCourseProgress(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_course_progress')
     .select('progress_percentage, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .maybeSingle();
+  
+  return response;
 }
 
 /**
  * Obtiene el progreso de las lecciones de un curso para un usuario
- * Utilizando una función más simple sin retornar el objeto completo de Supabase
+ * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
-export async function getLessonProgress(userId: string, courseId: string): Promise<any> {
-  // Separamos la consulta en pasos para evitar la inferencia de tipos profunda
-  const client = supabase.from('user_lesson_progress');
-  const query = client.select('lesson_id, completed');
-  const filtered = query
+export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
+  // Ejecutamos la consulta y extraemos solo los datos que necesitamos
+  const response = await supabase
+    .from('user_lesson_progress')
+    .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  const response = await filtered;
-  
-  // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
-  return { 
-    data: response.data || null, 
-    error: response.error || null 
+  // Retornamos una estructura simplificada
+  return {
+    data: response.data,
+    error: response.error
   };
 }
 
 /**
  * Verifica si existe un progreso de lección
  */
-export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string): Promise<any> {
-  return supabase
+export async function checkLessonProgressExists(userId: string, courseId: string, lessonId: string): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_lesson_progress')
     .select('id')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .eq('lesson_id', lessonId)
     .maybeSingle();
+  
+  return response;
 }
 
 /**
  * Actualiza un progreso de lección existente
  */
-export async function updateLessonProgress(id: string, data: Partial<LessonProgressItem>): Promise<any> {
-  return supabase
+export async function updateLessonProgress(id: string, data: Partial<LessonProgressItem>): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_lesson_progress')
     .update(data)
     .eq('id', id);
+  
+  return response;
 }
 
 /**
  * Crea un nuevo registro de progreso de lección
  */
-export async function createLessonProgress(data: LessonProgressItem): Promise<any> {
-  return supabase
+export async function createLessonProgress(data: LessonProgressItem): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_lesson_progress')
-    .insert([data]); // Wrapping in array to fix type issue
+    .insert([data]);
+  
+  return response;
 }
 
 /**
  * Cuenta el total de lecciones en un curso
- * Utilizando una función más simple sin retornar el objeto completo de Supabase
+ * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
-export async function countTotalLessons(courseId: string): Promise<any> {
-  // Separamos la consulta en pasos para evitar la inferencia de tipos profunda
-  const client = supabase.from('course_lessons');
-  const query = client.select('*', { count: 'exact', head: true });
-  const filtered = query.eq('course_id', courseId);
+export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
+  // Ejecutamos la consulta
+  const response = await supabase
+    .from('course_lessons')
+    .select('*', { count: 'exact', head: true })
+    .eq('course_id', courseId);
   
-  const response = await filtered;
-  
-  // Retornamos solo lo necesario para evitar la inferencia de tipos compleja
-  return { 
-    count: response.count || 0, 
-    error: response.error || null 
+  // Retornamos una estructura simplificada
+  return {
+    count: response.count || 0,
+    error: response.error
   };
 }
 
 /**
  * Cuenta las lecciones completadas por un usuario en un curso
  */
-export async function countCompletedLessons(userId: string, courseId: string): Promise<any> {
-  return supabase
+export async function countCompletedLessons(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_lesson_progress')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .eq('completed', true);
+  
+  return response;
 }
 
 /**
  * Verifica si existe un progreso de curso
  */
-export async function checkCourseProgressExists(userId: string, courseId: string): Promise<any> {
-  return supabase
+export async function checkCourseProgressExists(userId: string, courseId: string): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_course_progress')
     .select('id')
     .eq('user_id', userId)
     .eq('course_id', courseId)
     .maybeSingle();
+  
+  return response;
 }
 
 /**
  * Actualiza un progreso de curso existente
  */
-export async function updateCourseProgressRecord(id: string, data: Partial<CourseProgressItem>): Promise<any> {
-  return supabase
+export async function updateCourseProgressRecord(id: string, data: Partial<CourseProgressItem>): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_course_progress')
     .update(data)
     .eq('id', id);
+  
+  return response;
 }
 
 /**
  * Crea un nuevo registro de progreso de curso
  */
-export async function createCourseProgressRecord(data: CourseProgressItem): Promise<any> {
-  return supabase
+export async function createCourseProgressRecord(data: CourseProgressItem): Promise<SupabaseSimpleResponse> {
+  const response = await supabase
     .from('user_course_progress')
-    .insert([data]); // Wrapping in array to fix type issue
+    .insert([data]);
+  
+  return response;
 }

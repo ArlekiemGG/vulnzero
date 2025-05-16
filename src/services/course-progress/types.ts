@@ -31,3 +31,23 @@ export interface ProgressResult {
   completedLessons: Record<string, boolean>;
   completedQuizzes: Record<string, boolean>;
 }
+
+// Interfaces para las respuestas de Supabase
+export interface LessonProgressResponse {
+  data: Array<{
+    lesson_id: string;
+    completed: boolean;
+  }> | null;
+  error: any | null;
+}
+
+export interface TotalLessonsResponse {
+  count: number;
+  error: any | null;
+}
+
+export interface SupabaseSimpleResponse {
+  data: any;
+  error: any | null;
+}
+

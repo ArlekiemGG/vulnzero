@@ -1,3 +1,4 @@
+
 import { ProgressResult, QuizResult } from './types';
 import * as queries from './queries';
 
@@ -67,19 +68,23 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 export async function markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
   try {
     // Check if the lesson is already marked as completed
-    const { data: existingProgress } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    const { data: existingProgress, error: checkError } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    
+    if (checkError) {
+      throw new Error(`Error checking lesson progress: ${checkError.message}`);
+    }
     
     if (existingProgress) {
       // Update existing record
-      const result = await queries.updateLessonProgress(existingProgress.id, {
+      const { error } = await queries.updateLessonProgress(existingProgress.id, {
         completed: true,
         completed_at: new Date().toISOString()
       });
       
-      if (result.error) throw result.error;
+      if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
     } else {
       // Create new record with all required fields
-      const result = await queries.createLessonProgress({
+      const { error } = await queries.createLessonProgress({
         user_id: userId,
         course_id: courseId,
         lesson_id: lessonId,
@@ -87,7 +92,7 @@ export async function markLessonComplete(userId: string, courseId: string, lesso
         completed_at: new Date().toISOString()
       });
       
-      if (result.error) throw result.error;
+      if (error) throw new Error(`Error creating lesson progress: ${error.message}`);
     }
     
     // Update course progress
@@ -112,7 +117,11 @@ export async function saveQuizResults(
 ): Promise<boolean> {
   try {
     // Check if lesson progress already exists
-    const { data: existingLesson } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    const { data: existingLesson, error: checkError } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
+    
+    if (checkError) {
+      throw new Error(`Error checking lesson progress: ${checkError.message}`);
+    }
     
     const lessonData = {
       completed: true,
@@ -121,18 +130,18 @@ export async function saveQuizResults(
     
     if (existingLesson) {
       // Update existing record
-      const result = await queries.updateLessonProgress(existingLesson.id, lessonData);
-      if (result.error) throw result.error;
+      const { error } = await queries.updateLessonProgress(existingLesson.id, lessonData);
+      if (error) throw new Error(`Error updating lesson progress: ${error.message}`);
     } else {
       // Create new lesson progress record with all required fields
-      const result = await queries.createLessonProgress({
+      const { error } = await queries.createLessonProgress({
         user_id: userId,
         course_id: courseId,
         lesson_id: lessonId,
         ...lessonData
       });
       
-      if (result.error) throw result.error;
+      if (error) throw new Error(`Error creating lesson progress: ${error.message}`);
     }
     
     // Update course progress
@@ -154,16 +163,14 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     const { count: totalLessonsCount, error: totalLessonsError } = await queries.countTotalLessons(courseId);
     
     if (totalLessonsError) {
-      console.error("Error counting total lessons:", totalLessonsError);
-      return 0;
+      throw new Error(`Error counting total lessons: ${totalLessonsError.message}`);
     }
     
     // Get completed lessons count
     const { data: completedLessonsData, error: completedLessonsError } = await queries.countCompletedLessons(userId, courseId);
     
     if (completedLessonsError) {
-      console.error("Error counting completed lessons:", completedLessonsError);
-      return 0;
+      throw new Error(`Error counting completed lessons: ${completedLessonsError.message}`);
     }
     
     const totalLessons = totalLessonsCount || 0;
@@ -172,7 +179,11 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     const completed = progressPercentage === 100;
     
     // Check if course progress record exists
-    const { data: existingProgress } = await queries.checkCourseProgressExists(userId, courseId);
+    const { data: existingProgress, error: checkError } = await queries.checkCourseProgressExists(userId, courseId);
+    
+    if (checkError) {
+      throw new Error(`Error checking course progress: ${checkError.message}`);
+    }
     
     const updateData = {
       progress_percentage: progressPercentage,
@@ -182,16 +193,18 @@ export async function updateCourseProgressData(userId: string, courseId: string)
     
     if (existingProgress) {
       // Update existing record
-      await queries.updateCourseProgressRecord(existingProgress.id, updateData);
+      const { error } = await queries.updateCourseProgressRecord(existingProgress.id, updateData);
+      if (error) throw new Error(`Error updating course progress: ${error.message}`);
     } else {
       // Create new record with all required fields
-      await queries.createCourseProgressRecord({
+      const { error } = await queries.createCourseProgressRecord({
         user_id: userId,
         course_id: courseId,
         ...updateData,
         started_at: new Date().toISOString(),
         progress_percentage: progressPercentage
       });
+      if (error) throw new Error(`Error creating course progress: ${error.message}`);
     }
     
     return progressPercentage;
