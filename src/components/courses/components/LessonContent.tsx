@@ -1,5 +1,5 @@
 
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Clock } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 
 interface LessonContentProps {
@@ -12,18 +12,24 @@ interface LessonContentProps {
 
 const LessonContent = ({ lesson }: LessonContentProps) => {
   return (
-    <>
+    <div className="lesson-content">
       <h1 className="text-3xl font-bold mb-4">{lesson.title}</h1>
       
-      <div className="flex items-center text-sm text-gray-500 mb-8">
-        <BookOpen className="mr-1 h-4 w-4" />
-        <span>{lesson.duration_minutes} minutos de lectura</span>
+      <div className="flex items-center gap-4 text-sm text-gray-500 mb-8">
+        <div className="flex items-center">
+          <Clock className="mr-1 h-4 w-4" />
+          <span>{lesson.duration_minutes} minutos de lectura</span>
+        </div>
+        <div className="flex items-center">
+          <BookOpen className="mr-1 h-4 w-4" />
+          <span>Lección</span>
+        </div>
       </div>
       
-      <div className="prose max-w-none mb-8">
+      <div className="prose max-w-none dark:prose-invert mb-8">
         <MarkdownRenderer content={lesson.content} />
       </div>
-    </>
+    </div>
   );
 };
 

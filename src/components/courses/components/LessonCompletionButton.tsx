@@ -1,6 +1,7 @@
 
 import { Button } from '@/components/ui/button';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface CompletionButtonProps {
   isCompleted: boolean;
@@ -8,6 +9,19 @@ interface CompletionButtonProps {
 }
 
 const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleComplete = async () => {
+    if (isLoading || isCompleted) return;
+    
+    setIsLoading(true);
+    try {
+      await onComplete();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <>
       {isCompleted ? (
@@ -16,8 +30,9 @@ const LessonCompletionButton = ({ isCompleted, onComplete }: CompletionButtonPro
           <span>Completada</span>
         </Button>
       ) : (
-        <Button onClick={onComplete}>
-          Marcar como completada
+        <Button onClick={handleComplete} disabled={isLoading} className="flex items-center">
+          {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          <span>Marcar como completada</span>
         </Button>
       )}
     </>
