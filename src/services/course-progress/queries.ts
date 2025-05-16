@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LessonProgressItem, 
@@ -28,17 +27,26 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Ejecutamos la consulta explícitamente para evitar problemas de inferencia de tipos
-  const { data, error } = await supabase
+  // Ejecutamos la consulta pero no usamos inferencia de tipos
+  const response = await supabase
     .from('user_lesson_progress')
-    .select('lesson_id, completed, course_id')
+    .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
+  // Transformamos explícitamente la respuesta para evitar problemas de inferencia de tipos
+  const transformedData = response.data ? 
+    response.data.map((item: any) => ({
+      lesson_id: item.lesson_id,
+      completed: item.completed,
+      course_id: courseId // Añadimos el courseId manualmente ya que estamos filtrando por él
+    })) as SimpleLessonProgress[] : 
+    null;
+  
   // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    data: data as SimpleLessonProgress[] | null,
-    error: error
+    data: transformedData,
+    error: response.error
   };
 }
 
@@ -85,16 +93,16 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Ejecutamos la consulta explícitamente para evitar problemas de inferencia de tipos
-  const { count, error } = await supabase
+  // Ejecutamos la consulta con count explícito para evitar inferencia de tipos
+  const response = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
   // Retornamos una estructura simplificada con solo lo que necesitamos
   return {
-    count: count || 0,
-    error: error
+    count: response.count || 0,
+    error: response.error
   };
 }
 

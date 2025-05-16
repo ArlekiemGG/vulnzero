@@ -1,4 +1,5 @@
 
+
 // Interfaces para los modelos de datos
 export interface LessonProgressItem {
   id?: string;
@@ -34,11 +35,7 @@ export interface ProgressResult {
 
 // Interfaces para las respuestas de Supabase
 export interface LessonProgressResponse {
-  data: Array<{
-    lesson_id: string;
-    completed: boolean;
-    course_id?: string;
-  }> | null;
+  data: SimpleLessonProgress[] | null;
   error: any | null;
 }
 
@@ -56,5 +53,6 @@ export interface SupabaseSimpleResponse {
 export interface SimpleLessonProgress {
   lesson_id: string;
   completed: boolean;
-  course_id?: string;
+  course_id: string;  // Ahora es requerido para evitar problemas de tipo
 }
+
