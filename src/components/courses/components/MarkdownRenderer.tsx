@@ -9,6 +9,15 @@ interface MarkdownRendererProps {
   content: string;
 }
 
+// Define proper types for the code component props
+interface CodeProps {
+  node: any;
+  inline?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  [key: string]: any;
+}
+
 const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,7 +49,7 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     <ReactMarkdown
       className="prose prose-invert max-w-none"
       components={{
-        code({ node, inline, className, children, ...props }) {
+        code: ({ node, inline, className, children, ...props }: CodeProps) => {
           const match = /language-(\w+)/.exec(className || '');
           return !inline && match ? (
             <SyntaxHighlighter
