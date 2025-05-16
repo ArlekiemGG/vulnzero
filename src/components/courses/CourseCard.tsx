@@ -29,17 +29,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isComplet
   return (
     <Link 
       to={`/courses/${course.id}`} 
-      className="block transition-all duration-300"
-      state={{ fromCourses: true }}
-      preventScrollReset={false}
+      className="block transition-all duration-300 hover:no-underline"
+      state={{ fromCourses: true, courseId: course.id }}
     >
-      <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
+      <Card className="h-full overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-[1.02] bg-white">
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 
             src={course.image_url} 
             alt={course.title} 
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}

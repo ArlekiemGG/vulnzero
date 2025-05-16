@@ -37,9 +37,17 @@ const CourseDetail = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
 
-  // Efecto para la animación de entrada
+  // Controlamos la animación de entrada solo después de que los datos estén listos
   useEffect(() => {
-    setFadeIn(true);
+    if (!isLoading) {
+      // Pequeño retraso para dar tiempo a que el DOM se actualice
+      const timer = setTimeout(() => setFadeIn(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
+  // Limpiamos el efecto de animación al desmontar
+  useEffect(() => {
     return () => setFadeIn(false);
   }, []);
 
@@ -47,6 +55,7 @@ const CourseDetail = () => {
     const fetchCourseData = async () => {
       if (!courseId) return;
       setIsLoading(true);
+      setFadeIn(false); // Aseguramos inicio con fade out
       
       try {
         // Obtener datos del curso
@@ -192,7 +201,7 @@ const CourseDetail = () => {
   return (
     <div 
       ref={contentRef} 
-      className={`container px-4 py-8 mx-auto transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+      className={`container px-4 py-8 mx-auto transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
     >
       <div className="flex flex-col md:flex-row gap-8">
         {/* Contenido principal */}
@@ -227,6 +236,7 @@ const CourseDetail = () => {
               src={course.image_url}
               alt={course.title}
               className="w-full h-full object-cover"
+              loading="eager"
               onError={(e) => {
                 e.currentTarget.src = '/placeholder.svg';
               }}
