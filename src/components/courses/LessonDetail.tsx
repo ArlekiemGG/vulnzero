@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CourseService, Lesson } from './services/CourseService';
+import { HybridCourseService } from './services/HybridCourseService';
 import { useProgressService } from './services/ProgressService';
 import { ChevronLeft, ChevronRight, CheckCircle, BookOpen } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -10,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import MarkdownRenderer from './components/MarkdownRenderer';
 
 const LessonDetail = () => {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -17,11 +19,25 @@ const LessonDetail = () => {
   const { user } = useAuth();
   const { getLessonProgress, markLessonAsCompleted } = useProgressService();
   
-  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [lesson, setLesson] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [completed, setCompleted] = useState<boolean>(false);
   const [nextLesson, setNextLesson] = useState<{id: string; title: string} | null>(null);
   const [prevLesson, setPrevLesson] = useState<{id: string; title: string} | null>(null);
+  const [fadeIn, setFadeIn] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Agregamos un efecto de fade-in cuando se cargan los datos
+    if (!isLoading && lesson) {
+      const timer = setTimeout(() => setFadeIn(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, lesson]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    setFadeIn(false);
+  }, [lessonId]);
 
   useEffect(() => {
     const fetchLessonData = async () => {
@@ -29,8 +45,8 @@ const LessonDetail = () => {
       setIsLoading(true);
       
       try {
-        // Obtener datos de la lección
-        const lessonData = await CourseService.getLessonById(lessonId);
+        // Obtener datos de la lección usando el servicio híbrido
+        const lessonData = await HybridCourseService.getLessonById(lessonId);
         if (!lessonData) {
           toast({
             title: "Lección no encontrada",
@@ -43,16 +59,14 @@ const LessonDetail = () => {
         setLesson(lessonData);
         
         // Obtener sección a la que pertenece la lección
-        const { data: sectionData } = await supabase
-          .from('course_sections')
-          .select('*, course_id')
-          .eq('id', lessonData.section_id)
-          .single();
+        const sectionsData = await HybridCourseService.getCourseSections(courseId);
+        const currentSectionId = lessonData.section_id;
+        const currentSection = sectionsData.find(s => s.id === currentSectionId);
         
-        if (!sectionData || sectionData.course_id !== courseId) {
+        if (!currentSection) {
           toast({
             title: "Error",
-            description: "Esta lección no pertenece al curso especificado",
+            description: "No se pudo encontrar la sección de esta lección",
             variant: "destructive",
           });
           navigate(`/courses/${courseId}`);
@@ -60,81 +74,61 @@ const LessonDetail = () => {
         }
         
         // Obtener todas las lecciones de la sección para navegación
-        const { data: sectionLessons } = await supabase
-          .from('course_lessons')
-          .select('id, title, position')
-          .eq('section_id', lessonData.section_id)
-          .order('position', { ascending: true });
+        const sectionLessons = await HybridCourseService.getSectionLessons(currentSectionId);
+        const currentIndex = sectionLessons.findIndex(l => l.id === lessonId);
         
-        if (sectionLessons) {
-          const currentIndex = sectionLessons.findIndex(l => l.id === lessonId);
-          
-          if (currentIndex > 0) {
-            setPrevLesson({
-              id: sectionLessons[currentIndex - 1].id,
-              title: sectionLessons[currentIndex - 1].title
-            });
-          } else {
-            // Buscar la última lección de la sección anterior
-            const { data: prevSections } = await supabase
-              .from('course_sections')
-              .select('id')
-              .eq('course_id', courseId)
-              .lt('position', sectionData.position)
-              .order('position', { ascending: false })
-              .limit(1);
-            
-            if (prevSections && prevSections.length > 0) {
-              const { data: prevSectionLessons } = await supabase
-                .from('course_lessons')
-                .select('id, title')
-                .eq('section_id', prevSections[0].id)
-                .order('position', { ascending: false })
-                .limit(1);
-              
-              if (prevSectionLessons && prevSectionLessons.length > 0) {
-                setPrevLesson({
-                  id: prevSectionLessons[0].id,
-                  title: prevSectionLessons[0].title
-                });
-              }
+        // Configurar navegación a lección anterior
+        if (currentIndex > 0) {
+          setPrevLesson({
+            id: sectionLessons[currentIndex - 1].id,
+            title: sectionLessons[currentIndex - 1].title
+          });
+        } else {
+          // Buscar la última lección de la sección anterior
+          const currentSectionIndex = sectionsData.findIndex(s => s.id === currentSectionId);
+          if (currentSectionIndex > 0) {
+            const prevSectionId = sectionsData[currentSectionIndex - 1].id;
+            const prevSectionLessons = await HybridCourseService.getSectionLessons(prevSectionId);
+            if (prevSectionLessons.length > 0) {
+              const lastLesson = prevSectionLessons[prevSectionLessons.length - 1];
+              setPrevLesson({
+                id: lastLesson.id,
+                title: lastLesson.title
+              });
+            } else {
+              setPrevLesson(null);
             }
-          }
-          
-          if (currentIndex < sectionLessons.length - 1) {
-            setNextLesson({
-              id: sectionLessons[currentIndex + 1].id,
-              title: sectionLessons[currentIndex + 1].title
-            });
           } else {
-            // Buscar la primera lección de la sección siguiente
-            const { data: nextSections } = await supabase
-              .from('course_sections')
-              .select('id')
-              .eq('course_id', courseId)
-              .gt('position', sectionData.position)
-              .order('position', { ascending: true })
-              .limit(1);
-            
-            if (nextSections && nextSections.length > 0) {
-              const { data: nextSectionLessons } = await supabase
-                .from('course_lessons')
-                .select('id, title')
-                .eq('section_id', nextSections[0].id)
-                .order('position', { ascending: true })
-                .limit(1);
-              
-              if (nextSectionLessons && nextSectionLessons.length > 0) {
-                setNextLesson({
-                  id: nextSectionLessons[0].id,
-                  title: nextSectionLessons[0].title
-                });
-              }
-            }
+            setPrevLesson(null);
           }
         }
         
-        // Verificar si la lección está completada
+        // Configurar navegación a siguiente lección
+        if (currentIndex < sectionLessons.length - 1) {
+          setNextLesson({
+            id: sectionLessons[currentIndex + 1].id,
+            title: sectionLessons[currentIndex + 1].title
+          });
+        } else {
+          // Buscar la primera lección de la siguiente sección
+          const currentSectionIndex = sectionsData.findIndex(s => s.id === currentSectionId);
+          if (currentSectionIndex < sectionsData.length - 1) {
+            const nextSectionId = sectionsData[currentSectionIndex + 1].id;
+            const nextSectionLessons = await HybridCourseService.getSectionLessons(nextSectionId);
+            if (nextSectionLessons.length > 0) {
+              setNextLesson({
+                id: nextSectionLessons[0].id,
+                title: nextSectionLessons[0].title
+              });
+            } else {
+              setNextLesson(null);
+            }
+          } else {
+            setNextLesson(null);
+          }
+        }
+        
+        // Verificar si la lección está completada (datos de progreso de Supabase)
         if (user) {
           const progress = await getLessonProgress(lessonId);
           setCompleted(progress?.completed || false);
@@ -171,9 +165,15 @@ const LessonDetail = () => {
       // Si hay una siguiente lección, preguntar si quiere continuar
       if (nextLesson) {
         setTimeout(() => {
-          if (window.confirm('¿Quieres continuar con la siguiente lección?')) {
-            navigate(`/courses/${courseId}/lessons/${nextLesson.id}`);
-          }
+          toast({
+            title: "¡Lección completada!",
+            description: "¿Quieres continuar con la siguiente lección?",
+            action: (
+              <Button onClick={() => navigate(`/courses/${courseId}/lessons/${nextLesson.id}`)}>
+                Continuar
+              </Button>
+            )
+          });
         }, 500);
       } else {
         toast({
@@ -225,7 +225,7 @@ const LessonDetail = () => {
   }
 
   return (
-    <div className="container px-4 py-8 mx-auto">
+    <div className={`container px-4 py-8 mx-auto transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       <div className="flex flex-col md:flex-row gap-8">
         {/* Contenido principal */}
         <div className="w-full md:w-3/4">
@@ -248,7 +248,7 @@ const LessonDetail = () => {
           </div>
           
           <div className="prose max-w-none mb-8">
-            <div className="whitespace-pre-wrap">{lesson.content}</div>
+            <MarkdownRenderer content={lesson.content} />
           </div>
           
           <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t">

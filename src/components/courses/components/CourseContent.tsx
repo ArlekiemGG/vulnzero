@@ -2,6 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CourseSections from './CourseSections';
 import { SectionWithLessons } from '../types';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface CourseContentProps {
   sections: SectionWithLessons[];
@@ -30,7 +31,7 @@ const CourseContent = ({ sections, courseId, courseDescription, completedLessons
       <TabsContent value="descripcion">
         <div className="prose max-w-none">
           <h2 className="text-2xl font-bold mb-4">Descripción</h2>
-          <p className="whitespace-pre-wrap">{courseDescription}</p>
+          <MarkdownRenderer content={courseDescription} />
         </div>
       </TabsContent>
     </Tabs>

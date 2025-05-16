@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CourseService } from './services/CourseService';
+import { HybridCourseService } from './services/HybridCourseService';
 import { useProgressService } from './services/ProgressService';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,11 +38,6 @@ const CourseDetail = () => {
     }
   }, [isLoading]);
 
-  // Limpiamos el efecto de animación al desmontar
-  useEffect(() => {
-    return () => setFadeIn(false);
-  }, []);
-
   // Scroll to top when navigating to this page
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -55,8 +50,8 @@ const CourseDetail = () => {
     setFadeIn(false); // Aseguramos inicio con fade out
     
     try {
-      // Obtener datos del curso
-      const courseData = await CourseService.getCourseById(courseId);
+      // Obtener datos del curso usando el servicio híbrido
+      const courseData = await HybridCourseService.getCourseById(courseId);
       if (!courseData) {
         toast({
           title: "Curso no encontrado",
@@ -69,12 +64,12 @@ const CourseDetail = () => {
       setCourse(courseData);
 
       // Obtener las secciones del curso
-      const sectionsData = await CourseService.getCourseSections(courseId);
+      const sectionsData = await HybridCourseService.getCourseSections(courseId);
       
       // Obtener las lecciones de cada sección
       const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
         sectionsData.map(async (section) => {
-          const lessons = await CourseService.getSectionLessons(section.id);
+          const lessons = await HybridCourseService.getSectionLessons(section.id);
           return {
             ...section,
             lessons
