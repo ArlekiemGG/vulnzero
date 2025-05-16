@@ -28,17 +28,17 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
-  // Ejecutamos la consulta
-  const response = await supabase
+  // Ejecutamos la consulta explícitamente para evitar problemas de inferencia de tipos
+  const { data, error } = await supabase
     .from('user_lesson_progress')
     .select('lesson_id, completed')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
-  // Retornamos una estructura simplificada
+  // Retornamos una estructura simplificada que evita problemas de inferencia de tipos
   return {
-    data: response.data as SimpleLessonProgress[] | null,
-    error: response.error
+    data: data as SimpleLessonProgress[] | null,
+    error: error
   };
 }
 
@@ -85,16 +85,16 @@ export async function createLessonProgress(data: LessonProgressItem): Promise<Su
  * Usando un enfoque simplificado para evitar problemas de inferencia de tipos
  */
 export async function countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
-  // Ejecutamos la consulta
-  const response = await supabase
+  // Ejecutamos la consulta explícitamente para evitar problemas de inferencia de tipos
+  const { count, error } = await supabase
     .from('course_lessons')
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
   
   // Retornamos una estructura simplificada con solo lo que necesitamos
   return {
-    count: response.count || 0,
-    error: response.error
+    count: count || 0,
+    error: error
   };
 }
 

@@ -1,9 +1,21 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { CourseProgress, LessonProgress } from './CourseService';
+import { 
+  fetchUserProgressData, 
+  markLessonComplete, 
+  updateCourseProgressData 
+} from '@/services/course-progress';
+import type { 
+  CourseProgressItem as CourseProgress,
+  LessonProgressItem as LessonProgress
+} from '@/services/course-progress/types';
 
+/**
+ * Hook para gestionar el progreso de cursos
+ * Este servicio ahora utiliza las funciones centrales de progreso del curso
+ * para evitar duplicación de código
+ */
 export const useProgressService = () => {
   const { user } = useAuth();
 
@@ -18,15 +30,22 @@ export const useProgressService = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_course_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .maybeSingle();
+      // Usamos la función centralizada para obtener el progreso
+      const progressResult = await fetchUserProgressData(courseId, user.id);
       
-      if (error) throw error;
-      return data;
+      // Si no hay datos de progreso en el curso, retornamos null
+      if (!progressResult || progressResult.progress === 0) {
+        return null;
+      }
+      
+      // Transformamos la respuesta al formato esperado por los componentes existentes
+      return {
+        user_id: user.id,
+        course_id: courseId,
+        progress_percentage: progressResult.progress,
+        completed: progressResult.progress === 100,
+        completed_at: progressResult.progress === 100 ? new Date().toISOString() : null
+      };
     } catch (error) {
       console.error('Error fetching course progress:', error);
       return null;
@@ -39,15 +58,35 @@ export const useProgressService = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Necesitamos obtener el courseId para la lección primero
+      const { data: lesson } = await supabase
+        .from('course_lessons')
+        .select('section_id')
+        .eq('id', lessonId)
+        .single();
+      
+      if (!lesson) return null;
+
+      // Obtenemos el course_id a través de la sección
+      const { data: section } = await supabase
+        .from('course_sections')
+        .select('course_id')
+        .eq('id', lesson.section_id)
+        .single();
+        
+      if (!section) return null;
+        
+      const courseId = section.course_id;
+      
+      // Usamos las funciones centralizadas para verificar el progreso
+      const { data: existingProgress } = await supabase
         .from('user_lesson_progress')
         .select('*')
         .eq('user_id', user.id)
         .eq('lesson_id', lessonId)
         .maybeSingle();
       
-      if (error) throw error;
-      return data;
+      return existingProgress;
     } catch (error) {
       console.error('Error fetching lesson progress:', error);
       return null;
@@ -65,48 +104,43 @@ export const useProgressService = () => {
     }
 
     try {
-      // Verificar si ya existe un registro de progreso para esta lección
-      const { data: existingProgress } = await supabase
-        .from('user_lesson_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('lesson_id', lessonId)
-        .maybeSingle();
-
-      if (existingProgress) {
-        // Actualizar el registro existente
-        const { error } = await supabase
-          .from('user_lesson_progress')
-          .update({
-            completed: true,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', existingProgress.id);
-        
-        if (error) throw error;
-      } else {
-        // Crear un nuevo registro
-        const { error } = await supabase
-          .from('user_lesson_progress')
-          .insert({
-            user_id: user.id,
-            lesson_id: lessonId,
-            completed: true,
-            completed_at: new Date().toISOString()
-          });
-        
-        if (error) throw error;
+      // Necesitamos obtener el courseId para la lección
+      const { data: lesson } = await supabase
+        .from('course_lessons')
+        .select('section_id')
+        .eq('id', lessonId)
+        .single();
+      
+      if (!lesson) {
+        throw new Error('Lesson not found');
       }
-
-      // Actualizar el progreso del curso
-      await updateCourseProgress(lessonId);
       
-      toast({
-        title: "¡Progreso guardado!",
-        description: "Has completado esta lección",
-      });
+      // Obtenemos el course_id a través de la sección
+      const { data: section } = await supabase
+        .from('course_sections')
+        .select('course_id')
+        .eq('id', lesson.section_id)
+        .single();
+        
+      if (!section) {
+        throw new Error('Section not found');
+      }
       
-      return true;
+      const courseId = section.course_id;
+      
+      // Usamos la función centralizada de marcado de lección
+      const success = await markLessonComplete(user.id, courseId, lessonId);
+      
+      if (success) {
+        toast({
+          title: "¡Progreso guardado!",
+          description: "Has completado esta lección",
+        });
+      } else {
+        throw new Error('No se pudo guardar el progreso');
+      }
+      
+      return success;
     } catch (error) {
       console.error('Error marking lesson as completed:', error);
       toast({
@@ -118,109 +152,12 @@ export const useProgressService = () => {
     }
   };
 
-  const updateCourseProgress = async (lessonId: string): Promise<void> => {
-    if (!user) return;
-
-    try {
-      // Obtener información de la lección para saber a qué sección pertenece
-      const { data: lesson } = await supabase
-        .from('course_lessons')
-        .select('section_id')
-        .eq('id', lessonId)
-        .single();
-
-      if (!lesson) return;
-
-      // Obtener la sección para saber a qué curso pertenece
-      const { data: section } = await supabase
-        .from('course_sections')
-        .select('course_id')
-        .eq('id', lesson.section_id)
-        .single();
-
-      if (!section) return;
-
-      const courseId = section.course_id;
-
-      // Obtener IDs de las secciones del curso
-      const { data: sectionsData } = await supabase
-        .from('course_sections')
-        .select('id')
-        .eq('course_id', courseId);
-      
-      if (!sectionsData || sectionsData.length === 0) return;
-      
-      const sectionIds = sectionsData.map(section => section.id);
-        
-      // Contar el total de lecciones del curso
-      const { count: totalLessons } = await supabase
-        .from('course_lessons')
-        .select('*', { count: 'exact', head: true })
-        .in('section_id', sectionIds);
-
-      // Obtener IDs de las lecciones de las secciones del curso
-      const { data: lessonsData } = await supabase
-        .from('course_lessons')
-        .select('id')
-        .in('section_id', sectionIds);
-        
-      if (!lessonsData || lessonsData.length === 0) return;
-      
-      const lessonIds = lessonsData.map(lesson => lesson.id);
-        
-      // Contar lecciones completadas
-      const { count: completedLessons } = await supabase
-        .from('user_lesson_progress')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('completed', true)
-        .in('lesson_id', lessonIds);
-
-      if (!totalLessons || totalLessons === 0) return;
-
-      // Calcular porcentaje de progreso
-      const progressPercentage = Math.round((completedLessons / totalLessons) * 100);
-      const completed = progressPercentage === 100;
-
-      // Verificar si ya existe un registro de progreso para este curso
-      const { data: existingProgress } = await supabase
-        .from('user_course_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .maybeSingle();
-
-      const updateData = {
-        progress_percentage: progressPercentage,
-        last_lesson_id: lessonId,
-        completed: completed,
-        completed_at: completed ? new Date().toISOString() : null
-      };
-
-      if (existingProgress) {
-        // Actualizar el registro existente
-        await supabase
-          .from('user_course_progress')
-          .update(updateData)
-          .eq('id', existingProgress.id);
-      } else {
-        // Crear un nuevo registro
-        await supabase
-          .from('user_course_progress')
-          .insert({
-            user_id: user.id,
-            course_id: courseId,
-            ...updateData
-          });
-      }
-    } catch (error) {
-      console.error('Error updating course progress:', error);
-    }
-  };
-
   return {
     getCourseProgress,
     getLessonProgress,
     markLessonAsCompleted
   };
 };
+
+// Necesitamos importar supabase para algunas operaciones de búsqueda que aún requieren consultas directas
+import { supabase } from '@/integrations/supabase/client';
