@@ -115,42 +115,34 @@ class CourseProgressService {
    */
   async countTotalLessons(courseId: string): Promise<TotalLessonsResponse> {
     console.log(`CourseProgressService: Counting total lessons for course ${courseId}`);
-    const { count, error } = await supabase
-      .from('course_lessons')
-      .select('*', { count: 'exact' })
-      .eq('section_id', (
-        supabase
-        .from('course_sections')
-        .select('id')
-        .eq('course_id', courseId)
-      ));
     
-    if (error) {
-      console.error(`CourseProgressService: Error counting total lessons:`, error);
-      // Fallback usando una consulta diferente
+    // FIX: Using a different approach to avoid the type error
+    try {
+      // First get all sections for this course
       const { data: sections, error: sectionsError } = await supabase
         .from('course_sections')
         .select('id')
         .eq('course_id', courseId);
       
       if (sectionsError || !sections || sections.length === 0) {
-        console.error(`CourseProgressService: Error in fallback count:`, sectionsError);
+        console.error(`CourseProgressService: Error fetching course sections:`, sectionsError);
         return { count: 0, error: sectionsError || new Error('No sections found') };
       }
       
-      // Obtener IDs de secciones
+      // Get IDs of all sections
       const sectionIds = sections.map(s => s.id);
       
-      // Contar lecciones por secciones
-      const { count: lessonsCount, error: lessonsError } = await supabase
+      // Count lessons in those sections
+      const { count, error } = await supabase
         .from('course_lessons')
         .select('*', { count: 'exact' })
         .in('section_id', sectionIds);
       
-      return { count: lessonsCount || 0, error: lessonsError };
+      return { count: count || 0, error };
+    } catch (error) {
+      console.error(`CourseProgressService: Error in countTotalLessons:`, error);
+      return { count: 0, error: error as any };
     }
-    
-    return { count: count || 0, error };
   }
 
   /**
