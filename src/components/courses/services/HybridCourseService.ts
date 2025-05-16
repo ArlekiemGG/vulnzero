@@ -15,23 +15,31 @@ export const HybridCourseService = {
       return null;
     }
     
-    // Aseguramos que courseId es un string
+    // Aseguramos que courseId es un string y eliminamos espacios
     const courseIdStr = String(courseId).trim();
     console.log(`HybridCourseService: Buscando curso con ID: "${courseIdStr}"`);
     
-    // Obtenemos el contenido estático
-    const staticCourse = StaticContentService.getCourseContent(courseIdStr);
+    // Obtenemos el contenido estático (con verificación de normalización)
+    const normalizedId = courseIdStr.replace(/-/g, '').toLowerCase();
+    console.log(`HybridCourseService: ID normalizado para búsqueda: "${normalizedId}"`);
+    
+    // Intentamos buscar el curso tanto con el ID original como con el normalizado
+    const staticCourse = StaticContentService.getCourseContent(courseIdStr) || 
+                         StaticContentService.findCourseByNormalizedId(normalizedId);
+    
     if (!staticCourse) {
-      console.error(`HybridCourseService: No se encontró el curso estático con ID: "${courseIdStr}"`);
+      console.error(`HybridCourseService: No se encontró el curso estático con ID: "${courseIdStr}" ni con ID normalizado: "${normalizedId}"`);
       return null;
     }
+    
+    console.log(`HybridCourseService: Curso estático encontrado:`, staticCourse);
     
     try {
       // Obtenemos metadata dinámica desde Supabase (si existe)
       const { data: dynamicCourse } = await supabase
         .from('courses')
         .select('*')
-        .eq('id', courseIdStr)
+        .eq('id', staticCourse.id) // Usamos el ID del curso estático encontrado
         .maybeSingle();
       
       console.log('HybridCourseService: Datos dinámicos recibidos:', dynamicCourse);

@@ -1,4 +1,3 @@
-
 import { StaticCourseContent, StaticSection, StaticLesson } from '../types';
 
 // Mapeo de IDs de cursos a sus archivos de contenido
@@ -135,6 +134,25 @@ El hacking ético requiere un profundo conocimiento técnico y un fuerte código
   }
 };
 
+// Función para normalizar IDs
+const normalizeId = (id: string): string => {
+  return id.replace(/-/g, '').toLowerCase();
+};
+
+// Creamos un mapa de IDs normalizados para buscar cursos de manera más flexible
+const createNormalizedIdMap = (): Record<string, string> => {
+  const normalizedMap: Record<string, string> = {};
+  
+  Object.keys(courseContentMap).forEach(courseId => {
+    const normalizedId = normalizeId(courseId);
+    normalizedMap[normalizedId] = courseId;
+  });
+  
+  return normalizedMap;
+};
+
+const normalizedIdMap = createNormalizedIdMap();
+
 // Servicio para gestionar el contenido estático de los cursos
 export const StaticContentService = {
   /**
@@ -148,11 +166,11 @@ export const StaticContentService = {
       return null;
     }
     
-    console.log(`Buscando curso con ID: "${courseId}"`);
+    console.log(`StaticContentService: Buscando curso con ID: "${courseId}"`);
     
     // Comprobamos si el courseId existe exactamente como está
     if (courseContentMap[courseId]) {
-      console.log(`Curso encontrado con ID exacto: ${courseId}`);
+      console.log(`StaticContentService: Curso encontrado con ID exacto: ${courseId}`);
       return courseContentMap[courseId];
     }
     
@@ -161,12 +179,29 @@ export const StaticContentService = {
     const matchedId = courseIds.find(id => id.toLowerCase() === courseId.toLowerCase());
     
     if (matchedId) {
-      console.log(`Curso encontrado con coincidencia flexible: ${matchedId} para búsqueda: ${courseId}`);
+      console.log(`StaticContentService: Curso encontrado con coincidencia flexible: ${matchedId} para búsqueda: ${courseId}`);
       return courseContentMap[matchedId];
     }
     
     // Si sigue sin encontrarse, mostramos todos los IDs disponibles para depuración
-    console.error(`Curso no encontrado con ID: "${courseId}". IDs disponibles: ${courseIds.join(', ')}`);
+    console.error(`StaticContentService: Curso no encontrado con ID: "${courseId}". IDs disponibles: ${courseIds.join(', ')}`);
+    return null;
+  },
+
+  /**
+   * Busca un curso por su ID normalizado
+   * @param normalizedId ID del curso normalizado (sin guiones, todo en minúsculas)
+   * @returns Contenido estático del curso o null si no existe
+   */
+  findCourseByNormalizedId: (normalizedId: string): StaticCourseContent | null => {
+    const originalId = normalizedIdMap[normalizedId];
+    
+    if (originalId) {
+      console.log(`StaticContentService: Curso encontrado con ID normalizado: ${normalizedId} -> ${originalId}`);
+      return courseContentMap[originalId];
+    }
+    
+    console.error(`StaticContentService: Curso no encontrado con ID normalizado: "${normalizedId}". IDs normalizados disponibles: ${Object.keys(normalizedIdMap).join(', ')}`);
     return null;
   },
 

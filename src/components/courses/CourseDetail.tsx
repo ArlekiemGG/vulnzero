@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HybridCourseService } from './services/HybridCourseService';
@@ -59,28 +58,28 @@ const CourseDetail = () => {
     setFadeIn(false); // Aseguramos inicio con fade out
     
     try {
-      console.log("Fetching course with ID:", courseId);
+      console.log("CourseDetail: Fetching course with ID:", courseId);
       
       // Obtener datos del curso usando el servicio híbrido
       const courseData = await HybridCourseService.getCourseById(courseId);
       
       if (!courseData) {
-        console.error("Curso no encontrado con ID:", courseId);
+        console.error("CourseDetail: Curso no encontrado con ID:", courseId);
         toast({
           title: "Curso no encontrado",
-          description: "El curso que buscas no existe",
+          description: "El curso que buscas no existe. Por favor, verifica la URL o contacta con soporte.",
           variant: "destructive",
         });
         navigate('/courses');
         return;
       }
       
-      console.log("Course data loaded:", courseData);
+      console.log("CourseDetail: Course data loaded:", courseData);
       setCourse(courseData);
 
       // Obtener las secciones del curso
-      const sectionsData = await HybridCourseService.getCourseSections(courseId);
-      console.log("Sections loaded:", sectionsData.length);
+      const sectionsData = await HybridCourseService.getCourseSections(courseData.id);
+      console.log("CourseDetail: Sections loaded:", sectionsData.length);
       
       // Obtener las lecciones de cada sección
       const sectionsWithLessons: SectionWithLessons[] = await Promise.all(
@@ -93,12 +92,12 @@ const CourseDetail = () => {
         })
       );
       
-      console.log("Sections with lessons:", sectionsWithLessons);
+      console.log("CourseDetail: Sections with lessons:", sectionsWithLessons);
       setSections(sectionsWithLessons);
       
       // Obtener el progreso del curso si el usuario está autenticado
       if (user) {
-        const progressData = await getCourseProgress(courseId);
+        const progressData = await getCourseProgress(courseData.id);
         if (progressData) {
           setProgress(progressData.progress_percentage);
         }
@@ -123,10 +122,10 @@ const CourseDetail = () => {
         fetchCompletedLessons();
       }
     } catch (error) {
-      console.error('Error fetching course data:', error);
+      console.error('CourseDetail: Error fetching course data:', error);
       toast({
         title: "Error",
-        description: "No se pudo cargar la información del curso",
+        description: "No se pudo cargar la información del curso. Por favor, inténtalo más tarde.",
         variant: "destructive",
       });
       navigate('/courses');
