@@ -27,7 +27,11 @@ const getLevelColor = (level: string) => {
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, progress = 0, isCompleted = false }) => {
   return (
-    <Link to={`/courses/${course.id}`} className="block">
+    <Link 
+      to={`/courses/${course.id}`} 
+      className="block transition-opacity"
+      state={{ fromCourses: true }}
+    >
       <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
         <div className="h-40 bg-gray-200 overflow-hidden">
           <img 

@@ -1,13 +1,13 @@
 
-import CourseTabs from '@/components/courses/CourseTabs';
-import CourseWelcome from '@/components/courses/CourseWelcome';
+import { useEffect, useState, useCallback } from 'react';
 import { SearchIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserStats } from '@/hooks/use-user-stats';
+import CourseTabs from '@/components/courses/CourseTabs';
+import CourseWelcome from '@/components/courses/CourseWelcome';
 
 const Courses: React.FC = () => {
   const { user } = useAuth();
@@ -18,9 +18,9 @@ const Courses: React.FC = () => {
     document.title = "Cursos - VulnZero";
   }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-cybersec-black flex flex-col">
