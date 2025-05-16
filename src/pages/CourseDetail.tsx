@@ -6,7 +6,6 @@ import Footer from '@/components/layout/Footer';
 import Sidebar from '@/components/layout/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserStats } from '@/hooks/use-user-stats';
-import { toast } from '@/components/ui/use-toast';
 import { findCourseById } from '@/data/courses';
 import CourseDetail from '@/components/courses/CourseDetail';
 
@@ -42,12 +41,14 @@ const CourseDetailPage = () => {
   console.log("CourseDetailPage: courseId recibido:", courseId);
 
   return (
-    <div className="min-h-screen bg-cybersec-black">
+    <div className="min-h-screen bg-cybersec-black flex flex-col">
       <Navbar />
       {user && <Sidebar userStats={userStats} />}
       
-      <main className={`pt-16 pb-8 ${user ? 'md:pl-64' : ''}`}>
-        {!loading && courseId && <CourseDetail />}
+      <main className={`flex-grow pt-16 ${user ? 'md:pl-64' : ''}`}>
+        <div className="container px-4 py-8 mx-auto">
+          {!loading && courseId && <CourseDetail />}
+        </div>
       </main>
       
       <Footer />
