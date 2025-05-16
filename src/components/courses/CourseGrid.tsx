@@ -55,8 +55,8 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
         setProgressMap(newProgressMap);
       } catch (error) {
         console.error('Error fetching course progress:', error);
-        // Don't show the toast if we're not authenticated
-        if (user) {
+        // Solo mostramos el toast si hay un usuario autenticado Y no estamos en un proceso de inicialización
+        if (user && !isLoading) {
           toast({
             title: "Error",
             description: "No se pudo cargar el progreso de los cursos",

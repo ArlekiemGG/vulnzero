@@ -7,6 +7,7 @@ import { CheckCircle2, Clock, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
 
 interface CourseCardProps {
   course: Course;
@@ -35,6 +36,8 @@ const CourseCard: React.FC<CourseCardProps> = ({
   isCompleted = false,
   isLoading = false 
 }) => {
+  const [imgError, setImgError] = useState<boolean>(false);
+
   return (
     <Link 
       to={`/courses/${course.id}`} 
@@ -44,17 +47,23 @@ const CourseCard: React.FC<CourseCardProps> = ({
       <Card className="h-full overflow-hidden transition-transform duration-300 hover:shadow-lg hover:scale-[1.02] bg-cybersec-darkgray border border-gray-700">
         <div className="relative">
           <AspectRatio ratio={16/9}>
-            <img 
-              src={course.image_url || '/placeholder.svg'} 
-              alt={course.title} 
-              className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-              onError={(e) => {
-                console.error(`Failed to load image for course: ${course.title}, URL: ${course.image_url}`);
-                e.currentTarget.src = '/placeholder.svg';
-              }}
-            />
+            {imgError ? (
+              <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400">
+                <div className="text-center p-4">
+                  <h3 className="font-medium">{course.title}</h3>
+                  <p className="text-sm">{course.category}</p>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={course.image_url || '/placeholder.svg'} 
+                alt={course.title} 
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                onError={() => setImgError(true)}
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70"></div>
           </AspectRatio>
         </div>

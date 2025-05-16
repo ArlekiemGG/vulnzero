@@ -26,16 +26,17 @@ const CourseImage = ({ imageUrl, title }: CourseImageProps) => {
   const handleImageError = () => {
     console.error(`Failed to load image: ${actualUrl} for course: ${title}`);
     
-    if (actualUrl === imageUrl && imageUrl.includes('/cover.jpg')) {
-      // If this is the first attempt and URL ends with cover.jpg, try the placeholder
+    if (actualUrl === imageUrl && !actualUrl.includes('placeholder.svg')) {
+      // Si es la primera vez que falla, intentamos con el placeholder
+      console.log(`Trying placeholder for ${title}`);
       setActualUrl(placeholderUrl);
     } else {
-      // Mark as error and use placeholder
+      // Marca como error y usa placeholder
       setHasError(true);
       setActualUrl(placeholderUrl);
     }
     
-    // Mark as loaded so we display something rather than showing the loading state forever
+    // Marca como cargado para mostrar algo en vez de un estado de carga infinito
     setIsLoaded(true);
   };
 
