@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { courseProgressService } from '@/services/course-progress-service';
@@ -35,6 +34,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
         
         if (isMounted) {
           console.log('Progress data loaded:', result);
+          console.log('Completed lessons:', result.completedLessons);
           setProgress(result.progress);
           setCompletedLessons(result.completedLessons);
           setCompletedQuizzes(result.completedQuizzes);
@@ -67,38 +67,45 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
    * Marca una lección como completada
    */
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
-    if (!userId || !courseId) return false;
+    if (!userId || !courseId) {
+      console.log("Cannot mark lesson as completed: no user ID or course ID");
+      return false;
+    }
     
-    // Usamos una estructura de clave consistente: courseId:lessonId
+    // Usamos una estructura de clave consistente: courseId:lessonId y courseId:moduleId:lessonId
     const lessonKey = `${courseId}:${lessonId}`;
+    const extendedLessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
       console.log(`Marking lesson ${lessonId} as completed for course ${courseId} and user ${userId}`);
+      console.log(`Using lesson keys: ${lessonKey} and ${extendedLessonKey}`);
+      
       const success = await courseProgressService.markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
-        // Actualizamos el estado local
-        setCompletedLessons(prev => ({ ...prev, [lessonKey]: true, [lessonId]: true }));
+        console.log("Lesson marked as completed successfully in backend");
+        // Actualizamos el estado local para múltiples formatos de clave
+        setCompletedLessons(prev => ({ 
+          ...prev, 
+          [lessonKey]: true, 
+          [extendedLessonKey]: true, 
+          [lessonId]: true 
+        }));
+        
         setProgress(prev => {
           // Estimación simple hasta la próxima carga de datos
           const newProgress = Math.min(100, prev + 5);
+          console.log(`Updated progress: ${newProgress}%`);
           return newProgress;
         });
         
-        toast({
-          title: "Lección completada",
-          description: "Tu progreso ha sido guardado"
-        });
+        return true;
+      } else {
+        console.log("Failed to mark lesson as completed in backend");
+        return false;
       }
-      
-      return success;
     } catch (err) {
       console.error('Error marking lesson as completed:', err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo marcar la lección como completada"
-      });
       return false;
     }
   };

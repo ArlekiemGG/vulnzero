@@ -14,6 +14,7 @@ import LessonQuiz from './components/LessonQuiz';
 import EnhancedContentRenderer from './components/EnhancedContentRenderer';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import './components/lesson-content.css';
+import LessonCompletionButton from './components/LessonCompletionButton';
 
 interface FileLessonDetailProps {
   courseId: string;
@@ -47,9 +48,12 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
   const [nextLesson, setNextLesson] = useState<{moduleId: string; lessonId: string; title: string} | null>(null);
 
   // Determine if the lesson is completed
-  const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
-  const isCompleted = completedLessons ? !!completedLessons[lessonKey] : false;
-  const quizCompleted = completedQuizzes ? !!completedQuizzes[lessonKey] : false;
+  const lessonKey = `${courseId}:${lessonId}`;
+  const altLessonKey = `${courseId}:${moduleId}:${lessonId}`;
+  const isCompleted = completedLessons ? 
+    (!!completedLessons[lessonKey] || !!completedLessons[altLessonKey] || !!completedLessons[lessonId]) : 
+    false;
+  const quizCompleted = completedQuizzes ? !!completedQuizzes[lessonKey] || !!completedQuizzes[altLessonKey] : false;
 
   // Handle synchronizing course content
   const handleSyncContent = () => {
@@ -175,28 +179,47 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
       return;
     }
     
-    const success = await markLessonAsCompleted(moduleId, lessonId);
-    if (success) {
-      toast({
-        title: "¡Lección completada!",
-        description: "Tu progreso ha sido guardado",
-      });
+    try {
+      console.log(`Marking lesson ${lessonId} in module ${moduleId} of course ${courseId} as completed`);
+      const success = await markLessonAsCompleted(moduleId, lessonId);
       
-      // Show quiz if it has one and hasn't been completed yet
-      if (lesson?.has_quiz && !quizCompleted) {
-        setQuizVisible(true);
-      } else if (nextLesson) {
-        // Suggest continuing to next lesson
+      if (success) {
+        console.log("Lesson marked as completed successfully");
         toast({
-          title: "¿Continuar?",
-          description: "¿Quieres avanzar a la siguiente lección?",
-          action: (
-            <Button onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}>
-              Continuar
-            </Button>
-          )
+          title: "¡Lección completada!",
+          description: "Tu progreso ha sido guardado",
+        });
+        
+        // Show quiz if it has one and hasn't been completed yet
+        if (lesson?.has_quiz && !quizCompleted) {
+          setQuizVisible(true);
+        } else if (nextLesson) {
+          // Suggest continuing to next lesson
+          toast({
+            title: "¿Continuar?",
+            description: "¿Quieres avanzar a la siguiente lección?",
+            action: (
+              <Button onClick={() => navigateToLesson(nextLesson.moduleId, nextLesson.lessonId)}>
+                Continuar
+              </Button>
+            )
+          });
+        }
+      } else {
+        console.log("Failed to mark lesson as completed");
+        toast({
+          title: "Error",
+          description: "No se pudo guardar tu progreso",
+          variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error("Error in handleMarkAsCompleted:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un problema al guardar tu progreso",
+        variant: "destructive",
+      });
     }
   };
 
@@ -228,6 +251,17 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
 
   const navigateToLesson = (moduleId: string, lessonId: string) => {
     navigate(`/courses/${courseId}/learn/${moduleId}/${lessonId}`);
+  };
+  
+  const continueCourse = () => {
+    // If we have a next lesson, navigate to it
+    if (nextLesson) {
+      navigateToLesson(nextLesson.moduleId, nextLesson.lessonId);
+      return;
+    }
+    
+    // Otherwise, return to course page
+    navigate(`/courses/${courseId}`);
   };
 
   if (isLoading) {
@@ -353,16 +387,10 @@ const FileLessonDetail = ({ courseId, moduleId, lessonId }: FileLessonDetailProp
               </div>
               
               <div className="flex gap-2">
-                {isCompleted ? (
-                  <Button variant="outline" className="flex items-center" disabled>
-                    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                    <span>Completada</span>
-                  </Button>
-                ) : (
-                  <Button onClick={handleMarkAsCompleted}>
-                    Marcar como completada
-                  </Button>
-                )}
+                <LessonCompletionButton 
+                  isCompleted={isCompleted} 
+                  onComplete={() => handleMarkAsCompleted()}
+                />
                 
                 {nextLesson && (
                   <Button 

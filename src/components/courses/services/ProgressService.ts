@@ -88,6 +88,7 @@ export function useProgressService() {
    */
   const markLessonAsCompleted = async (lessonId: string, courseId?: string) => {
     if (!userSession) {
+      console.log("Cannot mark lesson as completed: no user session");
       toast({
         title: "No autorizado",
         description: "Debes iniciar sesión para marcar la lección como completada.",
@@ -97,11 +98,12 @@ export function useProgressService() {
     }
 
     try {
-      console.log(`Marking lesson ${lessonId} as completed for user ${userSession.id}`);
+      console.log(`ProgressService: Marking lesson ${lessonId} as completed for user ${userSession.id}`);
       
       // Si no tenemos el courseId, intentar determinarlo
       let effectiveCourseId = courseId;
       if (!effectiveCourseId) {
+        console.log("No course ID provided, attempting to determine it from lesson");
         const { data: lessonData, error: lessonError } = await courseProgressService.getLessonCourseInfo(lessonId);
         
         if (lessonError) {
@@ -115,6 +117,7 @@ export function useProgressService() {
         }
         
         effectiveCourseId = lessonData?.course_sections?.course_id;
+        console.log(`Determined course ID: ${effectiveCourseId}`);
       }
 
       if (!effectiveCourseId) {
@@ -127,6 +130,8 @@ export function useProgressService() {
         return false;
       }
 
+      console.log(`Marking lesson ${lessonId} complete in course ${effectiveCourseId}`);
+      
       // Usar el servicio centralizado para marcar la lección como completada
       const success = await courseProgressService.markLessonComplete(
         userSession.id, 
@@ -135,12 +140,10 @@ export function useProgressService() {
       );
       
       if (success) {
-        toast({
-          title: "Lección completada",
-          description: "¡Has completado esta lección!",
-        });
+        console.log('Lesson marked as completed successfully');
         return true;
       } else {
+        console.error('Failed to mark lesson as completed');
         toast({
           title: "Error",
           description: "No se pudo marcar la lección como completada.",
