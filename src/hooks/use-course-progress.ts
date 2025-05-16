@@ -65,7 +65,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   const markLessonAsCompleted = async (moduleId: string, lessonId: string): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    const lessonKey = `${courseId}:${lessonId}`;
+    const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
       const success = await markLessonComplete(userId, courseId, lessonId);
@@ -100,7 +100,7 @@ export const useUserCourseProgress = (courseId: string, userId?: string): Course
   const saveQuizResult = async (moduleId: string, lessonId: string, score: number, answers: Record<string, number>): Promise<boolean> => {
     if (!userId || !courseId) return false;
     
-    const lessonKey = `${courseId}:${lessonId}`;
+    const lessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
       const success = await saveQuizResults(userId, courseId, lessonId, score, answers);

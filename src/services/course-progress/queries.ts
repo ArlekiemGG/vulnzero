@@ -64,7 +64,7 @@ export async function createLessonProgress(data: LessonProgressItem) {
 export async function countTotalLessons(courseId: string): Promise<any> {
   // Using any to avoid deep type instantiation issues
   return supabase
-    .from('course_lessons') // Fixed table name from 'lessons' to 'course_lessons'
+    .from('course_lessons') 
     .select('*', { count: 'exact', head: true })
     .eq('course_id', courseId);
 }

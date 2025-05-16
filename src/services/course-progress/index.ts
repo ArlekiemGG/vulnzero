@@ -6,68 +6,99 @@ import * as queries from './queries';
  * Obtiene los datos de progreso del usuario para un curso específico
  */
 export async function fetchUserProgressData(courseId: string, userId: string): Promise<ProgressResult> {
-  // Fetch course progress data
-  const { data: progressData, error: progressError } = await queries.getCourseProgress(userId, courseId);
-  if (progressError) throw progressError;
+  try {
+    // Fetch course progress data
+    const { data: progressData, error: progressError } = await queries.getCourseProgress(userId, courseId);
+    if (progressError) {
+      console.error("Error fetching course progress:", progressError);
+      // Fallback para evitar errores si no hay progreso
+      return {
+        progress: 0,
+        completedLessons: {},
+        completedQuizzes: {}
+      };
+    }
 
-  // Fetch lesson progress data - avoid deep type instantiation error
-  const lessonProgressResult = await queries.getLessonProgress(userId, courseId);
-  if (lessonProgressResult.error) throw lessonProgressResult.error;
-  
-  // Process and set data
-  const progress = progressData?.progress_percentage || 0;
-  const completedLessonsMap: Record<string, boolean> = {};
-  const completedQuizzesMap: Record<string, boolean> = {};
-  
-  if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
-    lessonProgressResult.data.forEach((item: { lesson_id: string; completed: boolean }) => {
-      if (item && item.completed) {
-        // Create lesson key using courseId and lessonId
-        const lessonKey = `${courseId}:${item.lesson_id}`;
-        completedLessonsMap[lessonKey] = true;
-      }
-    });
+    // Fetch lesson progress data
+    const lessonProgressResult = await queries.getLessonProgress(userId, courseId);
+    if (lessonProgressResult.error) {
+      console.error("Error fetching lesson progress:", lessonProgressResult.error);
+      // Fallback para evitar errores si no hay progreso de lecciones
+      return {
+        progress: progressData?.progress_percentage || 0,
+        completedLessons: {},
+        completedQuizzes: {}
+      };
+    }
+    
+    // Process and set data
+    const progress = progressData?.progress_percentage || 0;
+    const completedLessonsMap: Record<string, boolean> = {};
+    const completedQuizzesMap: Record<string, boolean> = {};
+    
+    if (lessonProgressResult.data && Array.isArray(lessonProgressResult.data)) {
+      lessonProgressResult.data.forEach((item: { lesson_id: string; completed: boolean }) => {
+        if (item && item.completed) {
+          // Crear clave combinada para completedLessons usando courseId y lessonId
+          const lessonKey = `${courseId}:${item.lesson_id}`;
+          completedLessonsMap[lessonKey] = true;
+        }
+      });
+    }
+
+    return {
+      progress,
+      completedLessons: completedLessonsMap,
+      completedQuizzes: completedQuizzesMap
+    };
+  } catch (error) {
+    console.error("Error in fetchUserProgressData:", error);
+    // Fallback para cualquier error no controlado
+    return {
+      progress: 0,
+      completedLessons: {},
+      completedQuizzes: {}
+    };
   }
-
-  return {
-    progress,
-    completedLessons: completedLessonsMap,
-    completedQuizzes: completedQuizzesMap
-  };
 }
 
 /**
  * Marca una lección como completada
  */
 export async function markLessonComplete(userId: string, courseId: string, lessonId: string): Promise<boolean> {
-  // Check if the lesson is already marked as completed
-  const { data: existingProgress } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
-  
-  if (existingProgress) {
-    // Update existing record
-    const result = await queries.updateLessonProgress(existingProgress.id, {
-      completed: true,
-      completed_at: new Date().toISOString()
-    });
+  try {
+    // Check if the lesson is already marked as completed
+    const { data: existingProgress } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
     
-    if (result.error) throw result.error;
-  } else {
-    // Create new record - with all required fields
-    const result = await queries.createLessonProgress({
-      user_id: userId,
-      course_id: courseId,
-      lesson_id: lessonId,
-      completed: true,
-      completed_at: new Date().toISOString()
-    });
+    if (existingProgress) {
+      // Update existing record
+      const result = await queries.updateLessonProgress(existingProgress.id, {
+        completed: true,
+        completed_at: new Date().toISOString()
+      });
+      
+      if (result.error) throw result.error;
+    } else {
+      // Create new record with all required fields
+      const result = await queries.createLessonProgress({
+        user_id: userId,
+        course_id: courseId,
+        lesson_id: lessonId,
+        completed: true,
+        completed_at: new Date().toISOString()
+      });
+      
+      if (result.error) throw result.error;
+    }
     
-    if (result.error) throw result.error;
+    // Update course progress
+    await updateCourseProgressData(userId, courseId);
+    
+    return true;
+  } catch (error) {
+    console.error("Error in markLessonComplete:", error);
+    return false;
   }
-  
-  // Update course progress
-  await updateCourseProgressData(userId, courseId);
-  
-  return true;
 }
 
 /**
@@ -80,81 +111,97 @@ export async function saveQuizResults(
   score: number, 
   answers: Record<string, number>
 ): Promise<boolean> {
-  // Check if lesson progress already exists
-  const { data: existingLesson } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
-  
-  const lessonData = {
-    completed: true,
-    completed_at: new Date().toISOString()
-  };
-  
-  if (existingLesson) {
-    // Update existing record
-    const result = await queries.updateLessonProgress(existingLesson.id, lessonData);
-    if (result.error) throw result.error;
-  } else {
-    // Create new lesson progress record - with all required fields
-    const result = await queries.createLessonProgress({
-      user_id: userId,
-      course_id: courseId,
-      lesson_id: lessonId,
-      ...lessonData
-    });
+  try {
+    // Check if lesson progress already exists
+    const { data: existingLesson } = await queries.checkLessonProgressExists(userId, courseId, lessonId);
     
-    if (result.error) throw result.error;
+    const lessonData = {
+      completed: true,
+      completed_at: new Date().toISOString()
+    };
+    
+    if (existingLesson) {
+      // Update existing record
+      const result = await queries.updateLessonProgress(existingLesson.id, lessonData);
+      if (result.error) throw result.error;
+    } else {
+      // Create new lesson progress record with all required fields
+      const result = await queries.createLessonProgress({
+        user_id: userId,
+        course_id: courseId,
+        lesson_id: lessonId,
+        ...lessonData
+      });
+      
+      if (result.error) throw result.error;
+    }
+    
+    // Update course progress
+    await updateCourseProgressData(userId, courseId);
+    
+    return true;
+  } catch (error) {
+    console.error("Error in saveQuizResults:", error);
+    return false;
   }
-  
-  // Update course progress
-  await updateCourseProgressData(userId, courseId);
-  
-  return true;
 }
 
 /**
  * Actualiza los datos de progreso del curso
  */
 export async function updateCourseProgressData(userId: string, courseId: string): Promise<number> {
-  // Use more specific types to avoid deep instantiation issues
-  const totalLessonsResult = await queries.countTotalLessons(courseId);
-  
-  const totalLessonsCount = totalLessonsResult.count;
-  if (totalLessonsResult.error) throw totalLessonsResult.error;
-  
-  // Use more specific types to avoid deep instantiation issues
-  const completedLessonsResult = await queries.countCompletedLessons(userId, courseId);
-  
-  const completedLessonsData = completedLessonsResult.data;
-  if (completedLessonsResult.error) throw completedLessonsResult.error;
-  
-  const totalLessons = totalLessonsCount || 0;
-  const completedCount = completedLessonsData?.length || 0;
-  const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-  const completed = progressPercentage === 100;
-  
-  // Check if course progress record exists
-  const { data: existingProgress } = await queries.checkCourseProgressExists(userId, courseId);
-  
-  const updateData = {
-    progress_percentage: progressPercentage,
-    completed,
-    completed_at: completed ? new Date().toISOString() : null
-  };
-  
-  if (existingProgress) {
-    // Update existing record
-    await queries.updateCourseProgressRecord(existingProgress.id, updateData);
-  } else {
-    // Create new record - with all required fields
-    await queries.createCourseProgressRecord({
-      user_id: userId,
-      course_id: courseId,
-      ...updateData,
-      started_at: new Date().toISOString(),
-      progress_percentage: progressPercentage
-    });
+  try {
+    // Get total lessons count
+    const totalLessonsResult = await queries.countTotalLessons(courseId);
+    
+    const totalLessonsCount = totalLessonsResult.count;
+    if (totalLessonsResult.error) {
+      console.error("Error counting total lessons:", totalLessonsResult.error);
+      return 0;
+    }
+    
+    // Get completed lessons count
+    const completedLessonsResult = await queries.countCompletedLessons(userId, courseId);
+    
+    const completedLessonsData = completedLessonsResult.data;
+    if (completedLessonsResult.error) {
+      console.error("Error counting completed lessons:", completedLessonsResult.error);
+      return 0;
+    }
+    
+    const totalLessons = totalLessonsCount || 0;
+    const completedCount = completedLessonsData?.length || 0;
+    const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+    const completed = progressPercentage === 100;
+    
+    // Check if course progress record exists
+    const { data: existingProgress } = await queries.checkCourseProgressExists(userId, courseId);
+    
+    const updateData = {
+      progress_percentage: progressPercentage,
+      completed,
+      completed_at: completed ? new Date().toISOString() : null
+    };
+    
+    if (existingProgress) {
+      // Update existing record
+      await queries.updateCourseProgressRecord(existingProgress.id, updateData);
+    } else {
+      // Create new record with all required fields
+      await queries.createCourseProgressRecord({
+        user_id: userId,
+        course_id: courseId,
+        ...updateData,
+        started_at: new Date().toISOString(),
+        progress_percentage: progressPercentage
+      });
+    }
+    
+    return progressPercentage;
+  } catch (error) {
+    console.error("Error in updateCourseProgressData:", error);
+    return 0;
   }
-  
-  return progressPercentage;
 }
 
 // Re-exportamos los tipos para facilitar su uso
