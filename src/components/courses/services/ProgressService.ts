@@ -4,6 +4,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useState, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { HybridCourseService } from './HybridCourseService';
+import { generateUUID } from '@/utils/uuid-generator';
 
 export function useProgressService() {
   // Instead of destructuring user directly, we'll get the whole context

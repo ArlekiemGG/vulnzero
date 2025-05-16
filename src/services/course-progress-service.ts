@@ -1,16 +1,35 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { generateUUID, isValidUUID } from '@/utils/uuid-generator';
 
 /**
  * Service centralizado para gestionar el progreso de cursos y lecciones
  */
 export const courseProgressService = {
   /**
+   * Convierte un ID alfanumérico a UUID si es necesario
+   */
+  normalizeId: (id: string): string => {
+    if (!id) return '';
+    
+    // Si ya es un UUID válido, lo devolvemos como está
+    if (isValidUUID(id)) {
+      return id;
+    }
+    
+    // Caso contrario, generamos un UUID determinista basado en el string
+    return generateUUID(id);
+  },
+
+  /**
    * Obtiene información del curso al que pertenece una lección
    */
   getLessonCourseInfo: async (lessonId: string) => {
     try {
+      // Normalizar el ID de lección a UUID
+      const normalizedLessonId = courseProgressService.normalizeId(lessonId);
+      
       const { data, error } = await supabase
         .from('course_lessons')
         .select(`
@@ -19,7 +38,7 @@ export const courseProgressService = {
             course_id
           )
         `)
-        .eq('id', lessonId)
+        .eq('id', normalizedLessonId)
         .single();
       
       if (error) throw error;
@@ -35,16 +54,19 @@ export const courseProgressService = {
    */
   fetchUserProgressData: async (courseId: string, userId: string) => {
     try {
+      // Normalizar el ID del curso a UUID
+      const normalizedCourseId = courseProgressService.normalizeId(courseId);
+      
       // Primero, obtenemos todas las lecciones del curso para calcular el progreso
       const { data: sections, error: sectionsError } = await supabase
         .from('course_sections')
         .select('id')
-        .eq('course_id', courseId);
+        .eq('course_id', normalizedCourseId);
       
       if (sectionsError) throw sectionsError;
       
       if (!sections || sections.length === 0) {
-        console.warn(`No sections found for course: ${courseId}`);
+        console.warn(`No sections found for course: ${courseId} (normalized: ${normalizedCourseId})`);
         return {
           progress: 0,
           completedLessons: {},
@@ -76,7 +98,7 @@ export const courseProgressService = {
         .from('user_lesson_progress')
         .select('*')
         .eq('user_id', userId)
-        .eq('course_id', courseId)
+        .eq('course_id', normalizedCourseId)
         .eq('completed', true);
       
       if (progressError) throw progressError;
@@ -91,16 +113,24 @@ export const courseProgressService = {
       const completedQuizzes: Record<string, boolean> = {};
       
       userLessonProgress?.forEach(lessonProgress => {
-        // Usamos múltiples formatos de clave para compatibilidad con diferentes partes del código
-        completedLessons[lessonProgress.lesson_id] = true;
-        completedLessons[`${courseId}:${lessonProgress.lesson_id}`] = true;
+        // Mapeamos tanto los UUIDs como los IDs originales para mantener compatibilidad
+        const originalLessonId = Object.keys(courseProgressService._idMappings).find(
+          key => courseProgressService._idMappings[key] === lessonProgress.lesson_id
+        ) || lessonProgress.lesson_id;
         
-        // También registramos si es un quiz (para futura implementación)
-        // Accedemos de forma segura a la propiedad quiz_score que podría no existir
+        // Usamos múltiples formatos de clave para compatibilidad con diferentes partes del código
+        completedLessons[originalLessonId] = true;
+        completedLessons[lessonProgress.lesson_id] = true;
+        completedLessons[`${courseId}:${originalLessonId}`] = true;
+        completedLessons[`${normalizedCourseId}:${lessonProgress.lesson_id}`] = true;
+        
+        // También registramos si es un quiz
         const quizScore = (lessonProgress as any).quiz_score;
         if (quizScore && quizScore > 0) {
+          completedQuizzes[originalLessonId] = true;
           completedQuizzes[lessonProgress.lesson_id] = true;
-          completedQuizzes[`${courseId}:${lessonProgress.lesson_id}`] = true;
+          completedQuizzes[`${courseId}:${originalLessonId}`] = true;
+          completedQuizzes[`${normalizedCourseId}:${lessonProgress.lesson_id}`] = true;
         }
       });
       
@@ -124,11 +154,14 @@ export const courseProgressService = {
    */
   fetchLessonProgressByLessonId: async (userId: string, lessonId: string) => {
     try {
+      // Normalizar el ID de lección a UUID
+      const normalizedLessonId = courseProgressService.normalizeId(lessonId);
+      
       const { data, error } = await supabase
         .from('user_lesson_progress')
         .select('*')
         .eq('user_id', userId)
-        .eq('lesson_id', lessonId)
+        .eq('lesson_id', normalizedLessonId)
         .maybeSingle();
       
       if (error) throw error;
@@ -144,11 +177,14 @@ export const courseProgressService = {
    */
   getCourseProgress: async (userId: string, courseId: string) => {
     try {
+      // Normalizar el ID del curso a UUID
+      const normalizedCourseId = courseProgressService.normalizeId(courseId);
+      
       const { data, error } = await supabase
         .from('user_course_progress')
         .select('*')
         .eq('user_id', userId)
-        .eq('course_id', courseId)
+        .eq('course_id', normalizedCourseId)
         .maybeSingle();
       
       if (error) throw error;
@@ -166,12 +202,22 @@ export const courseProgressService = {
     try {
       console.log(`Marking lesson as completed: userId=${userId}, courseId=${courseId}, lessonId=${lessonId}`);
       
+      // Normalizar IDs a UUID
+      const normalizedCourseId = courseProgressService.normalizeId(courseId);
+      const normalizedLessonId = courseProgressService.normalizeId(lessonId);
+      
+      console.log(`Normalized IDs: courseId=${normalizedCourseId}, lessonId=${normalizedLessonId}`);
+      
+      // Registrar el mapeo para uso futuro
+      courseProgressService._idMappings[courseId] = normalizedCourseId;
+      courseProgressService._idMappings[lessonId] = normalizedLessonId;
+      
       // Verificar si ya existe un registro de progreso para esta lección
       const { data: existingProgress, error: checkError } = await supabase
         .from('user_lesson_progress')
         .select('id')
         .eq('user_id', userId)
-        .eq('lesson_id', lessonId)
+        .eq('lesson_id', normalizedLessonId)
         .maybeSingle();
       
       if (checkError) throw checkError;
@@ -183,7 +229,7 @@ export const courseProgressService = {
           .update({
             completed: true,
             completed_at: new Date().toISOString(),
-            course_id: courseId
+            course_id: normalizedCourseId
           })
           .eq('id', existingProgress.id);
         
@@ -194,8 +240,8 @@ export const courseProgressService = {
           .from('user_lesson_progress')
           .insert({
             user_id: userId,
-            lesson_id: lessonId,
-            course_id: courseId,
+            lesson_id: normalizedLessonId,
+            course_id: normalizedCourseId,
             completed: true,
             completed_at: new Date().toISOString()
           });
@@ -204,7 +250,7 @@ export const courseProgressService = {
       }
       
       // Actualizar el progreso general del curso
-      await courseProgressService.updateCourseProgressData(userId, courseId);
+      await courseProgressService.updateCourseProgressData(userId, normalizedCourseId);
       
       // Registrar la actividad
       await supabase.rpc('log_user_activity', {
@@ -237,12 +283,16 @@ export const courseProgressService = {
     answers: Record<string, number>
   ): Promise<boolean> => {
     try {
+      // Normalizar IDs a UUID
+      const normalizedCourseId = courseProgressService.normalizeId(courseId);
+      const normalizedLessonId = courseProgressService.normalizeId(lessonId);
+      
       // Verificar si ya existe un registro de progreso para esta lección
       const { data: existingProgress, error: checkError } = await supabase
         .from('user_lesson_progress')
         .select('id')
         .eq('user_id', userId)
-        .eq('lesson_id', lessonId)
+        .eq('lesson_id', normalizedLessonId)
         .maybeSingle();
       
       if (checkError) throw checkError;
@@ -257,7 +307,7 @@ export const courseProgressService = {
       } = {
         completed: true,
         completed_at: new Date().toISOString(),
-        course_id: courseId,
+        course_id: normalizedCourseId,
         quiz_score: score,
         quiz_answers: answers
       };
@@ -276,7 +326,7 @@ export const courseProgressService = {
           .from('user_lesson_progress')
           .insert({
             user_id: userId,
-            lesson_id: lessonId,
+            lesson_id: normalizedLessonId,
             ...quizData
           });
         
@@ -284,7 +334,7 @@ export const courseProgressService = {
       }
       
       // Actualizar el progreso general del curso
-      await courseProgressService.updateCourseProgressData(userId, courseId);
+      await courseProgressService.updateCourseProgressData(userId, normalizedCourseId);
       
       // Registrar la actividad
       const pointsEarned = Math.round(score / 10); // 0-10 puntos basados en la puntuación
@@ -317,5 +367,8 @@ export const courseProgressService = {
       console.error('Error in updateCourseProgressData:', error);
       return false;
     }
-  }
+  },
+
+  // Cache para mapear IDs originales a UUIDs generados
+  _idMappings: {} as Record<string, string>
 };
