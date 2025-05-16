@@ -35,6 +35,8 @@ export const useLessonData = (courseId: string | undefined, moduleId: string | u
       setIsLoading(true);
       
       try {
+        console.log(`Fetching lesson data for: courseId=${courseId}, moduleId=${moduleId}, lessonId=${lessonId}`);
+        
         // Obtener datos de la lección usando el servicio híbrido
         const lessonData = await HybridCourseService.getLessonById(lessonId);
         if (!lessonData) {

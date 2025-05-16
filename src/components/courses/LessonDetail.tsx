@@ -115,7 +115,7 @@ const LessonDetail = () => {
           
           <LessonNavigation 
             courseId={courseId!} 
-            moduleId={moduleId}
+            moduleId={moduleId!}
             prevLesson={prevLesson} 
             nextLesson={nextLesson} 
           />
