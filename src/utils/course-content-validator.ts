@@ -14,6 +14,7 @@ export const validateLessonContent = async (
   lessonId: string
 ): Promise<boolean> => {
   try {
+    // Use the descriptive ID format for the content path
     const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
     console.log(`Validando existencia de archivo: ${contentPath}`);
     const response = await fetch(contentPath, { method: 'HEAD' });
