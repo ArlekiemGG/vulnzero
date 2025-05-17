@@ -1,5 +1,5 @@
 
-import { ProgressResult } from './types';
+import { ProgressResult } from '@/types/course-progress';
 import * as queries from './queries';
 
 /**
@@ -43,6 +43,14 @@ export async function fetchUserProgressData(courseId: string, userId: string): P
 
           // Para compatibilidad también mantenemos el formato más general
           completedLessonsMap[item.lesson_id] = true;
+          
+          // Check for quiz completion
+          if (item.quiz_score !== undefined && 
+              typeof item.quiz_score === 'number' && 
+              item.quiz_score > 0) {
+            completedQuizzesMap[lessonKey] = true;
+            completedQuizzesMap[item.lesson_id] = true;
+          }
         }
       });
     }

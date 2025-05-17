@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LessonProgressItem, 
@@ -6,7 +7,7 @@ import {
   TotalLessonsResponse, 
   SupabaseSimpleResponse,
   SimpleLessonProgress
-} from './types';
+} from '@/types/course-progress';
 
 /**
  * Recupera el progreso del curso para un usuario y curso específico
@@ -26,7 +27,7 @@ export async function getCourseProgress(userId: string, courseId: string): Promi
 export async function getLessonProgress(userId: string, courseId: string): Promise<LessonProgressResponse> {
   const { data, error } = await supabase
     .from('user_lesson_progress')
-    .select('lesson_id, completed')
+    .select('lesson_id, completed, quiz_score, quiz_answers')
     .eq('user_id', userId)
     .eq('course_id', courseId);
   
@@ -37,7 +38,9 @@ export async function getLessonProgress(userId: string, courseId: string): Promi
     filteredData = data.map((item: any) => ({
       lesson_id: item.lesson_id,
       completed: !!item.completed,
-      course_id: courseId
+      course_id: courseId,
+      quiz_score: item.quiz_score,
+      quiz_answers: item.quiz_answers
     }));
   }
   
