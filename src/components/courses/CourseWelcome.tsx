@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Brain, Target, BarChart } from 'lucide-react';
-import { ProfileWithPreferences } from '@/services/course-progress/types';
+import { ProfileWithPreferences } from '@/types/course-progress';
 import { toast } from '@/components/ui/use-toast';
 
 const CourseWelcome = () => {
@@ -47,12 +47,18 @@ const CourseWelcome = () => {
       // Imprimir datos para depuración
       console.log("Datos del perfil:", profile);
       
-      // Manejar el perfil con seguridad comprobando si los campos existen
-      const userProfile = profile as ProfileWithPreferences;
-      const hasCompletedAssessment = Boolean(userProfile?.completed_assessment);
+      // Cast profile to ProfileWithPreferences and ensure type safety
+      const userProfile: ProfileWithPreferences = {
+        id: profile.id,
+        username: profile.username,
+        avatar_url: profile.avatar_url,
+        preferred_level: profile.preferred_level,
+        recommended_course: profile.recommended_course,
+        completed_assessment: !!profile.completed_assessment
+      };
       
-      console.log("Estado de completed_assessment:", hasCompletedAssessment);
-      setCompletedAssessment(hasCompletedAssessment);
+      console.log("Estado de completed_assessment:", userProfile.completed_assessment);
+      setCompletedAssessment(!!userProfile.completed_assessment);
       setProfileLoaded(true);
     } catch (error) {
       console.error('Error checking assessment status:', error);

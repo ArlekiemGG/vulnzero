@@ -76,6 +76,6 @@ export interface ProfileWithPreferences {
   username: string;
   avatar_url: string;
   preferred_level?: string;
-  recommended_course?: boolean;
+  recommended_course?: string; // Changed from boolean to string
   completed_assessment?: boolean;
 }

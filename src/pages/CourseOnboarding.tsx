@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Lightbulb, Route } from 'lucide-react';
-import { ProfileWithPreferences } from '@/services/course-progress/types';
+import { ProfileWithPreferences } from '@/types/course-progress';
 
 const CourseOnboarding = () => {
   const { user } = useAuth();
@@ -43,9 +44,17 @@ const CourseOnboarding = () => {
       }
       
       if (profile) {
-        const userProfile = profile as ProfileWithPreferences;
-        // Safely handle potential missing fields
-        setCompletedAssessment(userProfile.completed_assessment || false);
+        // Cast profile to ProfileWithPreferences and ensure type safety
+        const userProfile: ProfileWithPreferences = {
+          id: profile.id,
+          username: profile.username,
+          avatar_url: profile.avatar_url,
+          preferred_level: profile.preferred_level,
+          recommended_course: profile.recommended_course,
+          completed_assessment: !!profile.completed_assessment
+        };
+        
+        setCompletedAssessment(!!userProfile.completed_assessment);
         setLevel(userProfile.preferred_level || '');
         setRecommendedCourseId(userProfile.recommended_course || '');
       }
