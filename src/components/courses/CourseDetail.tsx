@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HybridCourseService } from './services/HybridCourseService';
@@ -23,14 +22,6 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
-// Mapeo de IDs de cursos a sus directorios alfanuméricos
-const courseDirectoryMap: Record<string, string> = {
-  'fundamentos-cybersecurity': 'course001',
-  'hacking-etico': 'course002',
-  'analisis-malware': 'course003',
-  'seguridad-personal': 'course004'
-};
-
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const { user } = useAuth();
@@ -41,11 +32,6 @@ const CourseDetail = () => {
   const [courseValidation, setCourseValidation] = useState<any | null>(null);
   const [validationLoading, setValidationLoading] = useState(false);
   const { progress, completedLessons } = useUserCourseProgress(courseId, user?.id);
-  
-  // Función para obtener el directorio del curso según el ID
-  const getCourseDirectory = (id: string): string => {
-    return courseDirectoryMap[id] || id;
-  };
   
   useEffect(() => {
     const loadCourseDetails = async () => {
@@ -92,15 +78,11 @@ const CourseDetail = () => {
           
           console.log('CourseDetail: Secciones con lecciones de datos estáticos:', sectionsData);
           
-          // Usar el mapeo para obtener la ruta de imagen correcta
-          const courseDirectory = getCourseDirectory(staticCourse.id);
-          const imageUrl = staticCourse.image_url || `/courses/${courseDirectory}/cover.jpg`;
-          
           setCourse({
             id: staticCourse.id,
             title: staticCourse.title,
             description: staticCourse.description,
-            image_url: imageUrl,
+            image_url: staticCourse.image_url || `/courses/${staticCourse.id}/cover.jpg`,
             category: staticCourse.category,
             level: staticCourse.level,
             instructor: staticCourse.instructor,

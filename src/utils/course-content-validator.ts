@@ -1,4 +1,3 @@
-
 import { findCourseById, findModuleById, findLessonById } from '@/data/courses';
 
 /**
@@ -14,27 +13,7 @@ export const validateLessonContent = async (
   lessonId: string
 ): Promise<boolean> => {
   try {
-    // Obtiene el directorio del curso según su ID
-    let courseDirectory = '';
-    
-    switch(courseId) {
-      case 'fundamentos-cybersecurity':
-        courseDirectory = 'course001';
-        break;
-      case 'hacking-etico':
-        courseDirectory = 'course002';
-        break;
-      case 'analisis-malware':
-        courseDirectory = 'course003';
-        break;
-      case 'seguridad-personal':
-        courseDirectory = 'course004';
-        break;
-      default:
-        courseDirectory = courseId;
-    }
-    
-    const contentPath = `/courses/${courseDirectory}/${moduleId}/${lessonId}.html`;
+    const contentPath = `/courses/${courseId}/${moduleId}/${lessonId}.html`;
     console.log(`Validando existencia de archivo: ${contentPath}`);
     const response = await fetch(contentPath, { method: 'HEAD' });
     return response.ok;
