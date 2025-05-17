@@ -131,7 +131,8 @@ export const courseProgressService = {
           completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
           
           // También registramos si es un quiz
-          const quizScore = lessonProgress.quiz_score;
+          // Fix: Check if quiz_score exists in lessonProgress as a property
+          const quizScore = 'quiz_score' in lessonProgress ? lessonProgress.quiz_score : null;
           if (quizScore && quizScore > 0) {
             completedQuizzes[originalLessonId] = true;
             completedQuizzes[`${courseId}:${originalLessonId}`] = true;
@@ -288,7 +289,7 @@ export const courseProgressService = {
         console.log(`courseProgressService: Updating course progress for course ${normalizedCourseId}`);
         
         // Ejecutar la función para asegurarnos de que todos los registros tienen el course_id correcto
-        await this.updateCourseProgressData(userId, normalizedCourseId);
+        await courseProgressService.updateCourseProgressData(userId, normalizedCourseId);
         
         // Registrar la actividad del usuario
         try {
@@ -336,16 +337,26 @@ export const courseProgressService = {
       }
       
       // 2. Contar lecciones totales para el curso
-      // Corregido: Primero construimos el subquery correctamente
+      // Primero construimos el subquery correctamente
       const sectionsSubquery = supabase
         .from('course_sections')
         .select('id')
         .eq('course_id', normalizedCourseId);
       
+      // Fix: Create an array of section ids to use with the 'in' method
+      const { data: sectionData } = await sectionsSubquery;
+      const sectionIds = sectionData ? sectionData.map(section => section.id) : [];
+      
+      // If no sections found, return early
+      if (sectionIds.length === 0) {
+        console.log(`courseProgressService: No sections found for course ${normalizedCourseId}`);
+        return false;
+      }
+      
       const { count, error: countError } = await supabase
         .from('course_lessons')
         .select('id', { count: 'exact', head: true })
-        .in('section_id', sectionsSubquery.select('id'));
+        .in('section_id', sectionIds);
       
       if (countError) {
         console.error("courseProgressService: Error counting total lessons:", countError);
@@ -514,7 +525,7 @@ export const courseProgressService = {
       }
       
       // Actualizar el progreso general del curso
-      await this.updateCourseProgressData(userId, normalizedCourseId);
+      await courseProgressService.updateCourseProgressData(userId, normalizedCourseId);
       
       // Registrar la actividad con puntos basados en la puntuación del quiz
       const pointsEarned = Math.round(score / 10); // 0-10 puntos basados en la puntuación
