@@ -486,7 +486,13 @@ export const courseProgressService = {
       }
       
       const now = new Date().toISOString();
-      const quizData = {
+      const quizData: {
+        completed: boolean; 
+        completed_at: string; 
+        course_id: string;
+        quiz_score: number;
+        quiz_answers: Record<string, number>;
+      } = {
         completed: true,
         completed_at: now,
         course_id: normalizedCourseId,
@@ -498,10 +504,9 @@ export const courseProgressService = {
         // Actualizar registro existente con resultados del quiz
         console.log(`courseProgressService: Updating existing quiz progress record ${existingProgress.id}`);
         
-        // Utilizamos typecast para evitar el error de TypeScript
         const { error: updateError } = await supabase
           .from('user_lesson_progress')
-          .update(quizData as any)
+          .update(quizData)
           .eq('id', existingProgress.id);
         
         if (updateError) {
@@ -512,14 +517,13 @@ export const courseProgressService = {
         // Crear nuevo registro con resultados del quiz
         console.log(`courseProgressService: Creating new quiz progress record`);
         
-        // Utilizamos typecast para evitar el error de TypeScript
         const { error: insertError } = await supabase
           .from('user_lesson_progress')
           .insert({
             user_id: userId,
             lesson_id: normalizedLessonId,
             ...quizData
-          } as any);
+          });
         
         if (insertError) {
           console.error("courseProgressService: Error creating quiz progress:", insertError);
@@ -552,4 +556,3 @@ export const courseProgressService = {
       return false;
     }
   }
-};
