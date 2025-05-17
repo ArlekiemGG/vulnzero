@@ -1,64 +1,33 @@
-
-/**
- * Utilidad para generar UUIDs deterministas basados en strings
- * Esto garantiza que el mismo string siempre generará el mismo UUID
- */
-
 import { v5 as uuidv5 } from 'uuid';
 
-// Espacio de nombres personalizado para nuestra aplicación
-// Usamos un UUID v4 aleatorio generado previamente como namespace
-const NAMESPACE = '2f8b5fb2-07bc-4db9-b58b-c241c9615f6d';
+// Namespace to use for generating UUIDs
+const NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
 
 /**
- * Genera un UUID determinista basado en una cadena
- * @param input String que se usará como base para generar el UUID
- * @returns UUID v5 determinista
+ * Generates a UUID from a string using the v5 algorithm
  */
 export function generateUUID(input: string): string {
-  if (!input) {
-    console.error('generateUUID: Input string is empty');
-    return '';
-  }
-  
-  // Normalizar el input para mayor consistencia
-  const normalizedInput = String(input).trim().toLowerCase();
-  
-  // Generar UUID y devolver
-  const result = uuidv5(normalizedInput, NAMESPACE);
-  console.log(`generateUUID: "${input}" → UUID: ${result}`);
-  return result;
+  return uuidv5(input, NAMESPACE);
 }
 
 /**
- * Verifica si un string es un UUID válido
- * @param id String a verificar
- * @returns true si es un UUID válido, false en caso contrario
- */
-export function isValidUUID(id: string): boolean {
-  if (!id) return false;
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidPattern.test(id);
-}
-
-/**
- * Normaliza un ID a UUID si es necesario
- * @param id ID a normalizar
- * @returns UUID válido
+ * Normalizes an ID by converting it to UUID format if it's not already
  */
 export function normalizeId(id: string): string {
-  if (!id) {
-    console.error('normalizeId: ID is empty');
-    return '';
-  }
-  
-  // Si ya es un UUID válido, lo devolvemos como está
+  // If the ID is already a UUID, return it as is
   if (isValidUUID(id)) {
     return id;
   }
   
-  // Caso contrario, generamos un UUID determinista basado en el string
-  const normalizedId = generateUUID(id);
-  console.log(`normalizeId: "${id}" → "${normalizedId}"`);
-  return normalizedId;
+  // Otherwise, generate a UUID from the ID
+  console.log(`normalizeId: "${id}" → "${generateUUID(id)}"`);
+  return generateUUID(id);
+}
+
+/**
+ * Checks if a string is a valid UUID
+ */
+export function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
 }
