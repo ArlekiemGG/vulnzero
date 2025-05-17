@@ -133,7 +133,8 @@ export const lessonProgressService = {
               console.log("Attempting alternative approach with direct RPC call");
               
               // Use an RPC call that can handle the string ID properly
-              const { data: rpcResult, error: rpcError } = await supabase.rpc('create_lesson_progress', {
+              // TypeScript doesn't know about our custom function yet, so we need to use 'as any' to bypass the type check
+              const { data: rpcResult, error: rpcError } = await (supabase.rpc as any)('create_lesson_progress', {
                 p_user_id: userId,
                 p_lesson_id: lessonId, // Use original ID here
                 p_course_id: normalizedCourseId,

@@ -639,6 +639,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_lesson_progress: {
+        Args: {
+          p_user_id: string
+          p_lesson_id: string
+          p_course_id: string
+          p_completed: boolean
+        }
+        Returns: boolean
+      }
       get_user_progress: {
         Args: { p_user_id: string }
         Returns: Json
