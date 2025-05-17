@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProgressService } from './services/ProgressService';
+import { useUser } from '@/contexts/UserContext';
 
 // Componentes refactorizados
 import LessonHeader from './components/LessonHeader';
@@ -19,6 +20,7 @@ const LessonDetail = () => {
   const { courseId, moduleId, lessonId } = useParams<{ courseId: string; moduleId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshUserStats } = useUser(); // Añadimos acceso a refreshUserStats
   const { markLessonAsCompleted } = useProgressService();
   
   console.log(`LessonDetail rendered with params: courseId=${courseId}, moduleId=${moduleId}, lessonId=${lessonId}`);
@@ -31,7 +33,8 @@ const LessonDetail = () => {
     setCompleted,
     nextLesson,
     prevLesson,
-    fadeIn
+    fadeIn,
+    refreshProgress // Usamos esta función para actualizar el progreso local
   } = useLessonData(courseId, moduleId, lessonId, user?.id);
 
   const handleMarkAsCompleted = async () => {
@@ -46,7 +49,16 @@ const LessonDetail = () => {
     
     const success = await markLessonAsCompleted(lessonId!);
     if (success) {
+      console.log("LessonDetail: Lección marcada como completada exitosamente");
       setCompleted(true);
+      
+      // Actualizamos el progreso global del usuario
+      await refreshUserStats();
+      console.log("LessonDetail: Estadísticas de usuario actualizadas");
+      
+      // También actualizamos el progreso local del curso
+      await refreshProgress();
+      console.log("LessonDetail: Progreso local actualizado");
       
       // Si hay una siguiente lección, preguntar si quiere continuar
       if (nextLesson) {
@@ -70,6 +82,13 @@ const LessonDetail = () => {
           description: "Has completado todas las lecciones de este curso",
         });
       }
+    } else {
+      console.error("LessonDetail: Error al marcar la lección como completada");
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la lección como completada",
+        variant: "destructive",
+      });
     }
   };
 

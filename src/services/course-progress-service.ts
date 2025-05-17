@@ -131,9 +131,9 @@ export const courseProgressService = {
           completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
           
           // También registramos si es un quiz
-          // Fix: Check if quiz_score exists in lessonProgress as a property
-          const quizScore = 'quiz_score' in lessonProgress ? lessonProgress.quiz_score : null;
-          if (quizScore && quizScore > 0) {
+          // Fix: Check if quiz_score exists in lessonProgress and ensure proper type checking
+          const quizScore = lessonProgress.quiz_score as number | null | undefined;
+          if (quizScore !== null && quizScore !== undefined && quizScore > 0) {
             completedQuizzes[originalLessonId] = true;
             completedQuizzes[`${courseId}:${originalLessonId}`] = true;
             completedQuizzes[`${normalizedCourseId}:${originalLessonId}`] = true;
