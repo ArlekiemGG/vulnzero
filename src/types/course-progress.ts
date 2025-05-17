@@ -27,8 +27,8 @@ export interface LessonProgressItem {
   course_id: string;
   completed: boolean;
   completed_at: string | null;
-  quiz_score?: number;  // Añadimos esta propiedad que faltaba
-  quiz_answers?: Record<string, number>;  // También añadimos esta por si es necesaria
+  quiz_score?: number;
+  quiz_answers?: Record<string, number>;
 }
 
 export interface CourseProgressItem {

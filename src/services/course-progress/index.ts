@@ -1,21 +1,16 @@
 
-// Re-exportamos desde nuestro nuevo servicio centralizado 
-// para mantener compatibilidad con código existente
+import { courseProgressService } from './course-progress-service';
 
-import { courseProgressService } from '@/services/course-progress-service';
+// Re-export the main functions and types
+export const {
+  fetchUserProgressData,
+  markLessonComplete,
+  saveQuizResults,
+  updateCourseProgressData,
+  getLessonCourseInfo,
+  fetchLessonProgressByLessonId,
+  getCourseProgress
+} = courseProgressService;
 
-// Exportar las funciones principales
-export const fetchUserProgressData = (courseId: string, userId: string) => 
-  courseProgressService.fetchUserProgressData(courseId, userId);
-
-export const markLessonComplete = (userId: string, courseId: string, lessonId: string) => 
-  courseProgressService.markLessonComplete(userId, courseId, lessonId);
-
-export const saveQuizResults = (userId: string, courseId: string, lessonId: string, score: number, answers: Record<string, number>) => 
-  courseProgressService.saveQuizResults(userId, courseId, lessonId, score, answers);
-
-export const updateCourseProgressData = (userId: string, courseId: string) => 
-  courseProgressService.updateCourseProgressData(userId, courseId);
-
-// Re-exportar tipos
+// Re-export types
 export * from '@/types/course-progress';
