@@ -131,9 +131,10 @@ export const courseProgressService = {
           completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
           
           // También registramos si es un quiz
-          // Fix: Check if quiz_score exists in lessonProgress and ensure proper type checking
-          const quizScore = lessonProgress.quiz_score as number | null | undefined;
-          if (quizScore !== null && quizScore !== undefined && quizScore > 0) {
+          // Verificamos si quiz_score existe en lessonProgress con comprobación de tipo adecuada
+          if (lessonProgress.hasOwnProperty('quiz_score') && 
+              typeof lessonProgress.quiz_score === 'number' && 
+              lessonProgress.quiz_score > 0) {
             completedQuizzes[originalLessonId] = true;
             completedQuizzes[`${courseId}:${originalLessonId}`] = true;
             completedQuizzes[`${normalizedCourseId}:${originalLessonId}`] = true;

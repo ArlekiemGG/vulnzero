@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Course, Section, Lesson } from './CourseService';
 import { StaticContentService } from './StaticContentService';
@@ -272,4 +271,96 @@ export const HybridCourseService = {
       return null;
     }
   },
+  
+  /**
+   * Obtiene las lecciones adyacentes (anterior y siguiente) para una lección dada
+   */
+  getAdjacentLessons: async (courseId: string, lessonId: string): Promise<{prevLesson: Lesson | null, nextLesson: Lesson | null}> => {
+    try {
+      console.log(`HybridCourseService: Buscando lecciones adyacentes para courseId=${courseId}, lessonId=${lessonId}`);
+      
+      // Obtenemos todas las secciones del curso
+      const sections = await HybridCourseService.getCourseSections(courseId);
+      
+      // Recopilamos todas las lecciones de todas las secciones
+      let allLessons: Lesson[] = [];
+      let currentLessonFound = false;
+      let prevLessonData: Lesson | null = null;
+      let nextLessonData: Lesson | null = null;
+      
+      for (const section of sections) {
+        const sectionLessons = await HybridCourseService.getSectionLessons(section.id);
+        
+        // Si encontramos la lección actual en la sección anterior, 
+        // la primera lección de esta sección sería la siguiente
+        if (currentLessonFound && sectionLessons.length > 0 && !nextLessonData) {
+          nextLessonData = {
+            ...sectionLessons[0],
+            moduleId: section.id  // Añadimos moduleId para facilitar la navegación
+          };
+        }
+        
+        for (let i = 0; i < sectionLessons.length; i++) {
+          // Comparamos IDs para encontrar la lección actual
+          if (sectionLessons[i].id === lessonId) {
+            currentLessonFound = true;
+            
+            // Lección anterior en la misma sección
+            if (i > 0) {
+              prevLessonData = {
+                ...sectionLessons[i - 1],
+                moduleId: section.id
+              };
+            }
+            
+            // Lección siguiente en la misma sección
+            if (i < sectionLessons.length - 1) {
+              nextLessonData = {
+                ...sectionLessons[i + 1],
+                moduleId: section.id
+              };
+            }
+          } else if (currentLessonFound && !nextLessonData) {
+            // Si ya encontramos la lección actual pero aún no tenemos la siguiente
+            nextLessonData = {
+              ...sectionLessons[i],
+              moduleId: section.id
+            };
+            break;
+          } else if (!currentLessonFound) {
+            // Guardamos la lección actual como posible "anterior" 
+            // hasta que encontremos la lección actual
+            prevLessonData = {
+              ...sectionLessons[i],
+              moduleId: section.id
+            };
+          }
+        }
+        
+        // Si ya tenemos tanto la lección anterior como la siguiente, salimos del bucle
+        if (currentLessonFound && nextLessonData) {
+          break;
+        }
+      }
+      
+      // Si no encontramos la lección actual, devolvemos null para ambas
+      if (!currentLessonFound) {
+        prevLessonData = null;
+        nextLessonData = null;
+      }
+      
+      console.log('HybridCourseService: Lecciones adyacentes encontradas:', {
+        prev: prevLessonData?.title || 'No hay lección anterior',
+        next: nextLessonData?.title || 'No hay lección siguiente'
+      });
+      
+      return { 
+        prevLesson: prevLessonData, 
+        nextLesson: nextLessonData 
+      };
+    } catch (error) {
+      console.error('Error en getAdjacentLessons:', error);
+      return { prevLesson: null, nextLesson: null };
+    }
+  }
 };

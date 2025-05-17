@@ -34,7 +34,7 @@ export function useLessonData(courseId?: string, moduleId?: string, lessonId?: s
         setIsLoading(true);
         
         console.log(`useLessonData: Fetching lesson data for courseId=${courseId}, lessonId=${lessonId}`);
-        const lessonData = await HybridCourseService.getLessonById(courseId, lessonId);
+        const lessonData = await HybridCourseService.getLessonById(lessonId);
         
         if (lessonData) {
           console.log('useLessonData: Lesson data found:', lessonData);
