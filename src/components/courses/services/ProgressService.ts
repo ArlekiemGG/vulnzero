@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from '@/components/ui/use-toast';
 import { normalizeId } from '@/utils/uuid-generator';
+import { courseProgressService } from '@/services/course-progress/course-progress-service';
 
 /**
  * Service for managing lesson progress with direct database access
@@ -64,7 +65,7 @@ export function useProgressService() {
   const markLessonAsCompleted = useCallback(async (lessonId: string, moduleId?: string) => {
     if (!userContext.user) {
       console.error("ProgressService: No user logged in");
-      return false;
+      throw new Error("No user logged in");
     }
 
     setIsLoading(true);
@@ -85,7 +86,7 @@ export function useProgressService() {
           description: "No se pudo determinar el curso al que pertenece esta lección"
         });
         setIsLoading(false);
-        return false;
+        throw new Error("Could not extract course ID from URL");
       }
       
       const courseId = match[1];
@@ -93,6 +94,31 @@ export function useProgressService() {
       
       console.log(`ProgressService: Extracted courseId ${courseId} from URL (normalized: ${normalizedCourseId})`);
       console.log(`ProgressService: Lesson ${lessonId} belongs to course ${courseId}`);
+      
+      // First try to use the courseProgressService
+      console.log(`ProgressService: Using courseProgressService first...`);
+      try {
+        const serviceSuccess = await courseProgressService.markLessonComplete(
+          userContext.user.id, 
+          normalizedCourseId,
+          lessonId
+        );
+        
+        if (serviceSuccess) {
+          console.log(`ProgressService: courseProgressService completed successfully`);
+          
+          // Update global user stats
+          await refreshUserStats();
+          
+          setIsLoading(false);
+          return true;
+        }
+        
+        console.log(`ProgressService: courseProgressService failed, falling back to direct method`);
+      } catch (serviceError) {
+        console.error('ProgressService: Error using courseProgressService:', serviceError);
+        console.log(`ProgressService: Falling back to direct method`);
+      }
       
       // Check if a record already exists
       const { data: existingProgress } = await supabase
@@ -167,11 +193,6 @@ export function useProgressService() {
         await refreshUserStats();
         console.log("ProgressService: User stats refreshed");
         
-        toast({
-          title: "Lección completada",
-          description: "Se ha guardado tu progreso correctamente"
-        });
-
         setIsLoading(false);
         return true;
       } else {
@@ -191,7 +212,7 @@ export function useProgressService() {
         description: "Ocurrió un error al guardar el progreso"
       });
       setIsLoading(false);
-      return false;
+      throw error; // Rethrow to indicate failure to caller
     }
   }, [userContext.user, refreshUserStats]);
   
