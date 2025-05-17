@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ProgressResult } from '@/types/course-progress';
+import { ProgressResult, SimpleLessonProgress } from '@/types/course-progress';
 import { normalizeId } from '@/utils/uuid-generator';
 
 /**
@@ -74,10 +74,11 @@ export const progressDataService = {
           completedLessons[`${courseId}:${originalLessonId}`] = true;
           completedLessons[`${normalizedCourseId}:${originalLessonId}`] = true;
           
-          // Check for quiz completion
-          if (lessonProgress.quiz_score !== undefined && 
-              typeof lessonProgress.quiz_score === 'number' && 
-              lessonProgress.quiz_score > 0) {
+          // Check for quiz completion - explicitly cast the object to include quiz_score
+          const progressWithQuiz = lessonProgress as SimpleLessonProgress;
+          if (progressWithQuiz.quiz_score !== undefined && 
+              typeof progressWithQuiz.quiz_score === 'number' && 
+              progressWithQuiz.quiz_score > 0) {
             completedQuizzes[originalLessonId] = true;
             completedQuizzes[`${courseId}:${originalLessonId}`] = true;
             completedQuizzes[`${normalizedCourseId}:${originalLessonId}`] = true;
