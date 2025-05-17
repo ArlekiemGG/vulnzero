@@ -1,3 +1,4 @@
+
 export type CompletedLessonsMap = Record<string, boolean>;
 export type CompletedQuizzesMap = Record<string, boolean>;
 

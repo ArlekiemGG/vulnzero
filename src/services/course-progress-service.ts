@@ -556,3 +556,4 @@ export const courseProgressService = {
       return false;
     }
   }
+};
