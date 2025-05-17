@@ -14,17 +14,32 @@ export const lessonProgressService = {
    */
   fetchLessonProgressByLessonId: async (userId: string, lessonId: string) => {
     try {
-      // Normalizar el ID de lección a UUID
-      const normalizedLessonId = normalizeId(lessonId);
+      // Normalizamos el ID de lección a UUID si es posible
+      const normalizedLessonId = isValidUUID(lessonId) ? lessonId : normalizeId(lessonId);
+      console.log(`LessonProgressService: Checking progress for lesson ${lessonId} (normalized: ${normalizedLessonId})`);
       
-      const { data, error } = await supabase
+      // First try with normalized ID
+      const { data: normalizedData, error: normalizedError } = await supabase
         .from('user_lesson_progress')
         .select('*')
         .eq('user_id', userId)
         .eq('lesson_id', normalizedLessonId)
         .maybeSingle();
+        
+      // If found with normalized ID, return it
+      if (normalizedData) {
+        return { data: normalizedData };
+      }
       
-      if (error) {
+      // If not found with normalized ID, try with original ID
+      const { data, error } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') { // Ignore "no rows returned" error
         throw error;
       }
       
@@ -40,27 +55,31 @@ export const lessonProgressService = {
    */
   markLessonComplete: async (userId: string, courseId: string, lessonId: string): Promise<boolean> => {
     try {
-      // Normalizar IDs a UUID
-      const normalizedCourseId = normalizeId(courseId);
-      const normalizedLessonId = normalizeId(lessonId);
+      console.log(`LessonProgressService: Marking lesson ${lessonId} as completed for course ${courseId}`);
       
-      // Primero verificamos si la lección existe en la tabla course_lessons
+      // Normalizamos el courseId siempre a UUID
+      const normalizedCourseId = normalizeId(courseId);
+      console.log(`LessonProgressService: Normalized courseId from ${courseId} to ${normalizedCourseId}`);
+      
+      // Para el ID de la lección, intentaremos verificar si existe en la tabla course_lessons
       const { data: existingLesson, error: lessonCheckError } = await supabase
         .from('course_lessons')
         .select('id')
-        .eq('id', normalizedLessonId)
+        .eq('id', normalizeId(lessonId))
         .maybeSingle();
         
-      if (lessonCheckError) {
+      if (lessonCheckError && lessonCheckError.code !== 'PGRST116') { // Ignore "no rows returned" error
         console.error("Error checking if lesson exists:", lessonCheckError);
       }
       
-      // Si la lección no existe en la tabla course_lessons
-      // almacenamos el progreso usando el ID original sin normalizar
-      // esto es útil para lecciones de cursos estáticos que no están en la base de datos
-      const lessonIdToUse = existingLesson ? normalizedLessonId : lessonId;
+      // Decide which lessonId to use: 
+      // - If the lesson exists in DB, use normalized UUID
+      // - If it doesn't exist (static content), use the original ID
+      const lessonIdToUse = existingLesson ? normalizeId(lessonId) : lessonId;
       
-      // Check for existing progress
+      console.log(`LessonProgressService: Using lessonId ${lessonIdToUse} (original: ${lessonId})`);
+      
+      // Check for existing progress using the chosen lessonId
       const { data: existingProgress, error: checkError } = await supabase
         .from('user_lesson_progress')
         .select('id')
@@ -68,14 +87,15 @@ export const lessonProgressService = {
         .eq('lesson_id', lessonIdToUse)
         .maybeSingle();
       
-      if (checkError) {
+      if (checkError && checkError.code !== 'PGRST116') { // Ignore "no rows returned" error
         throw checkError;
       }
       
       const now = new Date().toISOString();
-      let success = false;
       
       if (existingProgress) {
+        console.log(`LessonProgressService: Updating existing progress record ${existingProgress.id}`);
+        
         // Update existing record
         const { error: updateError } = await supabase
           .from('user_lesson_progress')
@@ -87,11 +107,12 @@ export const lessonProgressService = {
           .eq('id', existingProgress.id);
         
         if (updateError) {
-          throw updateError;
+          console.error("Error updating lesson progress:", updateError);
+          return false;
         }
-        
-        success = true;
       } else {
+        console.log(`LessonProgressService: Creating new progress record`);
+        
         // Create new record
         const { error: insertError } = await supabase
           .from('user_lesson_progress')
@@ -104,31 +125,33 @@ export const lessonProgressService = {
           });
         
         if (insertError) {
-          throw insertError;
+          console.error("Error creating lesson progress:", insertError);
+          return false;
         }
-        
-        success = true;
       }
       
       // Update course progress
-      if (success) {
-        // Update course_id in all lesson progress records
+      try {
         await courseProgressUpdater.updateCourseProgressData(userId, normalizedCourseId);
-        
-        // Log activity
-        try {
-          await supabase.rpc('log_user_activity', {
-            p_user_id: userId,
-            p_type: 'lesson_completion',
-            p_title: `Completó una lección del curso`,
-            p_points: 10
-          });
-        } catch (activityError) {
-          console.error("Error logging activity:", activityError);
-        }
+      } catch (updateError) {
+        console.error("Error updating course progress data:", updateError);
+        // Don't fail the operation if this fails
       }
       
-      return success;
+      // Log activity
+      try {
+        await supabase.rpc('log_user_activity', {
+          p_user_id: userId,
+          p_type: 'lesson_completion',
+          p_title: `Completó una lección del curso`,
+          p_points: 10
+        });
+      } catch (activityError) {
+        console.error("Error logging activity:", activityError);
+        // Don't fail the operation if this fails
+      }
+      
+      return true;
     } catch (error) {
       console.error("Error in markLessonComplete:", error);
       return false;
@@ -146,24 +169,23 @@ export const lessonProgressService = {
     answers: Record<string, number>
   ): Promise<boolean> => {
     try {
-      // Normalizar IDs a UUID
+      // Normalizamos IDs a UUID
       const normalizedCourseId = normalizeId(courseId);
-      const normalizedLessonId = normalizeId(lessonId);
       
-      // Primero verificamos si la lección existe en la tabla course_lessons
+      // Para el ID de la lección, intentaremos verificar si existe en la tabla course_lessons
       const { data: existingLesson, error: lessonCheckError } = await supabase
         .from('course_lessons')
         .select('id')
-        .eq('id', normalizedLessonId)
+        .eq('id', normalizeId(lessonId))
         .maybeSingle();
         
-      if (lessonCheckError) {
+      if (lessonCheckError && lessonCheckError.code !== 'PGRST116') { // Ignore "no rows returned" error
         console.error("Error checking if lesson exists:", lessonCheckError);
       }
       
       // Si la lección no existe en la tabla course_lessons
       // almacenamos el progreso usando el ID original sin normalizar
-      const lessonIdToUse = existingLesson ? normalizedLessonId : lessonId;
+      const lessonIdToUse = existingLesson ? normalizeId(lessonId) : lessonId;
       
       // Check for existing progress
       const { data: existingProgress, error: checkError } = await supabase
@@ -173,7 +195,7 @@ export const lessonProgressService = {
         .eq('lesson_id', lessonIdToUse)
         .maybeSingle();
       
-      if (checkError) {
+      if (checkError && checkError.code !== 'PGRST116') { // Ignore "no rows returned" error
         throw checkError;
       }
       

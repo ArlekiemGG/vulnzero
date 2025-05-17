@@ -1,6 +1,7 @@
 
 import { HybridCourseService } from './HybridCourseService';
 import { normalizeId, isValidUUID } from '@/utils/uuid-generator';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Servicio especializado en resolver IDs de cursos a partir de IDs de lecciones
@@ -13,14 +14,42 @@ export const CourseIdResolver = {
    */
   getCourseIdFromLesson: async (lessonId: string): Promise<string | null> => {
     try {
+      console.log(`CourseIdResolver: Getting course ID for lesson ${lessonId}`);
+      
       // Normalizamos el ID de la lección a UUID si es necesario
-      const normalizedLessonId = normalizeId(lessonId);
-      console.log(`CourseIdResolver: Checking lesson ${lessonId} (normalized: ${normalizedLessonId})`);
+      let normalizedLessonId = lessonId;
+      if (!isValidUUID(lessonId)) {
+        normalizedLessonId = normalizeId(lessonId);
+        console.log(`CourseIdResolver: Normalized lesson ID from ${lessonId} to ${normalizedLessonId}`);
+      }
       
       // 1. Obtener información de la lección
       const lessonData = await HybridCourseService.getLessonById(lessonId);
       if (!lessonData) {
         console.error("CourseIdResolver: Lesson not found:", lessonId);
+        
+        // Intentar con ID normalizado si es diferente
+        if (normalizedLessonId !== lessonId) {
+          console.log(`CourseIdResolver: Trying with normalized ID ${normalizedLessonId}`);
+          const normalizedLessonData = await HybridCourseService.getLessonById(normalizedLessonId);
+          if (normalizedLessonData) {
+            if (normalizedLessonData.section_id) {
+              const courseId = await CourseIdResolver.getCourseIdFromSection(normalizedLessonData.section_id);
+              if (courseId) {
+                console.log(`CourseIdResolver: Found course_id ${courseId} for normalized lesson ID`);
+                return courseId;
+              }
+            }
+          }
+        }
+        
+        // Si aún no encontramos nada, intentamos extraer del URL
+        const urlCourseId = CourseIdResolver.extractCourseIdFromUrl();
+        if (urlCourseId) {
+          console.log(`CourseIdResolver: Extracted course_id ${urlCourseId} from URL`);
+          return urlCourseId;
+        }
+        
         return null;
       }
 
@@ -56,7 +85,26 @@ export const CourseIdResolver = {
    */
   getCourseIdFromSection: async (sectionId: string): Promise<string | null> => {
     try {
-      const normalizedSectionId = normalizeId(sectionId);
+      // First check if the sectionId is a valid UUID or normalize it
+      let normalizedSectionId = sectionId;
+      if (!isValidUUID(sectionId)) {
+        normalizedSectionId = normalizeId(sectionId);
+        console.log(`CourseIdResolver: Normalized section ID from ${sectionId} to ${normalizedSectionId}`);
+      }
+      
+      // Try to get section directly from database first
+      const { data: sectionData, error: sectionError } = await supabase
+        .from('course_sections')
+        .select('course_id')
+        .eq('id', normalizedSectionId)
+        .maybeSingle();
+        
+      if (!sectionError && sectionData && sectionData.course_id) {
+        console.log(`CourseIdResolver: Found course_id ${sectionData.course_id} directly from database`);
+        return sectionData.course_id;
+      }
+      
+      // If not found in database, try with HybridCourseService
       console.log(`CourseIdResolver: Looking for course with section ${sectionId} (normalized: ${normalizedSectionId})`);
       
       // Obtener todos los cursos y buscar la sección que coincide
@@ -64,11 +112,11 @@ export const CourseIdResolver = {
       
       for (const course of allCourses) {
         const courseId = course.id;
-        const normalizedCourseId = normalizeId(courseId);
+        const normalizedCourseId = isValidUUID(courseId) ? courseId : normalizeId(courseId);
         
         const sections = await HybridCourseService.getCourseSections(courseId);
         const matchingSection = sections.find(section => {
-          const secId = normalizeId(section.id);
+          const secId = isValidUUID(section.id) ? section.id : normalizeId(section.id);
           return secId === normalizedSectionId || section.id === sectionId;
         });
         
@@ -112,7 +160,8 @@ export const CourseIdResolver = {
       
       if (courseIdFromUrl) {
         console.log(`CourseIdResolver: Extracted course ID from URL: ${courseIdFromUrl}`);
-        const normalizedUrlCourseId = normalizeId(courseIdFromUrl);
+        // Only normalize if it's not already a UUID
+        const normalizedUrlCourseId = isValidUUID(courseIdFromUrl) ? courseIdFromUrl : normalizeId(courseIdFromUrl);
         console.log(`CourseIdResolver: Normalized course ID from URL: ${normalizedUrlCourseId}`);
         return normalizedUrlCourseId;
       }

@@ -46,7 +46,7 @@ export const useUserCourseProgress = (courseSlug?: string, userId?: string): Cou
   // Try to get progress from user context
   useEffect(() => {
     if (detailedProgress && courseId && !isLoading) {
-      const courseProgress = detailedProgress.detailed_progress.course_progress.find(
+      const courseProgress = detailedProgress.detailed_progress?.course_progress?.find(
         course => course.course_id === courseId
       );
       
@@ -114,6 +114,7 @@ export const useUserCourseProgress = (courseSlug?: string, userId?: string): Cou
     const extendedLessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
+      // Llama al servicio sin normalizar el lessonId, el servicio se encargará de eso
       const success = await courseProgressService.markLessonComplete(userId, courseId, lessonId);
       
       if (success) {
@@ -167,6 +168,7 @@ export const useUserCourseProgress = (courseSlug?: string, userId?: string): Cou
     const extendedLessonKey = `${courseId}:${moduleId}:${lessonId}`;
     
     try {
+      // Call service without normalizing lessonId, the service will handle that
       const success = await courseProgressService.saveQuizResults(userId, courseId, lessonId, score, answers);
       
       if (success) {

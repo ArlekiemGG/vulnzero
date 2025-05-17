@@ -15,16 +15,31 @@ export const progressDataService = {
       const normalizedCourseId = normalizeId(courseId);
       console.log(`progressDataService: Fetching progress for course ${courseId} (normalized: ${normalizedCourseId}) and user ${userId}`);
       
-      // Get user progress directly, rather than filtering by section first
-      const { data: userLessonProgress, error: progressError } = await supabase
+      // First try to get user progress with normalized course ID
+      let { data: userLessonProgress, error: progressError } = await supabase
         .from('user_lesson_progress')
         .select('*')
         .eq('user_id', userId)
         .eq('course_id', normalizedCourseId)
         .eq('completed', true);
       
-      if (progressError) {
+      if (progressError && progressError.code !== 'PGRST116') {
         throw progressError;
+      }
+      
+      // If no progress found with normalized ID, try with original ID
+      if (!userLessonProgress || userLessonProgress.length === 0) {
+        console.log(`progressDataService: No progress found with normalized ID, trying original ID ${courseId}`);
+        const { data: originalIdProgress, error: originalIdError } = await supabase
+          .from('user_lesson_progress')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('course_id', courseId)
+          .eq('completed', true);
+          
+        if (!originalIdError) {
+          userLessonProgress = originalIdProgress;
+        }
       }
       
       // Get course sections

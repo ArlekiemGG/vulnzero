@@ -3,7 +3,7 @@ import { courseProgressService } from '@/services/course-progress-service';
 import { useUser } from '@/contexts/UserContext';
 import { useState, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { normalizeId } from '@/utils/uuid-generator';
+import { normalizeId, isValidUUID } from '@/utils/uuid-generator';
 import { CourseIdResolver } from './CourseIdResolver';
 
 export function useProgressService() {
@@ -18,12 +18,24 @@ export function useProgressService() {
     if (!userContext.user) return null;
     
     try {
-      // Normalizamos el ID de la lección a UUID
-      const normalizedLessonId = normalizeId(lessonId);
-      console.log(`ProgressService: Checking progress for lesson ${lessonId} (normalized: ${normalizedLessonId})`);
+      let lessonIdToCheck = lessonId;
       
-      const response = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, normalizedLessonId);
-      console.log(`ProgressService: Lesson progress response:`, response);
+      // Comprobamos si el ID es un UUID válido, sino lo normalizamos
+      if (!isValidUUID(lessonId)) {
+        lessonIdToCheck = normalizeId(lessonId);
+      }
+      
+      console.log(`ProgressService: Checking progress for lesson ${lessonId} (checking with: ${lessonIdToCheck})`);
+      
+      const response = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, lessonIdToCheck);
+      
+      // Si no encontramos progreso con el ID normalizado, intentamos con el original
+      if (!response.data && lessonIdToCheck !== lessonId) {
+        console.log(`ProgressService: No progress found with normalized ID, trying original ID ${lessonId}`);
+        const originalResponse = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, lessonId);
+        return originalResponse.data;
+      }
+      
       return response.data;
     } catch (error) {
       console.error("ProgressService: Error getting lesson progress:", error);
@@ -47,10 +59,6 @@ export function useProgressService() {
     try {
       console.log(`ProgressService: Marking lesson ${lessonId} as completed`);
       
-      // Normalizamos el ID de la lección a UUID
-      const normalizedLessonId = normalizeId(lessonId);
-      console.log(`ProgressService: Normalized lessonId from ${lessonId} to ${normalizedLessonId}`);
-      
       // 1. Determinar el curso al que pertenece esta lección
       const courseId = await CourseIdResolver.getCourseIdFromLesson(lessonId);
       
@@ -66,13 +74,14 @@ export function useProgressService() {
       }
       
       // El courseId ya viene normalizado desde CourseIdResolver
-      console.log(`ProgressService: Lesson ${normalizedLessonId} belongs to course ${courseId}`);
+      console.log(`ProgressService: Lesson ${lessonId} belongs to course ${courseId}`);
       
-      // 2. Marcar la lección como completada
+      // 2. Marcar la lección como completada - pasamos el lessonId sin normalizar
+      // El servicio se encargará de determinar cómo guardarlo
       const success = await courseProgressService.markLessonComplete(
         userContext.user.id,
         courseId,
-        normalizedLessonId
+        lessonId
       );
       
       if (success) {
