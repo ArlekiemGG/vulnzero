@@ -59,8 +59,25 @@ export function useProgressService() {
     try {
       console.log(`ProgressService: Marking lesson ${lessonId} as completed`);
       
-      // 1. Determinar el curso al que pertenece esta lección
-      const courseId = await CourseIdResolver.getCourseIdFromLesson(lessonId);
+      // 1. Obtener la URL actual para extraer el courseId
+      const currentUrl = window.location.pathname;
+      let extractedCourseId: string | null = null;
+      
+      // La URL debería tener un formato como /courses/{courseId}/learn/{moduleId}/{lessonId}
+      const urlPattern = /\/courses\/([^\/]+)\/learn/;
+      const match = currentUrl.match(urlPattern);
+      
+      if (match && match[1]) {
+        extractedCourseId = match[1];
+        console.log(`ProgressService: Extracted courseId from URL: ${extractedCourseId}`);
+      }
+      
+      // 2. Si no se pudo extraer de la URL, intentar con CourseIdResolver
+      let courseId = extractedCourseId;
+      if (!courseId) {
+        console.log(`ProgressService: Couldn't extract courseId from URL, using CourseIdResolver`);
+        courseId = await CourseIdResolver.getCourseIdFromLesson(lessonId);
+      }
       
       if (!courseId) {
         console.error(`ProgressService: Could not determine course ID for lesson ${lessonId}`);
@@ -73,11 +90,10 @@ export function useProgressService() {
         return false;
       }
       
-      // El courseId ya viene normalizado desde CourseIdResolver
       console.log(`ProgressService: Lesson ${lessonId} belongs to course ${courseId}`);
       
-      // 2. Marcar la lección como completada - pasamos el lessonId sin normalizar
-      // El servicio se encargará de determinar cómo guardarlo
+      // 3. Marcar la lección como completada - pasamos el original ID sin normalizar
+      // junto con el courseId que hemos determinado
       const success = await courseProgressService.markLessonComplete(
         userContext.user.id,
         courseId,
@@ -87,7 +103,7 @@ export function useProgressService() {
       if (success) {
         console.log(`ProgressService: Successfully marked lesson ${lessonId} as completed`);
         
-        // 3. Actualizar el progreso global del usuario
+        // 4. Actualizar el progreso global del usuario
         await refreshUserStats();
         console.log("ProgressService: User stats refreshed");
         
