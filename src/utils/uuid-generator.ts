@@ -31,3 +31,46 @@ export function isValidUUID(str: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 }
+
+/**
+ * Safely converts a string to UUID for database operations
+ * This function can be used directly in database queries to ensure proper format
+ * and handle errors appropriately
+ */
+export function toDbUUID(id: string): string {
+  try {
+    // If empty or null, return null
+    if (!id) return '';
+    
+    // If already a valid UUID, use directly
+    if (isValidUUID(id)) {
+      return id;
+    }
+    
+    // Otherwise convert to UUID format
+    return generateUUID(id);
+  } catch (error) {
+    console.error("Error converting to UUID:", error);
+    throw new Error(`Could not convert "${id}" to a valid UUID`);
+  }
+}
+
+/**
+ * Safely handles UUIDs for database operations, ensuring all IDs are
+ * properly formatted whether they're already UUIDs or need conversion
+ */
+export function safelyHandleDbId(id: string): string {
+  try {
+    // Only normalize if the ID exists and is not already a valid UUID
+    if (id && !isValidUUID(id)) {
+      const normalizedId = normalizeId(id);
+      console.log(`safelyHandleDbId: normalized "${id}" → "${normalizedId}"`);
+      return normalizedId;
+    }
+    return id;
+  } catch (error) {
+    console.error(`Failed to safely handle ID "${id}":`, error);
+    // In case of error, return the original to avoid completely breaking functionality
+    return id;
+  }
+}

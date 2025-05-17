@@ -15,6 +15,7 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [wasSaved, setWasSaved] = useState(false);
+  const [processingComplete, setProcessingComplete] = useState(false);
   
   // Update internal state when prop changes
   useEffect(() => {
@@ -22,8 +23,18 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
     setCompleted(initialCompleted);
     if (initialCompleted) {
       setWasSaved(true);
+      setProcessingComplete(false);
     }
   }, [initialCompleted]);
+  
+  // Reset processing flag when completed state changes
+  useEffect(() => {
+    if (completed) {
+      // If completion was successful, clear processing flag after a delay
+      const timer = setTimeout(() => setProcessingComplete(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [completed]);
   
   const handleComplete = useCallback(async () => {
     // Skip if already loading or completed
@@ -32,6 +43,7 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
     console.log("LessonCompletionButton: Starting completion process");
     setIsLoading(true);
     setError(null);
+    setProcessingComplete(true);
     
     try {
       console.log("LessonCompletionButton: Calling onComplete callback");
@@ -92,7 +104,7 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
         <div className="space-y-1">
           <Button 
             onClick={handleComplete} 
-            disabled={isLoading} 
+            disabled={isLoading || processingComplete} 
             className="flex items-center"
           >
             {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { generateUUID, isValidUUID, normalizeId } from '@/utils/uuid-generator';
+import { generateUUID, isValidUUID, normalizeId, safelyHandleDbId } from '@/utils/uuid-generator';
 import { LessonProgressItem, SimpleLessonProgress } from '@/types/course-progress';
 import { courseProgressUpdater } from './course-progress-updater';
 
@@ -113,19 +113,45 @@ export const lessonProgressService = {
       } else {
         console.log(`LessonProgressService: Creating new progress record`);
         
-        // Create new record
-        const { error: insertError } = await supabase
-          .from('user_lesson_progress')
-          .insert({
-            user_id: userId,
-            lesson_id: lessonIdToUse,
-            course_id: normalizedCourseId,
-            completed: true,
-            completed_at: now
-          });
-        
-        if (insertError) {
-          console.error("Error creating lesson progress:", insertError);
+        try {
+          // Create new record
+          const { error: insertError } = await supabase
+            .from('user_lesson_progress')
+            .insert({
+              user_id: userId,
+              lesson_id: lessonIdToUse,
+              course_id: normalizedCourseId,
+              completed: true,
+              completed_at: now
+            });
+          
+          if (insertError) {
+            console.error("Error creating lesson progress:", insertError);
+            
+            // If we get a UUID error, try an alternative approach
+            if (insertError.message && insertError.message.includes('invalid input syntax for type uuid')) {
+              console.log("Attempting alternative approach with direct RPC call");
+              
+              // Use an RPC call that can handle the string ID properly
+              const { data: rpcResult, error: rpcError } = await supabase.rpc('create_lesson_progress', {
+                p_user_id: userId,
+                p_lesson_id: lessonId, // Use original ID here
+                p_course_id: normalizedCourseId,
+                p_completed: true
+              });
+              
+              if (rpcError) {
+                console.error("RPC error:", rpcError);
+                return false;
+              }
+              
+              return !!rpcResult;
+            }
+            
+            return false;
+          }
+        } catch (insertError: any) {
+          console.error("Caught exception in insert operation:", insertError);
           return false;
         }
       }
