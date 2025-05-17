@@ -50,9 +50,30 @@ export function useLessonData(courseId?: string, moduleId?: string, lessonId?: s
           // Cargar lecciones anterior y siguiente
           try {
             const { prevLesson, nextLesson } = await HybridCourseService.getAdjacentLessons(courseId, lessonId);
-            setPrevLesson(prevLesson);
-            setNextLesson(nextLesson);
-            console.log('useLessonData: Adjacent lessons loaded:', { prevLesson, nextLesson });
+            
+            // Adaptamos los resultados para mantener compatibilidad con la propiedad moduleId
+            if (prevLesson) {
+              setPrevLesson({
+                ...prevLesson,
+                moduleId: prevLesson.section_id
+              });
+            } else {
+              setPrevLesson(null);
+            }
+            
+            if (nextLesson) {
+              setNextLesson({
+                ...nextLesson,
+                moduleId: nextLesson.section_id
+              });
+            } else {
+              setNextLesson(null);
+            }
+            
+            console.log('useLessonData: Adjacent lessons loaded:', { 
+              prevLesson: prevLesson ? { ...prevLesson, moduleId: prevLesson.section_id } : null, 
+              nextLesson: nextLesson ? { ...nextLesson, moduleId: nextLesson.section_id } : null 
+            });
           } catch (error) {
             console.error('useLessonData: Error loading adjacent lessons:', error);
             // No fallamos toda la carga si solo fallan las lecciones adyacentes

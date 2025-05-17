@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Course, Section, Lesson } from './CourseService';
 import { StaticContentService } from './StaticContentService';
@@ -296,7 +297,7 @@ export const HybridCourseService = {
         if (currentLessonFound && sectionLessons.length > 0 && !nextLessonData) {
           nextLessonData = {
             ...sectionLessons[0],
-            moduleId: section.id  // Añadimos moduleId para facilitar la navegación
+            section_id: section.id  // Usamos section_id en lugar de moduleId
           };
         }
         
@@ -309,7 +310,7 @@ export const HybridCourseService = {
             if (i > 0) {
               prevLessonData = {
                 ...sectionLessons[i - 1],
-                moduleId: section.id
+                section_id: section.id  // Usamos section_id en lugar de moduleId
               };
             }
             
@@ -317,14 +318,14 @@ export const HybridCourseService = {
             if (i < sectionLessons.length - 1) {
               nextLessonData = {
                 ...sectionLessons[i + 1],
-                moduleId: section.id
+                section_id: section.id  // Usamos section_id en lugar de moduleId
               };
             }
           } else if (currentLessonFound && !nextLessonData) {
             // Si ya encontramos la lección actual pero aún no tenemos la siguiente
             nextLessonData = {
               ...sectionLessons[i],
-              moduleId: section.id
+              section_id: section.id  // Usamos section_id en lugar de moduleId
             };
             break;
           } else if (!currentLessonFound) {
@@ -332,7 +333,7 @@ export const HybridCourseService = {
             // hasta que encontremos la lección actual
             prevLessonData = {
               ...sectionLessons[i],
-              moduleId: section.id
+              section_id: section.id  // Usamos section_id en lugar de moduleId
             };
           }
         }
