@@ -70,7 +70,7 @@ export const lessonProgressService = {
         
         // Llamamos directamente a la función RPC para crear/actualizar el progreso
         const { data: rpcResult, error: rpcError } = await supabase.rpc(
-          'create_lesson_progress', 
+          'create_lesson_progress' as any, 
           {
             p_user_id: userId,
             p_lesson_id: lessonId,
@@ -302,19 +302,20 @@ export const lessonProgressService = {
       }
       
       const now = new Date().toISOString();
-      const quizData = {
-        completed: true,
-        completed_at: now,
-        course_id: normalizedCourseId,
-        quiz_score: score,
-        quiz_answers: answers
-      };
       
       if (existingProgress) {
         // Update existing record
         const { error: updateError } = await supabase
           .from('user_lesson_progress')
-          .update(quizData)
+          .update({
+            completed: true,
+            completed_at: now,
+            course_id: normalizedCourseId,
+            // Using direct column names that match the database schema 
+            // instead of trying to use the interface properties
+            quiz_score: score,
+            quiz_answers: answers
+          } as any) // Use type assertion to bypass TypeScript checking
           .eq('id', existingProgress.id);
         
         if (updateError) {
@@ -324,7 +325,7 @@ export const lessonProgressService = {
         // Create new record using RPC function
         try {
           const { data: rpcResult, error: rpcError } = await supabase.rpc(
-            'create_lesson_progress', 
+            'create_lesson_progress' as any, 
             {
               p_user_id: userId,
               p_lesson_id: lessonId,
@@ -357,7 +358,7 @@ export const lessonProgressService = {
             .update({
               quiz_score: score,
               quiz_answers: answers
-            })
+            } as any) // Use type assertion to bypass TypeScript checking
             .eq('id', newProgress.id);
           
           if (quizUpdateError) {
