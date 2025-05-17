@@ -44,12 +44,28 @@ export const lessonProgressService = {
       const normalizedCourseId = normalizeId(courseId);
       const normalizedLessonId = normalizeId(lessonId);
       
+      // Primero verificamos si la lección existe en la tabla course_lessons
+      const { data: existingLesson, error: lessonCheckError } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('id', normalizedLessonId)
+        .maybeSingle();
+        
+      if (lessonCheckError) {
+        console.error("Error checking if lesson exists:", lessonCheckError);
+      }
+      
+      // Si la lección no existe en la tabla course_lessons
+      // almacenamos el progreso usando el ID original sin normalizar
+      // esto es útil para lecciones de cursos estáticos que no están en la base de datos
+      const lessonIdToUse = existingLesson ? normalizedLessonId : lessonId;
+      
       // Check for existing progress
       const { data: existingProgress, error: checkError } = await supabase
         .from('user_lesson_progress')
         .select('id')
         .eq('user_id', userId)
-        .eq('lesson_id', normalizedLessonId)
+        .eq('lesson_id', lessonIdToUse)
         .maybeSingle();
       
       if (checkError) {
@@ -81,7 +97,7 @@ export const lessonProgressService = {
           .from('user_lesson_progress')
           .insert({
             user_id: userId,
-            lesson_id: normalizedLessonId,
+            lesson_id: lessonIdToUse,
             course_id: normalizedCourseId,
             completed: true,
             completed_at: now
@@ -134,12 +150,27 @@ export const lessonProgressService = {
       const normalizedCourseId = normalizeId(courseId);
       const normalizedLessonId = normalizeId(lessonId);
       
+      // Primero verificamos si la lección existe en la tabla course_lessons
+      const { data: existingLesson, error: lessonCheckError } = await supabase
+        .from('course_lessons')
+        .select('id')
+        .eq('id', normalizedLessonId)
+        .maybeSingle();
+        
+      if (lessonCheckError) {
+        console.error("Error checking if lesson exists:", lessonCheckError);
+      }
+      
+      // Si la lección no existe en la tabla course_lessons
+      // almacenamos el progreso usando el ID original sin normalizar
+      const lessonIdToUse = existingLesson ? normalizedLessonId : lessonId;
+      
       // Check for existing progress
       const { data: existingProgress, error: checkError } = await supabase
         .from('user_lesson_progress')
         .select('id')
         .eq('user_id', userId)
-        .eq('lesson_id', normalizedLessonId)
+        .eq('lesson_id', lessonIdToUse)
         .maybeSingle();
       
       if (checkError) {
@@ -171,7 +202,7 @@ export const lessonProgressService = {
           .from('user_lesson_progress')
           .insert({
             user_id: userId,
-            lesson_id: normalizedLessonId,
+            lesson_id: lessonIdToUse,
             ...quizData
           });
         

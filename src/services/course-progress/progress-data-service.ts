@@ -15,37 +15,7 @@ export const progressDataService = {
       const normalizedCourseId = normalizeId(courseId);
       console.log(`progressDataService: Fetching progress for course ${courseId} (normalized: ${normalizedCourseId}) and user ${userId}`);
       
-      // Get course sections
-      const { data: sections, error: sectionsError } = await supabase
-        .from('course_sections')
-        .select('id')
-        .eq('course_id', normalizedCourseId);
-      
-      if (sectionsError) {
-        throw sectionsError;
-      }
-      
-      if (!sections || sections.length === 0) {
-        return { progress: 0, completedLessons: {}, completedQuizzes: {} };
-      }
-      
-      const sectionIds = sections.map(section => section.id);
-      
-      // Get lessons
-      const { data: lessons, error: lessonsError } = await supabase
-        .from('course_lessons')
-        .select('id, section_id')
-        .in('section_id', sectionIds);
-      
-      if (lessonsError) {
-        throw lessonsError;
-      }
-      
-      if (!lessons || lessons.length === 0) {
-        return { progress: 0, completedLessons: {}, completedQuizzes: {} };
-      }
-      
-      // Get user progress
+      // Get user progress directly, rather than filtering by section first
       const { data: userLessonProgress, error: progressError } = await supabase
         .from('user_lesson_progress')
         .select('*')
@@ -57,10 +27,45 @@ export const progressDataService = {
         throw progressError;
       }
       
+      // Get course sections
+      const { data: sections, error: sectionsError } = await supabase
+        .from('course_sections')
+        .select('id')
+        .eq('course_id', normalizedCourseId);
+      
+      if (sectionsError && sectionsError.code !== 'PGRST116') {
+        // Ignore "no rows returned" error
+        throw sectionsError;
+      }
+      
+      let totalLessons = 0;
+      
+      // If we have sections in the database
+      if (sections && sections.length > 0) {
+        const sectionIds = sections.map(section => section.id);
+        
+        // Get lessons
+        const { data: lessons, error: lessonsError } = await supabase
+          .from('course_lessons')
+          .select('id, section_id')
+          .in('section_id', sectionIds);
+        
+        if (lessonsError && lessonsError.code !== 'PGRST116') {
+          // Ignore "no rows returned" error
+          throw lessonsError;
+        }
+        
+        totalLessons = lessons?.length || 0;
+      }
+      
       // Calculate progress
-      const totalLessons = lessons.length;
       const completedLessonsCount = userLessonProgress ? userLessonProgress.length : 0;
-      const progress = totalLessons > 0 ? Math.round((completedLessonsCount / totalLessons) * 100) : 0;
+      
+      // Si no hay lecciones en la base de datos pero hay progreso del usuario,
+      // asumimos que son lecciones de un curso estático
+      const progress = totalLessons > 0 
+        ? Math.round((completedLessonsCount / totalLessons) * 100) 
+        : completedLessonsCount > 0 ? 100 : 0;
       
       // Create maps
       const completedLessons: Record<string, boolean> = {};
