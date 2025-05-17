@@ -88,6 +88,19 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
     }
   }, [completed, isLoading, onComplete, retryCount]);
   
+  // Add debug output of component state
+  useEffect(() => {
+    console.log("LessonCompletionButton state:", {
+      isCompleted: initialCompleted,
+      stateCompleted: completed,
+      isLoading,
+      error,
+      retryCount,
+      wasSaved,
+      processingComplete
+    });
+  }, [initialCompleted, completed, isLoading, error, retryCount, wasSaved, processingComplete]);
+  
   return (
     <div className="flex flex-col items-start">
       {completed ? (

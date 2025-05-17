@@ -1,3 +1,4 @@
+
 import { v5 as uuidv5 } from 'uuid';
 
 // Namespace to use for generating UUIDs
@@ -28,6 +29,8 @@ export function normalizeId(id: string): string {
  * Checks if a string is a valid UUID
  */
 export function isValidUUID(str: string): boolean {
+  if (!str) return false;
+  
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 }
@@ -39,7 +42,7 @@ export function isValidUUID(str: string): boolean {
  */
 export function toDbUUID(id: string): string {
   try {
-    // If empty or null, return null
+    // If empty or null, return empty string
     if (!id) return '';
     
     // If already a valid UUID, use directly
