@@ -10,33 +10,35 @@ interface CompletionButtonProps {
 }
 
 const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: CompletionButtonProps) => {
-  // Usamos estado interno para mostrar el estado correcto de UI incluso si el prop no se actualiza
   const [isLoading, setIsLoading] = useState(false);
   const [completed, setCompleted] = useState(initialCompleted);
+  const [error, setError] = useState<string | null>(null);
   
-  // Actualizamos el estado interno cuando cambia el prop
+  // Update internal state when prop changes
   useEffect(() => {
     console.log("LessonCompletionButton: isCompleted prop changed:", initialCompleted);
     setCompleted(initialCompleted);
   }, [initialCompleted]);
   
   const handleComplete = useCallback(async () => {
-    // No hacemos nada si ya está cargando o completado
+    // Skip if already loading or completed
     if (isLoading || completed) return;
     
     console.log("LessonCompletionButton: Starting completion process");
     setIsLoading(true);
+    setError(null);
     
     try {
       console.log("LessonCompletionButton: Calling onComplete callback");
       await onComplete();
       console.log("LessonCompletionButton: Completion callback executed successfully");
       
-      // Actualizamos nuestro estado interno para mostrar como completado
-      // incluso si el prop no se actualiza inmediatamente
+      // Update internal state to show as completed
+      // even if the prop doesn't update immediately
       setCompleted(true);
     } catch (error) {
       console.error('Error marking lesson as completed:', error);
+      setError('No se pudo marcar la lección como completada');
       toast({
         title: "Error",
         description: "No se pudo marcar la lección como completada",
@@ -49,7 +51,7 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
   }, [completed, isLoading, onComplete]);
   
   return (
-    <>
+    <div>
       {completed ? (
         <Button variant="outline" className="flex items-center bg-green-900/20 border-green-500" disabled>
           <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
@@ -61,7 +63,11 @@ const LessonCompletionButton = ({ isCompleted: initialCompleted, onComplete }: C
           <span>{isLoading ? "Guardando progreso..." : "Marcar como completada"}</span>
         </Button>
       )}
-    </>
+      
+      {error && (
+        <p className="text-red-500 text-sm mt-2">{error}</p>
+      )}
+    </div>
   );
 };
 

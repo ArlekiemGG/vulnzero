@@ -1,42 +1,57 @@
 
-import { courseProgressService } from '@/services/course-progress-service';
-import { useUser } from '@/contexts/UserContext';
 import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/contexts/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { normalizeId, isValidUUID } from '@/utils/uuid-generator';
-import { CourseIdResolver } from './CourseIdResolver';
+import { normalizeId } from '@/utils/uuid-generator';
 
+/**
+ * Service for managing lesson progress with direct database access
+ * This is a simplified version that bypasses the complex service chain
+ */
 export function useProgressService() {
   const userContext = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const { refreshUserStats } = useUser();
 
   /**
-   * Obtiene el progreso de una lección específica
+   * Obtiene el progreso de una lección específica directamente de la base de datos
    */
   const getLessonProgress = useCallback(async (lessonId: string) => {
     if (!userContext.user) return null;
     
     try {
-      let lessonIdToCheck = lessonId;
+      // Normalize the lessonId for consistency
+      const normalizedLessonId = normalizeId(lessonId);
       
-      // Comprobamos si el ID es un UUID válido, sino lo normalizamos
-      if (!isValidUUID(lessonId)) {
-        lessonIdToCheck = normalizeId(lessonId);
+      console.log(`ProgressService: Checking progress for lesson ${lessonId} (normalized: ${normalizedLessonId})`);
+      
+      // Try with normalized ID first
+      const { data: normalizedData, error: normalizedError } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userContext.user.id)
+        .eq('lesson_id', normalizedLessonId)
+        .maybeSingle();
+      
+      if (normalizedData) {
+        console.log(`ProgressService: Found progress with normalized ID`);
+        return normalizedData;
       }
       
-      console.log(`ProgressService: Checking progress for lesson ${lessonId} (checking with: ${lessonIdToCheck})`);
+      // If not found with normalized ID, try with original ID
+      const { data, error } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userContext.user.id)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
       
-      const response = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, lessonIdToCheck);
-      
-      // Si no encontramos progreso con el ID normalizado, intentamos con el original
-      if (!response.data && lessonIdToCheck !== lessonId) {
-        console.log(`ProgressService: No progress found with normalized ID, trying original ID ${lessonId}`);
-        const originalResponse = await courseProgressService.fetchLessonProgressByLessonId(userContext.user.id, lessonId);
-        return originalResponse.data;
+      if (error && error.code !== 'PGRST116') { // Ignore "no rows returned" error
+        console.error("ProgressService: Error checking lesson progress:", error);
       }
       
-      return response.data;
+      return data;
     } catch (error) {
       console.error("ProgressService: Error getting lesson progress:", error);
       return null;
@@ -44,9 +59,7 @@ export function useProgressService() {
   }, [userContext.user]);
 
   /**
-   * Marca una lección como completada
-   * @param lessonId ID de la lección a marcar como completada
-   * @param moduleId Opcional: ID del módulo/sección (para actualización de estado en UI)
+   * Marca una lección como completada directamente en la base de datos
    */
   const markLessonAsCompleted = useCallback(async (lessonId: string, moduleId?: string) => {
     if (!userContext.user) {
@@ -59,28 +72,13 @@ export function useProgressService() {
     try {
       console.log(`ProgressService: Marking lesson ${lessonId} as completed`);
       
-      // 1. Obtener la URL actual para extraer el courseId
+      // Extract courseId from URL - this is the most reliable method
       const currentUrl = window.location.pathname;
-      let extractedCourseId: string | null = null;
-      
-      // La URL debería tener un formato como /courses/{courseId}/learn/{moduleId}/{lessonId}
       const urlPattern = /\/courses\/([^\/]+)\/learn/;
       const match = currentUrl.match(urlPattern);
       
-      if (match && match[1]) {
-        extractedCourseId = match[1];
-        console.log(`ProgressService: Extracted courseId from URL: ${extractedCourseId}`);
-      }
-      
-      // 2. Si no se pudo extraer de la URL, intentar con CourseIdResolver
-      let courseId = extractedCourseId;
-      if (!courseId) {
-        console.log(`ProgressService: Couldn't extract courseId from URL, using CourseIdResolver`);
-        courseId = await CourseIdResolver.getCourseIdFromLesson(lessonId);
-      }
-      
-      if (!courseId) {
-        console.error(`ProgressService: Could not determine course ID for lesson ${lessonId}`);
+      if (!match || !match[1]) {
+        console.error(`ProgressService: Could not extract course ID from URL: ${currentUrl}`);
         toast({
           variant: "destructive",
           title: "Error",
@@ -90,20 +88,82 @@ export function useProgressService() {
         return false;
       }
       
+      const courseId = match[1];
+      const normalizedCourseId = normalizeId(courseId);
+      
+      console.log(`ProgressService: Extracted courseId ${courseId} from URL (normalized: ${normalizedCourseId})`);
       console.log(`ProgressService: Lesson ${lessonId} belongs to course ${courseId}`);
       
-      // 3. Marcar la lección como completada - pasamos el original ID sin normalizar
-      // junto con el courseId que hemos determinado
-      const success = await courseProgressService.markLessonComplete(
-        userContext.user.id,
-        courseId,
-        lessonId
-      );
+      // Check if a record already exists
+      const { data: existingProgress } = await supabase
+        .from('user_lesson_progress')
+        .select('id')
+        .eq('user_id', userContext.user.id)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
       
-      if (success) {
-        console.log(`ProgressService: Successfully marked lesson ${lessonId} as completed`);
+      const now = new Date().toISOString();
+      let success = false;
+      
+      if (existingProgress) {
+        console.log(`ProgressService: Updating existing progress record ${existingProgress.id}`);
         
-        // 4. Actualizar el progreso global del usuario
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('user_lesson_progress')
+          .update({
+            completed: true,
+            completed_at: now,
+            course_id: normalizedCourseId
+          })
+          .eq('id', existingProgress.id);
+        
+        if (updateError) {
+          console.error("ProgressService: Error updating lesson progress:", updateError);
+          throw updateError;
+        }
+        
+        success = true;
+      } else {
+        console.log(`ProgressService: Creating new progress record`);
+        
+        // Create new record
+        const { error: insertError } = await supabase
+          .from('user_lesson_progress')
+          .insert({
+            user_id: userContext.user.id,
+            lesson_id: lessonId,
+            course_id: normalizedCourseId,
+            completed: true,
+            completed_at: now
+          });
+        
+        if (insertError) {
+          console.error("ProgressService: Error creating lesson progress:", insertError);
+          throw insertError;
+        }
+        
+        success = true;
+      }
+
+      if (success) {
+        // Update course progress
+        await updateCourseProgress(userContext.user.id, normalizedCourseId);
+        
+        // Log user activity
+        try {
+          await supabase.rpc('log_user_activity', {
+            p_user_id: userContext.user.id,
+            p_type: 'lesson_completion',
+            p_title: `Completó una lección del curso`,
+            p_points: 10
+          });
+        } catch (activityError) {
+          console.error("ProgressService: Error logging activity:", activityError);
+          // Don't fail the operation if this fails
+        }
+        
+        // Refresh global stats
         await refreshUserStats();
         console.log("ProgressService: User stats refreshed");
         
@@ -111,10 +171,10 @@ export function useProgressService() {
           title: "Lección completada",
           description: "Se ha guardado tu progreso correctamente"
         });
+
         setIsLoading(false);
         return true;
       } else {
-        console.error(`ProgressService: Failed to mark lesson ${lessonId} as completed`);
         toast({
           variant: "destructive",
           title: "Error",
@@ -134,6 +194,101 @@ export function useProgressService() {
       return false;
     }
   }, [userContext.user, refreshUserStats]);
+  
+  /**
+   * Updates course progress based on completed lessons
+   * This is a simplified, direct implementation
+   */
+  const updateCourseProgress = async (userId: string, courseId: string): Promise<boolean> => {
+    try {
+      console.log(`ProgressService: Updating course progress for ${courseId}`);
+      
+      // Count total lessons
+      const { count: totalCount, error: countError } = await supabase
+        .from('course_lessons')
+        .select('*', { count: 'exact', head: true })
+        .eq('section_id', courseId);
+      
+      if (countError && countError.code !== 'PGRST116') {
+        console.error("ProgressService: Error counting lessons:", countError);
+      }
+      
+      // Count completed lessons
+      const { data: completedData, error: completedError } = await supabase
+        .from('user_lesson_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .eq('completed', true);
+      
+      if (completedError) {
+        console.error("ProgressService: Error counting completed lessons:", completedError);
+        return false;
+      }
+      
+      // Calculate progress percentage
+      const totalLessons = totalCount || 0;
+      const completedLessons = completedData?.length || 0;
+      
+      const progressPercentage = totalLessons > 0 
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : completedLessons > 0 ? 100 : 0;
+      
+      const isCompleted = totalLessons > 0 && completedLessons >= totalLessons;
+      const now = new Date().toISOString();
+      
+      // Check if there's an existing course progress record
+      const { data: existingProgress } = await supabase
+        .from('user_course_progress')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      
+      if (existingProgress) {
+        console.log(`ProgressService: Updating course progress to ${progressPercentage}%`);
+        
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('user_course_progress')
+          .update({
+            progress_percentage: progressPercentage,
+            completed: isCompleted,
+            completed_at: isCompleted ? now : null
+          })
+          .eq('id', existingProgress.id);
+        
+        if (updateError) {
+          console.error("ProgressService: Error updating course progress:", updateError);
+          return false;
+        }
+      } else {
+        console.log(`ProgressService: Creating new course progress record with ${progressPercentage}%`);
+        
+        // Create new record
+        const { error: insertError } = await supabase
+          .from('user_course_progress')
+          .insert({
+            user_id: userId,
+            course_id: courseId,
+            progress_percentage: progressPercentage,
+            started_at: now,
+            completed: isCompleted,
+            completed_at: isCompleted ? now : null
+          });
+        
+        if (insertError) {
+          console.error("ProgressService: Error creating course progress:", insertError);
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("ProgressService: Error updating course progress:", error);
+      return false;
+    }
+  };
 
   return {
     markLessonAsCompleted,
